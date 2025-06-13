@@ -28,6 +28,7 @@
       :loading="loading"
       @sort-change="$emit('sort-change', $event)"
       style="min-height: 320px; margin-top: 20px;"
+      max-height="500"
     >
       <el-table-column prop="id" label="用户ID" min-width="100" />
       <el-table-column prop="username" label="用户" min-width="120" />
@@ -37,8 +38,7 @@
       <el-table-column
         prop="role"
         min-width="120"
-        :filters="roleFilters"
-        :filtered-value="filteredRole"
+        column-key="role"
       >
         <template #header>
           <span>角色</span>
@@ -69,8 +69,7 @@
       <el-table-column
         prop="status"
         min-width="100"
-        :filters="statusFilters"
-        :filtered-value="filteredStatus"
+        column-key="status"
       >
         <template #header>
           <span>状态</span>
@@ -82,7 +81,9 @@
           >
             <div>
               <el-checkbox-group v-model="statusFilterValue">
-                <el-checkbox v-for="item in statusFilters" :key="item.value" :value="item.value">{{ item.text }}</el-checkbox>
+                <div v-for="item in statusFilters" :key="item.value" style="margin-bottom: 5px;">
+                  <el-checkbox :value="item.value">{{ item.text }}</el-checkbox>
+                </div>
               </el-checkbox-group>
               <div class="mt-2 flex justify-end">
                 <el-button size="small" @click="resetStatusFilter">重置</el-button>

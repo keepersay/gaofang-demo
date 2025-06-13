@@ -4,6 +4,8 @@ import ClusterGroup from '../views/ClusterGroup.vue'
 import ResourceManagement from '../views/ResourceManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
 import Placeholder from '../views/Placeholder.vue'
+import LoginLog from '../views/LogManagement/LoginLog.vue'
+import OperationLog from '../views/LogManagement/OperationLog.vue'
 
 const routes = [
   {
@@ -65,12 +67,12 @@ const routes = [
   {
     path: '/log/login',
     name: 'LoginLogs',
-    component: Placeholder
+    component: LoginLog
   },
   {
     path: '/log/operation',
     name: 'OperationLogs',
-    component: Placeholder
+    component: OperationLog
   },
   {
     path: '/user',

@@ -101,6 +101,8 @@ const pageSize = ref(10)
 const filteredData = computed(() => {
   let data = usersData.value
 
+  console.log('filteredData: Starting filter with searchQuery:', searchQuery.value, 'and filters:', filters.value);
+
   // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -111,16 +113,25 @@ const filteredData = computed(() => {
         item.phone.includes(query)
     )
   }
+  console.log('filteredData: After search filter, data count:', data.length);
 
   // Role filter
-  if (filters.value.role.length) {
-    data = data.filter((item) => filters.value.role.includes(item.role))
+  if (filters.value.role && filters.value.role.length) {
+    data = data.filter((item) => {
+      const itemRole = String(item.role).toLowerCase().trim();
+      return filters.value.role.map(f => String(f).toLowerCase().trim()).includes(itemRole);
+    });
   }
+  console.log('filteredData: After role filter, data count:', data.length);
 
   // Status filter
-  if (filters.value.status.length) {
-    data = data.filter((item) => filters.value.status.includes(item.status))
+  if (filters.value.status && filters.value.status.length) {
+    data = data.filter((item) => {
+      const itemStatus = String(item.status).toLowerCase().trim();
+      return filters.value.status.map(f => String(f).toLowerCase().trim()).includes(itemStatus);
+    });
   }
+  console.log('filteredData: After status filter, data count:', data.length);
 
   // Sort
   if (sort.value.prop) {
