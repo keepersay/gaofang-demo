@@ -1,0 +1,273 @@
+<template>
+  <el-container>
+    <el-main>
+      <h2 style="font-size: 18px; margin-bottom: 15px;">用户管理</h2>
+      <el-card>
+        <UserTable
+          :data="pagedData"
+          :total="filteredData.length"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :search-query="searchQuery"
+          :filtered-role="filters.role"
+          :filtered-status="filters.status"
+          @create="onCreate"
+          @edit="onEdit"
+          @disable_enable="onDisableEnable"
+          @delete="onDelete"
+          @search="onSearch"
+          @page-change="onPageChange"
+          @size-change="onPageSizeChange"
+          @filter-change="onFilterChange"
+          @sort-change="onSortChange"
+        />
+      </el-card>
+
+      <UserModal
+        :visible="modalVisible"
+        :is-edit="isEdit"
+        :edit-data="editData"
+        @close="modalVisible = false"
+        @submit="handleModalSubmit"
+      />
+
+      <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
+        <div>确定要删除用户 <b>{{ deleteRow?.username }}</b> 吗？</div>
+        <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
+        <template #footer>
+          <el-button @click="deleteVisible = false">取消</el-button>
+          <el-button type="danger" @click="confirmDelete">确认删除</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="disableEnableVisible" :title="disableEnableRow?.status === 'active' ? '确认禁用' : '确认启用'" width="400px">
+        <div>确定要{{ disableEnableRow?.status === 'active' ? '禁用' : '启用' }}用户 <b>{{ disableEnableRow?.username }}</b> 吗？</div>
+        <div class="text-xs text-gray-500 mt-2">ID: {{ disableEnableRow?.id }}</div>
+        <template #footer>
+          <el-button @click="disableEnableVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmDisableEnable">确认</el-button>
+        </template>
+      </el-dialog>
+    </el-main>
+  </el-container>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
+import UserTable from '../components/UserManagement/UserTable.vue'
+import UserModal from '../components/UserManagement/UserModal.vue'
+
+// Mock data for users
+const usersData = ref([
+  {
+    id: '1234567',
+    username: 'ABC',
+    password: 'password123',
+    confirmPassword: 'password123',
+    name: '张三',
+    email: 'hi@gmail.com',
+    phone: '18888888888',
+    role: 'admin',
+    status: 'active',
+    creator: 'Admin',
+    createdAt: '2023-05-01',
+    notes: '12345'
+  },
+  {
+    id: '8765432',
+    username: 'DEF',
+    password: 'password123',
+    confirmPassword: 'password123',
+    name: '李四',
+    email: 'li@example.com',
+    phone: '13333333333',
+    role: 'readonly',
+    status: 'disabled',
+    creator: 'Admin',
+    createdAt: '2023-06-15',
+    notes: '测试用户'
+  }
+])
+
+// Search, filter, sort, pagination states
+const searchQuery = ref('')
+const filters = ref({ role: [], status: [] })
+const sort = ref({ prop: '', order: '' })
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+// Computed data for table
+const filteredData = computed(() => {
+  let data = usersData.value
+
+  // Search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    data = data.filter(
+      (item) =>
+        item.username.toLowerCase().includes(query) ||
+        item.name.toLowerCase().includes(query) ||
+        item.phone.includes(query)
+    )
+  }
+
+  // Role filter
+  if (filters.value.role.length) {
+    data = data.filter((item) => filters.value.role.includes(item.role))
+  }
+
+  // Status filter
+  if (filters.value.status.length) {
+    data = data.filter((item) => filters.value.status.includes(item.status))
+  }
+
+  // Sort
+  if (sort.value.prop) {
+    data = [...data].sort((a, b) => {
+      const aVal = a[sort.value.prop]
+      const bVal = b[sort.value.prop]
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sort.value.order === 'ascending'
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal)
+      }
+      return 0
+    })
+  }
+
+  return data
+})
+
+const pagedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
+
+// Modal/Dialog states
+const modalVisible = ref(false)
+const isEdit = ref(false)
+const editData = ref(null)
+const deleteVisible = ref(false)
+const deleteRow = ref(null)
+const disableEnableVisible = ref(false)
+const disableEnableRow = ref(null)
+
+// Event handlers from UserTable
+function onCreate() {
+  isEdit.value = false
+  editData.value = null
+  modalVisible.value = true
+}
+
+function onEdit(row) {
+  isEdit.value = true
+  editData.value = { ...row }
+  modalVisible.value = true
+}
+
+function onDisableEnable(row) {
+  disableEnableRow.value = row
+  disableEnableVisible.value = true
+}
+
+function onDelete(row) {
+  deleteRow.value = row
+  deleteVisible.value = true
+}
+
+function onSearch(query) {
+  searchQuery.value = query
+  currentPage.value = 1
+}
+
+function onPageChange(page) {
+  currentPage.value = page
+}
+
+function onPageSizeChange(size) {
+  pageSize.value = size
+  currentPage.value = 1
+}
+
+function onFilterChange(newFilters) {
+  filters.value = newFilters
+  currentPage.value = 1
+}
+
+function onSortChange(newSort) {
+  sort.value = newSort
+  currentPage.value = 1
+}
+
+// Handlers for UserModal and Dialogs
+function handleModalSubmit(formData) {
+  if (isEdit.value) {
+    const index = usersData.value.findIndex((user) => user.id === formData.id)
+    if (index !== -1) {
+      usersData.value[index] = { ...usersData.value[index], ...formData }
+      ElMessage.success('用户更新成功！')
+    } else {
+      ElMessage.error('用户更新失败！')
+    }
+  } else {
+    const newId = (Math.floor(Math.random() * 9000000) + 1000000).toString()
+    const now = new Date()
+    const createdAt = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`
+    usersData.value.unshift({
+      id: newId,
+      ...formData,
+      status: 'active',
+      creator: 'Admin',
+      createdAt: createdAt,
+      notes: ''
+    })
+    ElMessage.success('用户创建成功！')
+  }
+  modalVisible.value = false
+}
+
+function confirmDelete() {
+  const index = usersData.value.findIndex(
+    (user) => user.id === deleteRow.value.id
+  )
+  if (index !== -1) {
+    usersData.value.splice(index, 1)
+    ElMessage.success('用户删除成功！')
+  } else {
+    ElMessage.error('用户删除失败！')
+  }
+  deleteVisible.value = false
+}
+
+function confirmDisableEnable() {
+  const index = usersData.value.findIndex(
+    (user) => user.id === disableEnableRow.value.id
+  )
+  if (index !== -1) {
+    usersData.value[index].status = 
+      usersData.value[index].status === 'active' ? 'disabled' : 'active'
+    ElMessage.success(
+      `用户${usersData.value[index].status === 'active' ? '启用' : '禁用'}成功！`
+    )
+  } else {
+    ElMessage.error(
+      `用户${disableEnableRow.value.status === 'active' ? '禁用' : '启用'}失败！`
+    )
+  }
+  disableEnableVisible.value = false
+}
+</script>
+
+<style scoped>
+.el-main {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style> 
