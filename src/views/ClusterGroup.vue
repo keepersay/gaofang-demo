@@ -78,10 +78,24 @@ const pageSize = ref(10)
 const filteredData = computed(() => {
   let data = tableData.value
   console.log('Initial data (inside filteredData):', JSON.parse(JSON.stringify(data)))
-  // 临时只保留链路类型过滤
-  if (filters.value.linkType.length) {
+
+  // 应用所在机房过滤
+  if (filters.value.location && filters.value.location.length) {
+    console.log('Applying location filter. Filters:', filters.value.location);
+    data = data.filter(item => {
+      const itemLocation = String(item.location).toLowerCase().trim();
+      return filters.value.location.map(f => String(f).toLowerCase().trim()).includes(itemLocation);
+    });
+    console.log('After location filter (inside filteredData):', JSON.parse(JSON.stringify(data)));
+  }
+
+  // 应用链路类型过滤
+  if (filters.value.linkType && filters.value.linkType.length) {
     console.log('Applying linkType filter. Filters:', filters.value.linkType)
-    data = data.filter(item => filters.value.linkType.includes(item.linkType))
+    data = data.filter(item => {
+      const itemLinkType = String(item.linkType).toLowerCase().trim();
+      return filters.value.linkType.map(f => String(f).toLowerCase().trim()).includes(itemLinkType);
+    });
     console.log('After linkType filter (inside filteredData):', JSON.parse(JSON.stringify(data)))
   }
   console.log('Final filtered data (inside filteredData):', JSON.parse(JSON.stringify(data)))
