@@ -10,11 +10,10 @@
       <el-row justify="space-between" align="middle" :gutter="16">
         <el-col :span="8">
           <el-input
-            :model-value="search"
+            v-model="inputValue"
             placeholder="按逻辑集群组名称或ID搜索..."
             clearable
             style="max-width: 320px;"
-            @input="onInput"
             @keyup.enter="onSearch"
           >
             <template #append>

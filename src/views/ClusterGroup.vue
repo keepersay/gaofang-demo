@@ -79,6 +79,17 @@ const filteredData = computed(() => {
   let data = tableData.value
   console.log('Initial data (inside filteredData):', JSON.parse(JSON.stringify(data)))
 
+  // 应用搜索过滤
+  if (search.value) {
+    const query = search.value.toLowerCase().trim();
+    data = data.filter(
+      (item) =>
+        String(item.name).toLowerCase().includes(query) ||
+        String(item.id).toLowerCase().includes(query)
+    );
+    console.log('After search filter (inside filteredData):', JSON.parse(JSON.stringify(data)));
+  }
+
   // 应用所在机房过滤
   if (filters.value.location && filters.value.location.length) {
     console.log('Applying location filter. Filters:', filters.value.location);
