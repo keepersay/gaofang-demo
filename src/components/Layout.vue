@@ -35,7 +35,7 @@
         </el-sub-menu>
         <el-sub-menu index="element-cluster-management">
           <template #title>
-            <span>网元与集群管理</span>
+            <span>网元管理</span>
           </template>
           <el-menu-item index="/ads">ADS</el-menu-item>
           <el-menu-item index="/slb">SLB</el-menu-item>
@@ -44,6 +44,12 @@
           <el-menu-item index="/blackhole">黑洞</el-menu-item>
           <el-menu-item index="/traffic">流量分析</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu index="config-management">
+          <template #title>
+            <span>配置管理</span>
+          </template>
+          <el-menu-item index="/config/product">商品套餐</el-menu-item>
+        </el-sub-menu>
         <el-sub-menu index="log-management">
           <template #title>
             <span>日志管理</span>
@@ -51,6 +57,11 @@
           <el-menu-item index="/log/login">登录日志</el-menu-item>
           <el-menu-item index="/log/operation">操作日志</el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/customer">
+          <template #title>
+            <span>客户管理</span>
+          </template>
+        </el-menu-item>
         <el-menu-item index="/user">
           <template #title>
             <span>用户管理</span>

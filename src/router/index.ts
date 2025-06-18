@@ -3,6 +3,8 @@ import Overview from '../views/Overview.vue'
 import ClusterGroup from '../views/ClusterGroup.vue'
 import ResourceManagement from '../views/ResourceManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
+import CustomerManagement from '../views/CustomerManagement.vue'
+import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
 import Placeholder from '../views/Placeholder.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
@@ -65,6 +67,11 @@ const routes = [
     component: Placeholder
   },
   {
+    path: '/config/product',
+    name: 'ProductPackage',
+    component: ProductPackage
+  },
+  {
     path: '/log/login',
     name: 'LoginLogs',
     component: LoginLog
@@ -73,6 +80,11 @@ const routes = [
     path: '/log/operation',
     name: 'OperationLogs',
     component: OperationLog
+  },
+  {
+    path: '/customer',
+    name: 'CustomerManagement',
+    component: CustomerManagement
   },
   {
     path: '/user',

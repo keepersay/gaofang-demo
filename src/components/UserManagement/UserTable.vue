@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-row align="middle" :gutter="16" class="mb-4">
-      <el-col :span="8">
+      <el-col :span="24">
         <el-input
           :model-value="inputValue"
           placeholder="输入用户名, 姓名, 手机号 搜索..."
@@ -16,9 +16,6 @@
             </el-button>
           </template>
         </el-input>
-      </el-col>
-      <el-col :span="16" class="flex justify-end">
-        <el-button type="primary" @click="$emit('create')">创建用户</el-button>
       </el-col>
     </el-row>
     <el-table
@@ -121,18 +118,6 @@
         <div class="text-gray-400 py-10 text-center">暂无数据</div>
       </template>
     </el-table>
-    <div class="mt-6 w-full" style="text-align: right;">
-      <el-pagination
-        background
-        layout="sizes, prev, pager, next, total"
-        :total="total"
-        :page-size="pageSize"
-        :current-page="currentPage"
-        :page-sizes="pageSizeOptions"
-        @current-change="$emit('page-change', $event)"
-        @size-change="$emit('size-change', $event)"
-      />
-    </div>
   </div>
 </template>
 
@@ -176,7 +161,6 @@ const props = defineProps({
 })
 
 const emits = defineEmits([
-  'create',
   'edit',
   'disable_enable',
   'delete',
@@ -201,31 +185,74 @@ function onSearch() {
 
 // 角色过滤
 const rolePopoverVisible = ref(false)
-const roleFilterValue = ref([...props.filteredRole])
-watch(() => props.filteredRole, val => { roleFilterValue.value = [...val] })
+const roleFilterValue = ref([])
+
+watch(() => props.filteredRole, (newVal) => {
+  roleFilterValue.value = [...newVal]
+}, { immediate: true })
+
 function resetRoleFilter() {
   roleFilterValue.value = []
 }
+
 function confirmRoleFilter() {
+  emits('filter-change', { role: roleFilterValue.value })
   rolePopoverVisible.value = false
-  emits('filter-change', { role: [...roleFilterValue.value], status: [...statusFilterValue.value] })
 }
 
 // 状态过滤
 const statusPopoverVisible = ref(false)
-const statusFilterValue = ref([...props.filteredStatus])
-watch(() => props.filteredStatus, val => { statusFilterValue.value = [...val] })
+const statusFilterValue = ref([])
+
+watch(() => props.filteredStatus, (newVal) => {
+  statusFilterValue.value = [...newVal]
+}, { immediate: true })
+
 function resetStatusFilter() {
   statusFilterValue.value = []
 }
+
 function confirmStatusFilter() {
+  emits('filter-change', { status: statusFilterValue.value })
   statusPopoverVisible.value = false
-  emits('filter-change', { role: [...roleFilterValue.value], status: [...statusFilterValue.value] })
 }
 </script>
 
 <style scoped>
-.text-gray-500 {
-  color: #6b7280;
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.flex {
+  display: flex;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+.py-10 {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.ml-1 {
+  margin-left: 4px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style> 

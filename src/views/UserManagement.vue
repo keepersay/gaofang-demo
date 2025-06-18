@@ -1,55 +1,72 @@
 <template>
-  <el-container>
-    <el-main>
-      <h2 style="font-size: 18px; margin-bottom: 15px;">用户管理</h2>
-      <el-card>
-        <UserTable
-          :data="pagedData"
-          :total="filteredData.length"
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :search-query="searchQuery"
-          :filtered-role="filters.role"
-          :filtered-status="filters.status"
-          @create="onCreate"
-          @edit="onEdit"
-          @disable_enable="onDisableEnable"
-          @delete="onDelete"
-          @search="onSearch"
-          @page-change="onPageChange"
-          @size-change="onPageSizeChange"
-          @filter-change="onFilterChange"
-          @sort-change="onSortChange"
-        />
-      </el-card>
-
-      <UserModal
-        :visible="modalVisible"
-        :is-edit="isEdit"
-        :edit-data="editData"
-        @close="modalVisible = false"
-        @submit="handleModalSubmit"
+  <div class="user-management">
+    <el-card class="box-card">
+      <template #header>
+        <div class="card-header">
+          <span>用户管理</span>
+          <el-button type="primary" @click="onCreate">新增用户</el-button>
+        </div>
+      </template>
+      
+      <UserTable
+        :data="pagedData"
+        :total="filteredData.length"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :search-query="searchQuery"
+        :filtered-role="filters.role"
+        :filtered-status="filters.status"
+        @edit="onEdit"
+        @disable_enable="onDisableEnable"
+        @delete="onDelete"
+        @search="onSearch"
+        @page-change="onPageChange"
+        @size-change="onPageSizeChange"
+        @filter-change="onFilterChange"
+        @sort-change="onSortChange"
       />
 
-      <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
-        <div>确定要删除用户 <b>{{ deleteRow?.username }}</b> 吗？</div>
-        <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
-        <template #footer>
-          <el-button @click="deleteVisible = false">取消</el-button>
-          <el-button type="danger" @click="confirmDelete">确认删除</el-button>
-        </template>
-      </el-dialog>
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @size-change="onPageSizeChange"
+          @current-change="onPageChange"
+        />
+      </div>
+    </el-card>
 
-      <el-dialog v-model="disableEnableVisible" :title="disableEnableRow?.status === 'active' ? '确认禁用' : '确认启用'" width="400px">
-        <div>确定要{{ disableEnableRow?.status === 'active' ? '禁用' : '启用' }}用户 <b>{{ disableEnableRow?.username }}</b> 吗？</div>
-        <div class="text-xs text-gray-500 mt-2">ID: {{ disableEnableRow?.id }}</div>
-        <template #footer>
-          <el-button @click="disableEnableVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmDisableEnable">确认</el-button>
-        </template>
-      </el-dialog>
-    </el-main>
-  </el-container>
+    <UserModal
+      :visible="modalVisible"
+      :is-edit="isEdit"
+      :edit-data="editData"
+      @close="modalVisible = false"
+      @submit="handleModalSubmit"
+    />
+
+    <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
+      <div>确定要删除用户 <b>{{ deleteRow?.username }}</b> 吗？</div>
+      <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
+      <template #footer>
+        <el-button @click="deleteVisible = false">取消</el-button>
+        <el-button type="danger" @click="confirmDelete">确认删除</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="disableEnableVisible" :title="disableEnableRow?.status === 'active' ? '确认禁用' : '确认启用'" width="400px">
+      <div>确定要{{ disableEnableRow?.status === 'active' ? '禁用' : '启用' }}用户 <b>{{ disableEnableRow?.username }}</b> 吗？</div>
+      <div class="text-xs text-gray-500 mt-2">ID: {{ disableEnableRow?.id }}</div>
+      <template #footer>
+        <el-button @click="disableEnableVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmDisableEnable">确认</el-button>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
@@ -202,83 +219,90 @@ function onPageSizeChange(size) {
   currentPage.value = 1
 }
 
-function onFilterChange(newFilters) {
-  filters.value = newFilters
+function onFilterChange(filterData) {
+  filters.value = { ...filters.value, ...filterData }
   currentPage.value = 1
 }
 
-function onSortChange(newSort) {
-  sort.value = newSort
-  currentPage.value = 1
+function onSortChange(sortData) {
+  sort.value = sortData
 }
 
-// Handlers for UserModal and Dialogs
+// Modal submit handler
 function handleModalSubmit(formData) {
   if (isEdit.value) {
-    const index = usersData.value.findIndex((user) => user.id === formData.id)
+    // Edit existing user
+    const index = usersData.value.findIndex(user => user.id === editData.value.id)
     if (index !== -1) {
       usersData.value[index] = { ...usersData.value[index], ...formData }
-      ElMessage.success('用户更新成功！')
-    } else {
-      ElMessage.error('用户更新失败！')
+      ElMessage.success('用户更新成功')
     }
   } else {
-    const newId = (Math.floor(Math.random() * 9000000) + 1000000).toString()
-    const now = new Date()
-    const createdAt = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`
-    usersData.value.unshift({
-      id: newId,
+    // Create new user
+    const newUser = {
       ...formData,
-      status: 'active',
+      id: String(Math.floor(Math.random() * 9000000) + 1000000),
       creator: 'Admin',
-      createdAt: createdAt,
-      notes: ''
-    })
-    ElMessage.success('用户创建成功！')
+      createdAt: new Date().toISOString().split('T')[0]
+    }
+    usersData.value.push(newUser)
+    ElMessage.success('用户创建成功')
   }
   modalVisible.value = false
 }
 
+// Confirm delete
 function confirmDelete() {
-  const index = usersData.value.findIndex(
-    (user) => user.id === deleteRow.value.id
-  )
+  const index = usersData.value.findIndex(user => user.id === deleteRow.value.id)
   if (index !== -1) {
     usersData.value.splice(index, 1)
-    ElMessage.success('用户删除成功！')
-  } else {
-    ElMessage.error('用户删除失败！')
+    ElMessage.success('用户删除成功')
   }
   deleteVisible.value = false
 }
 
+// Confirm disable/enable
 function confirmDisableEnable() {
-  const index = usersData.value.findIndex(
-    (user) => user.id === disableEnableRow.value.id
-  )
+  const index = usersData.value.findIndex(user => user.id === disableEnableRow.value.id)
   if (index !== -1) {
-    usersData.value[index].status = 
-      usersData.value[index].status === 'active' ? 'disabled' : 'active'
-    ElMessage.success(
-      `用户${usersData.value[index].status === 'active' ? '启用' : '禁用'}成功！`
-    )
-  } else {
-    ElMessage.error(
-      `用户${disableEnableRow.value.status === 'active' ? '禁用' : '启用'}失败！`
-    )
+    usersData.value[index].status = disableEnableRow.value.status === 'active' ? 'disabled' : 'active'
+    const action = usersData.value[index].status === 'active' ? '启用' : '禁用'
+    ElMessage.success(`用户已${action}`)
   }
   disableEnableVisible.value = false
 }
 </script>
 
 <style scoped>
-.el-main {
+.user-management {
   padding: 20px;
+}
+
+.box-card {
+  margin-bottom: 20px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.text-xs {
+  font-size: 12px;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.mt-2 {
+  margin-top: 8px;
 }
 </style> 
