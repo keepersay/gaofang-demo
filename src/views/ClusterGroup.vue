@@ -80,11 +80,46 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="IP资源池" min-width="260">
+          <template #default="scope">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div v-if="scope.row.ipPools?.vip?.length">
+                <span style="font-weight: 600; color: #409EFF; margin-right: 6px;">VIP池</span>
+                <el-tag
+                  v-for="(ip, idx) in scope.row.ipPools.vip"
+                  :key="'vip-' + idx"
+                  size="small"
+                  style="margin-right: 4px; margin-bottom: 2px;"
+                >{{ ip }}</el-tag>
+              </div>
+              <div v-if="scope.row.ipPools?.origin?.length">
+                <span style="font-weight: 600; color: #67C23A; margin-right: 6px;">回源IP池</span>
+                <el-tag
+                  v-for="(ip, idx) in scope.row.ipPools.origin"
+                  :key="'origin-' + idx"
+                  size="small"
+                  type="success"
+                  style="margin-right: 4px; margin-bottom: 2px;"
+                >{{ ip }}</el-tag>
+              </div>
+              <div v-if="scope.row.ipPools?.snat?.length">
+                <span style="font-weight: 600; color: #E6A23C; margin-right: 6px;">SNAT地址池</span>
+                <el-tag
+                  v-for="(ip, idx) in scope.row.ipPools.snat"
+                  :key="'snat-' + idx"
+                  size="small"
+                  type="warning"
+                  style="margin-right: 4px; margin-bottom: 2px;"
+                >{{ ip }}</el-tag>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="160" sortable />
         <el-table-column prop="createAccount" label="创建人" width="120" />
         <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
         <el-table-column prop="updateAccount" label="修改人" width="120" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button
@@ -171,6 +206,54 @@
             </el-select>
           </el-form-item>
         </template>
+        <el-form-item label="VIP池">
+          <el-tag
+            v-for="(ip, idx) in form.ipPools.vip"
+            :key="'vip-' + idx"
+            closable
+            @close="form.ipPools.vip.splice(idx, 1)"
+            style="margin-right: 4px;"
+          >{{ ip }}</el-tag>
+          <el-input
+            v-model="vipInput"
+            size="small"
+            placeholder="CIDR/IP范围/单IP，回车添加"
+            @keyup.enter="addVipIp"
+            style="width: 220px; margin-top: 4px;"
+          />
+        </el-form-item>
+        <el-form-item label="回源IP池">
+          <el-tag
+            v-for="(ip, idx) in form.ipPools.origin"
+            :key="'origin-' + idx"
+            closable
+            @close="form.ipPools.origin.splice(idx, 1)"
+            style="margin-right: 4px;"
+          >{{ ip }}</el-tag>
+          <el-input
+            v-model="originInput"
+            size="small"
+            placeholder="CIDR/IP范围/单IP，回车添加"
+            @keyup.enter="addOriginIp"
+            style="width: 220px; margin-top: 4px;"
+          />
+        </el-form-item>
+        <el-form-item label="SNAT地址池">
+          <el-tag
+            v-for="(ip, idx) in form.ipPools.snat"
+            :key="'snat-' + idx"
+            closable
+            @close="form.ipPools.snat.splice(idx, 1)"
+            style="margin-right: 4px;"
+          >{{ ip }}</el-tag>
+          <el-input
+            v-model="snatInput"
+            size="small"
+            placeholder="CIDR/IP范围/单IP，回车添加"
+            @keyup.enter="addSnatIp"
+            style="width: 220px; margin-top: 4px;"
+          />
+        </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input 
             v-model="form.remark" 
@@ -237,6 +320,7 @@ const form = ref({
   displayName: '',
   linkTemplate: 'L4',
   slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
+  ipPools: { vip: [], origin: [], snat: [] },
   status: 'active',
   remark: ''
 })
@@ -280,6 +364,11 @@ const tableData = ref([
     displayName: '华东-电信-高级版',
     linkTemplate: 'L4',
     slots: { ADS: 'ads-1', SLB: 'slb-1', WAFCC: '', WAF: '' },
+    ipPools: {
+      vip: ['1.1.1.1/24', '2.2.2.2-2.2.2.10', '3.3.3.3'],
+      origin: ['10.0.0.1/28'],
+      snat: ['100.64.0.1-100.64.0.5', '100.64.0.10']
+    },
     status: 'active',
     remark: '华东地区电信高级版集群',
     createTime: '2024-01-01 10:00:00',
@@ -293,6 +382,11 @@ const tableData = ref([
     displayName: '华南-联通-基础版',
     linkTemplate: 'L7',
     slots: { ADS: 'ads-2', SLB: 'slb-2', WAFCC: 'wafcc-1', WAF: 'waf-1' },
+    ipPools: {
+      vip: ['4.4.4.4'],
+      origin: ['20.0.0.1-20.0.0.5', '20.0.0.10'],
+      snat: []
+    },
     status: 'active',
     remark: '华南地区联通基础版集群',
     createTime: '2024-01-02 14:30:00',
@@ -348,6 +442,7 @@ const handleAdd = () => {
     displayName: '',
     linkTemplate: 'L4',
     slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
+    ipPools: { vip: [], origin: [], snat: [] },
     status: 'active',
     remark: ''
   }
@@ -366,6 +461,11 @@ const handleEdit = (row) => {
       SLB: row.slots?.SLB || '',
       WAFCC: row.slots?.WAFCC || '',
       WAF: row.slots?.WAF || ''
+    },
+    ipPools: {
+      vip: [...(row.ipPools?.vip || [])],
+      origin: [...(row.ipPools?.origin || [])],
+      snat: [...(row.ipPools?.snat || [])]
     },
     status: row.status,
     remark: row.remark
@@ -515,6 +615,29 @@ function getClusterNameById(id) {
   return found ? found.displayName : id
 }
 
+// 新增/编辑弹窗表单增加IP池输入
+const vipInput = ref('')
+const originInput = ref('')
+const snatInput = ref('')
+function addVipIp() {
+  if (vipInput.value && !form.value.ipPools.vip.includes(vipInput.value)) {
+    form.value.ipPools.vip.push(vipInput.value)
+    vipInput.value = ''
+  }
+}
+function addOriginIp() {
+  if (originInput.value && !form.value.ipPools.origin.includes(originInput.value)) {
+    form.value.ipPools.origin.push(originInput.value)
+    originInput.value = ''
+  }
+}
+function addSnatIp() {
+  if (snatInput.value && !form.value.ipPools.snat.includes(snatInput.value)) {
+    form.value.ipPools.snat.push(snatInput.value)
+    snatInput.value = ''
+  }
+}
+
 onMounted(() => {
   fetchRegions()
   pagination.value.total = tableData.value.length
@@ -523,11 +646,15 @@ onMounted(() => {
 
 <style scoped>
 .cluster-management {
-  padding: 20px;
+  padding: 8px 12px;
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+:deep(.el-card__body) {
+  padding: 12px 16px;
 }
 
 .card-header {
@@ -539,12 +666,12 @@ onMounted(() => {
 }
 
 .search-area {
-  margin-bottom: 20px;
-  padding: 20px 20px 0 20px;
+  margin-bottom: 16px;
+  padding: 12px 12px 0 12px;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
 }
@@ -581,7 +708,10 @@ onMounted(() => {
 }
 
 .dense-row td {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  font-size: 13px;
 }
 </style> 
