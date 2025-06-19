@@ -1,13 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Overview from '../views/Overview.vue'
 import ClusterGroup from '../views/ClusterGroup.vue'
-import ResourceManagement from '../views/ResourceManagement.vue'
+import ClusterGroupManagement from '../views/ClusterGroupManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
 import CustomerManagement from '../views/CustomerManagement.vue'
 import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
 import Placeholder from '../views/Placeholder.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
+
+declare global {
+  interface ImportMeta {
+    env: {
+      BASE_URL: string
+    }
+  }
+}
 
 const routes = [
   {
@@ -21,20 +29,13 @@ const routes = [
   },
   {
     path: '/cluster-group',
-    name: 'LogicalResourceGroup',
+    name: 'LogicalCluster',
     component: ClusterGroup
   },
   {
-    path: '/resource-management',
-    name: 'ResourceManagement',
-    component: ResourceManagement,
-    children: [
-      {
-        path: 'placeholder',
-        name: 'ResourceManagementPlaceholder',
-        component: Placeholder
-      }
-    ]
+    path: '/cluster-group-management',
+    name: 'LogicalClusterGroup',
+    component: ClusterGroupManagement
   },
   {
     path: '/ads',
@@ -90,11 +91,16 @@ const routes = [
     path: '/user',
     name: 'UserManagement',
     component: UserManagement
+  },
+  {
+    path: '/region-management',
+    name: 'RegionManagement',
+    component: () => import('../views/RegionManagement.vue')
   }
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
