@@ -18,54 +18,112 @@
         style="flex:1;"
       >
         <el-menu-item index="/overview">
-          <template #title>
-            <span>总览</span>
-          </template>
+          <el-icon><PieChart /></el-icon>
+          <span>总览</span>
         </el-menu-item>
-        <el-menu-item index="/cluster-group">
-          <template #title>
-            <span>逻辑资源组</span>
-          </template>
-        </el-menu-item>
-        <el-sub-menu index="resource-management">
-          <template #title>
-            <span>资源管理</span>
-          </template>
-          <el-menu-item index="/resource-management/placeholder">占位子模块</el-menu-item>
-        </el-sub-menu>
         <el-sub-menu index="element-cluster-management">
           <template #title>
+            <el-icon>
+              <!-- 机架/集群风格，参考云主机/集群 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="8" width="10" height="8" rx="2" fill="currentColor" fill-opacity=".15"/></svg>
+            </el-icon>
             <span>网元管理</span>
           </template>
-          <el-menu-item index="/ads">ADS</el-menu-item>
-          <el-menu-item index="/slb">SLB</el-menu-item>
-          <el-menu-item index="/waf">WAF</el-menu-item>
-          <el-menu-item index="/waf-cc">WAF-CC</el-menu-item>
-          <el-menu-item index="/blackhole">黑洞</el-menu-item>
-          <el-menu-item index="/traffic">流量分析</el-menu-item>
+          <el-menu-item index="/ads">
+            <el-icon>
+              <!-- 盾牌安全风格，参考云防护 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V7l8-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11V3z" fill="currentColor" fill-opacity=".15"/></svg>
+            </el-icon>
+            <span>ADS</span>
+          </el-menu-item>
+          <el-menu-item index="/slb">
+            <el-icon>
+              <!-- 负载均衡风格，三节点分发 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><circle cx="4" cy="4" r="2" fill="#fff" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="4" r="2" fill="#fff" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="20" r="2" fill="#fff" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="20" r="2" fill="#fff" stroke="currentColor" stroke-width="1.5"/><path d="M12 12L4 4M12 12L20 4M12 12L4 20M12 12L20 20" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>SLB</span>
+          </el-menu-item>
+          <el-menu-item index="/waf">
+            <el-icon>
+              <!-- 盾牌+地球，参考云WAF -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V7l8-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M8 13c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.2"/></svg>
+            </el-icon>
+            <span>WAF</span>
+          </el-menu-item>
+          <el-menu-item index="/waf-cc">
+            <el-icon>
+              <!-- 盾牌+流量波浪，参考CC防护 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V7l8-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 15c1.5-2 3.5-2 5 0s3.5 2 5 0" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+            </el-icon>
+            <span>WAF-CC</span>
+          </el-menu-item>
+          <el-menu-item index="/blackhole">
+            <el-icon>
+              <!-- 黑洞风格，中心黑圆+吸收 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity=".15"/><circle cx="12" cy="12" r="6" fill="#fff"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+            </el-icon>
+            <span>黑洞</span>
+          </el-menu-item>
+          <el-menu-item index="/traffic">
+            <el-icon>
+              <!-- 折线流量分析，参考云监控 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><polyline points="4,20 10,10 14,14 20,4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="10" cy="10" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
+            </el-icon>
+            <span>流量分析</span>
+          </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="config-management">
+        <el-sub-menu index="/config-management">
           <template #title>
+            <el-icon><Setting /></el-icon>
             <span>配置管理</span>
           </template>
-          <el-menu-item index="/config/product">商品套餐</el-menu-item>
+          <el-menu-item index="/region-management">
+            <el-icon><Location /></el-icon>
+            <span>地域管理</span>
+          </el-menu-item>
+          <el-menu-item index="/cluster-group">
+            <el-icon>
+              <!-- 集群风格，参考云数据库/集群 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><ellipse cx="12" cy="7" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="17" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
+            </el-icon>
+            <span>逻辑集群</span>
+          </el-menu-item>
+          <el-menu-item index="/cluster-group-management">
+            <el-icon>
+              <!-- 组/多集群风格，参考云资源组 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="7" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="11" width="10" height="2" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
+            </el-icon>
+            <span>逻辑集群组</span>
+          </el-menu-item>
+          <el-menu-item index="/product-package">
+            <el-icon><Box /></el-icon>
+            <span>商品套餐</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="log-management">
           <template #title>
+            <el-icon>
+              <!-- 日志/文档风格，参考云日志服务 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 8h8M8 12h8M8 16h4" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
             <span>日志管理</span>
           </template>
           <el-menu-item index="/log/login">登录日志</el-menu-item>
           <el-menu-item index="/log/operation">操作日志</el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/customer">
-          <template #title>
-            <span>客户管理</span>
-          </template>
+          <el-icon>
+            <!-- 客户/企业风格，参考云企业/用户 -->
+            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="4" y="16" width="16" height="4" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
+          </el-icon>
+          <span>客户管理</span>
         </el-menu-item>
         <el-menu-item index="/user">
-          <template #title>
-            <span>用户管理</span>
-          </template>
+          <el-icon>
+            <!-- 用户风格，参考云账号/用户 -->
+            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
+          </el-icon>
+          <span>用户管理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -100,7 +158,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Bell, QuestionFilled, ArrowDown } from '@element-plus/icons-vue'
+import { Bell, QuestionFilled, ArrowDown, PieChart, Location, Setting, Box } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
