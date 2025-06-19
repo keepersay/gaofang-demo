@@ -116,6 +116,18 @@
             </el-icon>
             <span>客户管理</span>
           </el-menu-item>
+          <el-menu-item index="/business-instance">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="8" y="10" width="8" height="4" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
+            </el-icon>
+            <span>业务实例</span>
+          </el-menu-item>
+          <el-menu-item index="/order">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>订单</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="log-management">
           <template #title>

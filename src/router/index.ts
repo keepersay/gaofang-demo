@@ -101,6 +101,22 @@ const routes = [
     path: '/role',
     name: 'RoleManagement',
     component: () => import('../views/RoleManagement.vue')
+  },
+  {
+    path: '/dns',
+    name: 'DNS',
+    component: () => import('@/views/Placeholder.vue'),
+    meta: { title: 'DNS' }
+  },
+  {
+    path: '/business-instance',
+    name: 'BusinessInstance',
+    component: Placeholder
+  },
+  {
+    path: '/order',
+    name: 'Order',
+    component: Placeholder
   }
 ]
 
