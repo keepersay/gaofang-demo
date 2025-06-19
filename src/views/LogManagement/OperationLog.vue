@@ -151,12 +151,20 @@ const pageSize = ref(10)
 const detailDrawerVisible = ref(false)
 const currentLogDetail = ref(null)
 
+// 雪花算法ID生成（简单模拟）
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LCG${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
 // Mock 数据生成器
 const generateMockData = (count) => {
   const data = []
   for (let i = 0; i < count; i++) {
     data.push({
-      id: i + 1,
+      id: generateSnowflakeId(),
       module: ['日志管理', '集群组管理', '用户管理'][i % 3],
       clusterName: `集群-${i % 5}`,
       operatorAccount: `user${i + 1}`,

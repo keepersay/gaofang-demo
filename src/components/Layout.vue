@@ -118,13 +118,36 @@
           </el-icon>
           <span>客户管理</span>
         </el-menu-item>
-        <el-menu-item index="/user">
-          <el-icon>
-            <!-- 用户风格，参考云账号/用户 -->
-            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
-          </el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
+        <el-sub-menu index="system-management">
+          <template #title>
+            <el-icon>
+              <!-- 齿轮风格，参考云系统管理 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M12 7v2M12 15v2M7 12H5M19 12h-2M8.5 8.5l-1.5-1.5M15.5 15.5l1.5 1.5M8.5 15.5l-1.5 1.5M15.5 8.5l1.5-1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/global-config">
+            <el-icon>
+              <!-- 地球/设置风格，参考云全局配置 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="12" rx="7" ry="10" stroke="currentColor" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="10" ry="4" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>全局配置</span>
+          </el-menu-item>
+          <el-menu-item index="/user">
+            <el-icon>
+              <!-- 用户风格，参考云账号/用户 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
+            </el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/role">
+            <el-icon>
+              <!-- 盾牌风格，参考权限/角色管理 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 2l7 4v5c0 5-3.5 9-7 11-3.5-2-7-6-7-11V6l7-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M12 2l7 4v5c0 5-3.5 9-7 11V2z" fill="currentColor" fill-opacity=".15"/></svg>
+            </el-icon>
+            <span>角色管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 

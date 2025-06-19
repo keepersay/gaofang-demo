@@ -75,10 +75,18 @@ import { ElMessage } from 'element-plus'
 import UserTable from '../components/UserManagement/UserTable.vue'
 import UserModal from '../components/UserManagement/UserModal.vue'
 
+// 雪花算法ID生成（简单模拟）
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LCG${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
 // Mock data for users
 const usersData = ref([
   {
-    id: '1234567',
+    id: generateSnowflakeId(),
     username: 'ABC',
     password: 'password123',
     confirmPassword: 'password123',
@@ -92,7 +100,7 @@ const usersData = ref([
     notes: '12345'
   },
   {
-    id: '8765432',
+    id: generateSnowflakeId(),
     username: 'DEF',
     password: 'password123',
     confirmPassword: 'password123',
@@ -241,7 +249,7 @@ function handleModalSubmit(formData) {
     // Create new user
     const newUser = {
       ...formData,
-      id: String(Math.floor(Math.random() * 9000000) + 1000000),
+      id: generateSnowflakeId(),
       creator: 'Admin',
       createdAt: new Date().toISOString().split('T')[0]
     }

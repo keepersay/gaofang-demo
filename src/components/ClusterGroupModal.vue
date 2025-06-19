@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="visible"
-    :title="isEdit ? '编辑逻辑集群组' : '新建逻辑集群组'"
+    :title="isEdit ? '编辑逻辑集群' : '新建逻辑集群'"
     width="700px"
     @close="onClose"
     :close-on-click-modal="false"
@@ -12,7 +12,7 @@
     </el-steps>
     <div v-show="step === 0">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="110px">
-        <el-form-item label="逻辑集群组名称" prop="name">
+        <el-form-item label="逻辑集群名称" prop="name">
           <el-input v-model="form.name" placeholder="如：huadong-telecom-premium" />
         </el-form-item>
         <el-form-item label="所在机房" prop="location">

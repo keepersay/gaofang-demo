@@ -1,14 +1,14 @@
 <template>
   <div class="p-4">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-semibold">逻辑集群组</h1>
+      <h1 class="text-2xl font-semibold">逻辑集群</h1>
     </div>
 
     <div class="bg-white rounded-lg shadow-md p-4">
       <div class="flex items-center justify-between mb-48">
         <el-input
           v-model="inputValue"
-          placeholder="按逻辑集群组名称或ID搜索..."
+          placeholder="按逻辑集群名称或ID搜索..."
           clearable
           style="width: 260px;"
           @keyup.enter="onSearch"
@@ -19,13 +19,13 @@
             </el-button>
           </template>
         </el-input>
-        <el-button type="primary" @click="$emit('create')">新建逻辑集群组</el-button>
+        <el-button type="primary" @click="$emit('create')">新建逻辑集群</el-button>
       </div>
 
       <el-card class="table-card mt-48">
         <template #header>
           <div class="card-header">
-            <span>逻辑集群组列表</span>
+            <span>逻辑集群列表</span>
           </div>
         </template>
         <el-table
@@ -36,7 +36,7 @@
           @sort-change="$emit('sort-change', $event)"
           max-height="500"
         >
-          <el-table-column label="组名称 / ID" min-width="180">
+          <el-table-column label="集群名称 / ID" min-width="180">
             <template #default="{ row }">
               <div class="font-medium">{{ row.name }}</div>
               <div class="text-xs text-gray-500">{{ row.id }}</div>

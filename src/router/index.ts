@@ -96,6 +96,11 @@ const routes = [
     path: '/region-management',
     name: 'RegionManagement',
     component: () => import('../views/RegionManagement.vue')
+  },
+  {
+    path: '/role',
+    name: 'RoleManagement',
+    component: () => import('../views/RoleManagement.vue')
   }
 ]
 

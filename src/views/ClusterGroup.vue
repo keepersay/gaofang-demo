@@ -1,21 +1,80 @@
 <template>
-  <div>
-    <ClusterGroupTable 
-      :data="pagedData"
-      :total="filteredData.length"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      :filtered-location="filters.location"
-      :filtered-link-type="filters.linkType"
-      @create="onCreate" 
-      @edit="onEdit" 
-      @quota="onQuota" 
-      @delete="onDelete" 
-      @page-change="onPageChange"
-      @filter-change="onFilterChange"
-      @sort-change="onSortChange"
-      @search="onSearch"
-    />
+  <div class="cluster-group">
+    <el-card class="box-card">
+      <template #header>
+        <div class="card-header">
+          <span>逻辑集群</span>
+          <el-button type="primary" @click="onCreate">新建逻辑集群</el-button>
+        </div>
+      </template>
+      
+      <!-- 搜索区域 -->
+      <div class="search-area">
+        <el-form :inline="true" :model="searchForm" class="search-form">
+          <el-form-item label="集群名称">
+            <el-input v-model="searchForm.name" placeholder="请输入集群名称" clearable />
+          </el-form-item>
+          <el-form-item label="所在机房">
+            <el-select v-model="searchForm.location" placeholder="请选择机房" clearable>
+              <el-option label="华东-上海" value="华东-上海" />
+              <el-option label="华南-广州" value="华南-广州" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="链路类型">
+            <el-select v-model="searchForm.linkType" placeholder="请选择链路类型" clearable>
+              <el-option label="L7" value="L7" />
+              <el-option label="L4" value="L4" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <!-- 表格区域 -->
+      <el-table :data="pagedData" style="width: 100%" v-loading="loading" border stripe>
+        <el-table-column label="集群名称 / ID" min-width="180" fixed="left">
+          <template #default="{ row }">
+            <div class="font-medium">{{ row.name }}</div>
+            <div class="text-xs text-gray-500">{{ row.id }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="location" label="所在机房" min-width="140" />
+        <el-table-column prop="linkType" label="链路类型" min-width="140">
+          <template #default="{ row }">
+            <el-tag :type="row.linkType === 'L7' ? 'info' : 'success'">
+              {{ row.linkType === 'L7' ? '七层防护' : '四层防护' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="elementCount" label="网元数量" min-width="100" />
+        <el-table-column prop="updatedAt" label="最后修改时间" min-width="140" sortable />
+        <el-table-column label="操作" min-width="220" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="onEdit(row)">编辑</el-button>
+            <el-button type="info" link size="small" @click="onQuota(row)">配额管理</el-button>
+            <el-button type="danger" link size="small" @click="onDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @size-change="onPageSizeChange"
+          @current-change="onPageChange"
+        />
+      </div>
+    </el-card>
+
     <ClusterGroupModal
       :visible="modalVisible"
       :is-edit="isEdit"
@@ -31,7 +90,7 @@
       @save="handleQuotaSave"
     />
     <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
-      <div>确定要删除逻辑集群组 <b>{{ deleteRow?.name }}</b> 吗？</div>
+      <div>确定要删除逻辑集群 <b>{{ deleteRow?.name }}</b> 吗？</div>
       <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
       <template #footer>
         <el-button @click="deleteVisible=false">取消</el-button>
@@ -44,9 +103,15 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import ClusterGroupTable from '../components/ClusterGroupTable.vue'
 import ClusterGroupModal from '../components/ClusterGroupModal.vue'
 import ClusterGroupQuotaDrawer from '../components/ClusterGroupQuotaDrawer.vue'
+
+// 搜索表单
+const searchForm = ref({
+  name: '',
+  location: '',
+  linkType: ''
+})
 
 // 响应式表格数据
 const tableData = ref([
@@ -74,49 +139,41 @@ const filters = ref({ location: [], linkType: [] })
 const sort = ref({ prop: '', order: '' })
 const currentPage = ref(1)
 const pageSize = ref(10)
+const loading = ref(false)
 
 const filteredData = computed(() => {
   let data = tableData.value
-  console.log('Initial data (inside filteredData):', JSON.parse(JSON.stringify(data)))
 
   // 应用搜索过滤
-  if (search.value) {
-    const query = search.value.toLowerCase().trim();
+  if (searchForm.value.name) {
+    const query = searchForm.value.name.toLowerCase().trim();
     data = data.filter(
       (item) =>
         String(item.name).toLowerCase().includes(query) ||
         String(item.id).toLowerCase().includes(query)
     );
-    console.log('After search filter (inside filteredData):', JSON.parse(JSON.stringify(data)));
   }
 
   // 应用所在机房过滤
-  if (filters.value.location && filters.value.location.length) {
-    console.log('Applying location filter. Filters:', filters.value.location);
+  if (searchForm.value.location) {
     data = data.filter(item => {
-      const itemLocation = String(item.location).toLowerCase().trim();
-      return filters.value.location.map(f => String(f).toLowerCase().trim()).includes(itemLocation);
+      return item.location === searchForm.value.location;
     });
-    console.log('After location filter (inside filteredData):', JSON.parse(JSON.stringify(data)));
   }
 
   // 应用链路类型过滤
-  if (filters.value.linkType && filters.value.linkType.length) {
-    console.log('Applying linkType filter. Filters:', filters.value.linkType)
+  if (searchForm.value.linkType) {
     data = data.filter(item => {
-      const itemLinkType = String(item.linkType).toLowerCase().trim();
-      return filters.value.linkType.map(f => String(f).toLowerCase().trim()).includes(itemLinkType);
+      return item.linkType === searchForm.value.linkType;
     });
-    console.log('After linkType filter (inside filteredData):', JSON.parse(JSON.stringify(data)))
   }
-  console.log('Final filtered data (inside filteredData):', JSON.parse(JSON.stringify(data)))
+
   return data
 })
+
 const pagedData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
-  const slicedData = filteredData.value.slice(start, start + pageSize.value)
-  console.log('Paged data (to table):', JSON.parse(JSON.stringify(slicedData)))
-  return slicedData
+  return filteredData.value.slice(start, start + pageSize.value)
 })
 
 // 弹窗/抽屉/删除相关
@@ -129,25 +186,43 @@ const quotaData = ref({})
 const deleteVisible = ref(false)
 const deleteRow = ref(null)
 
+// 搜索和重置
+function handleSearch() {
+  currentPage.value = 1
+}
+
+function handleReset() {
+  searchForm.value = {
+    name: '',
+    location: '',
+    linkType: ''
+  }
+  currentPage.value = 1
+}
+
 function onCreate() {
   isEdit.value = false
   editData.value = null
   modalVisible.value = true
 }
+
 function onEdit(row) {
   isEdit.value = true
   editData.value = { ...row }
   modalVisible.value = true
 }
+
 function onQuota(row) {
   quotaGroupName.value = row.name
   quotaData.value = {} // 可传入row.quota等
   quotaVisible.value = true
 }
+
 function onDelete(row) {
   deleteRow.value = row
   deleteVisible.value = true
 }
+
 function confirmDelete() {
   const idx = tableData.value.findIndex(item => item.id === deleteRow.value.id)
   if (idx !== -1) {
@@ -158,6 +233,7 @@ function confirmDelete() {
   }
   deleteVisible.value = false
 }
+
 function handleModalSubmit(data) {
   if (isEdit.value && editData.value) {
     // 编辑
@@ -176,22 +252,30 @@ function handleModalSubmit(data) {
   }
   modalVisible.value = false
 }
+
 function handleQuotaSave(data) {
   ElMessage.success('配额保存成功')
   quotaVisible.value = false
 }
+
 function onPageChange(page) {
   currentPage.value = page
 }
+
+function onPageSizeChange(size) {
+  pageSize.value = size
+  currentPage.value = 1
+}
+
 function onFilterChange(val) {
-  console.log('onFilterChange triggered. New filters:', JSON.parse(JSON.stringify(val)))
   filters.value = val
   currentPage.value = 1
-  console.log('Filters after update:', JSON.parse(JSON.stringify(filters.value)))
 }
+
 function onSortChange(val) {
   sort.value = val
 }
+
 function onSearch(val) {
   search.value = val
   currentPage.value = 1
@@ -199,12 +283,46 @@ function onSearch(val) {
 </script>
 
 <style scoped>
-/**** 搜索框与表格间距 ****/
-.el-row.mb-4 + .el-table {
-  margin-top: 16px;
+.cluster-group {
+  padding: 20px;
 }
-/**** 分页器右对齐 ****/
-.mt-4.flex.justify-end {
+
+.box-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-area {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.search-form {
+  margin-bottom: 0;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
   justify-content: flex-end;
+}
+
+.text-xs {
+  font-size: 12px;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.font-medium {
+  font-weight: 500;
 }
 </style> 

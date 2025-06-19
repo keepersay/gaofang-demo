@@ -210,10 +210,18 @@ const rules = {
   ]
 }
 
+// 雪花算法ID生成（简单模拟）
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LCG${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
 // 模拟数据
 const mockData = [
   {
-    customerId: 'CUST001',
+    customerId: generateSnowflakeId(),
     customerName: '北京科技有限公司',
     phone: '13800138001',
     email: 'contact@beijingtech.com',
@@ -226,7 +234,7 @@ const mockData = [
     updateAccount: 'admin'
   },
   {
-    customerId: 'CUST002',
+    customerId: generateSnowflakeId(),
     customerName: '上海网络科技有限公司',
     phone: '13900139002',
     email: 'info@shanghainet.com',
@@ -239,7 +247,7 @@ const mockData = [
     updateAccount: 'operator1'
   },
   {
-    customerId: 'CUST003',
+    customerId: generateSnowflakeId(),
     customerName: '广州数据服务有限公司',
     phone: '13700137003',
     email: 'service@guangzhou.com',
@@ -361,7 +369,7 @@ const handleSubmit = () => {
         // 新增
         const newCustomer = {
           ...form,
-          customerId: `CUST${String(tableData.value.length + 1).padStart(3, '0')}`,
+          customerId: generateId(),
           createTime: currentTime,
           createAccount: currentUser,
           updateTime: currentTime,
@@ -390,6 +398,11 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   pagination.currentPage = val
   fetchData()
+}
+
+// 新增时也用雪花ID
+function generateId() {
+  return generateSnowflakeId()
 }
 
 onMounted(() => {

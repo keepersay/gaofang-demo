@@ -203,10 +203,23 @@ const rules = {
   ]
 }
 
+// 雪花算法ID生成（简单模拟）
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LCG${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
+// 新增时也用雪花ID
+function generateId() {
+  return generateSnowflakeId()
+}
+
 // 模拟数据
 const mockData = [
   {
-    packageId: 'PK001',
+    packageId: generateSnowflakeId(),
     packageName: '基础防护套餐',
     region: '华北',
     protectionBandwidth: 10,
@@ -217,7 +230,7 @@ const mockData = [
     isActive: true
   },
   {
-    packageId: 'PK002',
+    packageId: generateSnowflakeId(),
     packageName: '标准防护套餐',
     region: '华东',
     protectionBandwidth: 20,
@@ -228,7 +241,7 @@ const mockData = [
     isActive: true
   },
   {
-    packageId: 'PK003',
+    packageId: generateSnowflakeId(),
     packageName: '高级防护套餐',
     region: '华南',
     protectionBandwidth: 50,
@@ -330,7 +343,7 @@ const handleSubmit = () => {
         // 新增
         const newPackage = {
           ...form,
-          packageId: `PK${String(tableData.value.length + 1).padStart(3, '0')}`
+          packageId: generateId()
         }
         tableData.value.push(newPackage)
         pagination.total++

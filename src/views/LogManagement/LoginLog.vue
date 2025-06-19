@@ -101,8 +101,16 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+// 雪花算法ID生成（简单模拟）
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LCG${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
 const mockData = Array.from({ length: 100 }).map((_, i) => ({
-  id: i + 1,
+  id: generateSnowflakeId(),
   username: `user${i + 1}`,
   ip: `192.168.1.${i % 255}`,
   device: `设备-${i % 10}`,
