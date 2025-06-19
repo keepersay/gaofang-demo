@@ -90,7 +90,7 @@
         <el-table-column prop="updateAccount" label="最后修改账号" width="120" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
-            <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(scope.row.id, scope.row)">编辑</el-button>
             <el-button 
               :type="scope.row.status === 'active' ? 'danger' : 'success'" 
               link size="small" 
@@ -98,7 +98,7 @@
             >
               {{ scope.row.status === 'active' ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(scope.row.id)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -164,8 +164,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Filter } from '@element-plus/icons-vue'
+import RegionService from '@/services/RegionService'
 
 // 雪花算法ID生成（简单模拟）
 function generateSnowflakeId() {
@@ -218,73 +219,17 @@ const rules = {
   ]
 }
 
-// 模拟数据
-const mockData = [
-  {
-    id: generateSnowflakeId(),
-    name: '无锡',
-    isDistributed: false,
-    status: 'active',
-    remark: '',
-    createTime: '2024-01-15 10:30:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-20 14:20:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: generateSnowflakeId(),
-    name: '上海',
-    isDistributed: false,
-    status: 'active',
-    remark: '',
-    createTime: '2024-01-18 09:15:00',
-    createAccount: 'operator1',
-    updateTime: '2024-01-18 09:15:00',
-    updateAccount: 'operator1'
-  },
-  {
-    id: generateSnowflakeId(),
-    name: '广州',
-    isDistributed: false,
-    status: 'active',
-    remark: '',
-    createTime: '2024-01-10 16:45:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-25 11:30:00',
-    updateAccount: 'operator2'
-  },
-  {
-    id: generateSnowflakeId(),
-    name: '全国',
-    isDistributed: true,
-    status: 'active',
-    remark: '全国范围',
-    createTime: '2024-01-12 12:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-12 12:00:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: generateSnowflakeId(),
-    name: '全球',
-    isDistributed: true,
-    status: 'disabled',
-    remark: '全球范围',
-    createTime: '2024-01-13 13:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-13 13:00:00',
-    updateAccount: 'admin'
-  }
-]
-
-// 获取数据
-const fetchData = () => {
+// 获取地域数据
+const fetchData = async () => {
   loading.value = true
-  setTimeout(() => {
-    tableData.value = mockData
-    pagination.total = mockData.length
+  try {
+    tableData.value = await RegionService.getRegions()
+  } catch (error) {
+    console.error('获取地域数据失败:', error)
+    ElMessage.error('获取地域数据失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 过滤相关
@@ -353,7 +298,7 @@ const handleReset = () => {
 }
 
 // 新增
-const handleAdd = () => {
+const handleAdd = async () => {
   dialogTitle.value = '新建地域'
   Object.assign(form, {
     id: '',
@@ -370,27 +315,32 @@ const handleAdd = () => {
 }
 
 // 编辑
-const handleEdit = (row) => {
-  dialogTitle.value = '编辑地域'
-  Object.assign(form, row)
-  dialogVisible.value = true
+const handleEdit = async (id, form) => {
+  try {
+    await RegionService.updateRegion(id, form)
+    ElMessage.success('编辑成功')
+    fetchData()
+  } catch (error) {
+    console.error('编辑地域失败:', error)
+    ElMessage.error('编辑地域失败')
+  }
 }
 
 // 删除
-const handleDelete = (row) => {
-  deleteRow.value = row
-  deleteVisible.value = true
-}
-
-// 确认删除
-const confirmDelete = () => {
-  const index = tableData.value.findIndex(item => item.id === deleteRow.value.id)
-  if (index > -1) {
-    tableData.value.splice(index, 1)
-    pagination.total--
+const handleDelete = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该地域吗？', '提示', {
+      type: 'warning'
+    })
+    await RegionService.deleteRegion(id)
     ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除地域失败:', error)
+      ElMessage.error('删除地域失败')
+    }
   }
-  deleteVisible.value = false
 }
 
 // 状态变更

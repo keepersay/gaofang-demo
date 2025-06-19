@@ -148,6 +148,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { Filter, Search } from '@element-plus/icons-vue'
+
 const props = defineProps({
   data: Array,
   total: Number,
@@ -217,6 +218,110 @@ function confirmLinkTypeFilter() {
   linkTypePopoverVisible.value = false
   emits('filter-change', { location: [...locationFilterValue.value], linkType: [...linkTypeFilterValue.value] })
 }
+
+const mockRegions = [
+  {
+    id: 'GLOBAL',
+    name: '全球',
+    distributed: true,
+    status: 'active'
+  },
+  {
+    id: 'CHINA',
+    name: '全国',
+    distributed: true,
+    status: 'active'
+  },
+  {
+    id: 'REGION_001',
+    name: '华东1（杭州）',
+    distributed: false,
+    status: 'active'
+  },
+  {
+    id: 'REGION_002',
+    name: '华东2（上海）',
+    distributed: false,
+    status: 'active'
+  },
+  {
+    id: 'REGION_003',
+    name: '华北1（北京）',
+    distributed: false,
+    status: 'active'
+  },
+  {
+    id: 'REGION_004',
+    name: '华北2（张家口）',
+    distributed: false,
+    status: 'active'
+  },
+  {
+    id: 'REGION_005',
+    name: '华南1（深圳）',
+    distributed: false,
+    status: 'active'
+  },
+  {
+    id: 'REGION_006',
+    name: '华南2（广州）',
+    distributed: false,
+    status: 'active'
+  }
+]
+
+// 根据地域ID获取地域信息
+const getRegionById = (regionId) => {
+  return mockRegions.find(region => region.id === regionId) || null
+}
+
+// 获取地域名称
+const getRegionName = (regionId) => {
+  const region = getRegionById(regionId)
+  return region ? region.name : '-'
+}
+
+// 获取是否分布式
+const getDistributedStatus = (regionId) => {
+  const region = getRegionById(regionId)
+  return region ? region.distributed : false
+}
+
+const tableData = ref([
+  {
+    id: generateSnowflakeId(),
+    name: '示例集群组1',
+    region: 'GLOBAL',
+    status: 'active',
+    remark: '全球分布式集群组',
+    createTime: '2024-01-01 10:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-01-01 10:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: generateSnowflakeId(),
+    name: '示例集群组2',
+    region: 'CHINA',
+    status: 'active',
+    remark: '全国分布式集群组',
+    createTime: '2024-01-02 14:30:00',
+    createAccount: 'admin',
+    updateTime: '2024-01-02 14:30:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: generateSnowflakeId(),
+    name: '示例集群组3',
+    region: 'REGION_001',
+    status: 'disabled',
+    remark: '杭州地区集群组',
+    createTime: '2024-01-03 09:15:00',
+    createAccount: 'admin',
+    updateTime: '2024-01-03 09:15:00',
+    updateAccount: 'admin'
+  }
+])
 </script>
 
 <style scoped>

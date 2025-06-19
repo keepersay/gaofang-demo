@@ -13,12 +13,6 @@
           <el-form-item label="角色名称">
             <el-input v-model="searchForm.name" placeholder="请输入角色名称" clearable />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-              <el-option label="启用" value="active" />
-              <el-option label="禁用" value="disabled" />
-            </el-select>
-          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -31,16 +25,19 @@
         <el-table-column prop="name" label="角色名称" width="140" />
         <el-table-column prop="key" label="角色标识" width="120" />
         <el-table-column prop="remark" label="描述" width="200" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="100" :filters="[
+          { text: '启用', value: 'active' },
+          { text: '禁用', value: 'disabled' }
+        ]" :filter-method="filterStatus">
           <template #default="scope">
             <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
               {{ scope.row.status === 'active' ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column prop="createTime" label="创建时间" width="160" sortable />
         <el-table-column prop="createAccount" label="创建人" width="120" />
-        <el-table-column prop="updateTime" label="修改时间" width="160" />
+        <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
         <el-table-column prop="updateAccount" label="修改人" width="120" />
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="scope">
@@ -135,7 +132,6 @@ function generateSnowflakeId() {
 // 搜索表单
 const searchForm = reactive({
   name: '',
-  status: ''
 })
 
 // 表格数据
@@ -283,9 +279,6 @@ const filteredTableData = computed(() => {
     const query = searchForm.name.trim().toLowerCase()
     data = data.filter(item => item.name.toLowerCase().includes(query))
   }
-  if (searchForm.status) {
-    data = data.filter(item => item.status === searchForm.status)
-  }
   return data
 })
 
@@ -298,8 +291,7 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   Object.assign(searchForm, {
-    name: '',
-    status: ''
+    name: ''
   })
   handleSearch()
 }
@@ -422,6 +414,11 @@ const handleCurrentChange = (val) => {
   fetchData()
 }
 
+// 状态过滤方法
+const filterStatus = (value, row) => {
+  return row.status === value
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -475,5 +472,34 @@ onMounted(() => {
 
 .mt-2 {
   margin-top: 8px;
+}
+
+/* 自定义过滤图标为漏斗 */
+:deep(.el-table__column-filter-trigger) {
+  margin-left: 4px;
+}
+
+:deep(.el-table__column-filter-trigger i) {
+  display: none;
+}
+
+:deep(.el-table__column-filter-trigger)::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>') no-repeat center;
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>') no-repeat center;
+  opacity: 0.4;
+}
+
+:deep(.el-table__column-filter-trigger:hover)::after {
+  opacity: 0.8;
+}
+
+:deep(.el-table__column-filter-trigger.is-active)::after {
+  opacity: 1;
+  color: var(--el-color-primary);
 }
 </style> 
