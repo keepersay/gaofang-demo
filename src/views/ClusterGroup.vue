@@ -1,88 +1,120 @@
 <template>
   <div class="cluster-management">
-    <div class="page-header">
-      <h2>逻辑集群</h2>
-      <el-button type="primary" @click="handleAdd">新建集群</el-button>
-    </div>
+    <el-card class="box-card">
+      <template #header>
+        <div class="card-header">
+          <span>逻辑集群</span>
+          <el-button type="primary" @click="handleAdd">新建集群</el-button>
+        </div>
+      </template>
 
-    <div class="search-area">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item label="名称">
-          <el-input v-model="searchForm.name" placeholder="请输入集群名称" clearable />
-        </el-form-item>
-        <el-form-item label="地域">
-          <el-select v-model="searchForm.region" placeholder="请选择地域" clearable :loading="loading.regions">
-            <el-option
-              v-for="region in regions"
-              :key="region.id"
-              :label="region.name"
-              :value="region.id"
+      <div class="search-area">
+        <el-form :inline="true" :model="searchForm">
+          <el-form-item label="名称">
+            <el-input
+              v-model="searchForm.name"
+              placeholder="请输入集群名称"
+              clearable
+              style="max-width: 260px;"
+              @keyup.enter="handleSearch"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
 
-    <el-table :data="tableData" style="width: 100%" v-loading="loading.table" border stripe>
-      <el-table-column prop="id" label="ID" width="220" fixed="left" />
-      <el-table-column prop="name" label="名称" width="180" />
-      <el-table-column prop="displayName" label="显示名称" width="180" />
-      <el-table-column prop="region" label="地域" width="150">
-        <template #default="scope">
-          {{ getRegionName(scope.row.region) }}
+      <el-table
+        :data="filteredTableData"
+        border
+        stripe
+        max-height="500"
+        style="width: 100%;"
+        :header-cell-style="{ background: '#fff', zIndex: 2 }"
+        row-class-name="dense-row"
+      >
+        <el-table-column prop="id" label="ID" width="220" fixed="left" />
+        <el-table-column prop="name" label="名称" width="180" />
+        <el-table-column prop="displayName" label="显示名称" width="180" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #header>
+            <span>状态</span>
+            <el-popover placement="bottom" width="160" trigger="click" v-model:visible="statusPopoverVisible">
+              <div>
+                <el-checkbox-group v-model="statusFilterValue">
+                  <el-checkbox v-for="item in statusFilters" :key="item.value" :value="item.value">{{ item.text }}</el-checkbox>
+                </el-checkbox-group>
+                <div class="mt-2 flex justify-end">
+                  <el-button size="small" @click="resetStatusFilter">重置</el-button>
+                  <el-button size="small" type="primary" @click="confirmStatusFilter">确定</el-button>
+                </div>
+              </div>
+              <template #reference>
+                <el-icon :color="statusFilterValue.length ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
+              </template>
+            </el-popover>
+          </template>
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
+              {{ scope.row.status === 'active' ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
+        <el-table-column label="网元链路" min-width="220">
+          <template #default="scope">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div v-for="item in [
+                { label: 'ADS', value: getClusterNameById(scope.row.slots?.ADS), color: '#409EFF' },
+                { label: 'SLB', value: getClusterNameById(scope.row.slots?.SLB), color: '#67C23A' },
+                { label: 'WAF-CC', value: getClusterNameById(scope.row.slots?.WAFCC), color: '#E6A23C' },
+                { label: 'WAF', value: getClusterNameById(scope.row.slots?.WAF), color: '#F56C6C' }
+              ].filter(i => i.value)" :key="item.label" style="display: flex; align-items: center;">
+                <span :style="`background:${item.color};color:#fff;border-radius:3px;padding:2px 8px;font-size:12px;margin-right:8px;`">
+                  {{ item.label }}
+                </span>
+                <span style="color: #666;">{{ item.value }}</span>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="160" sortable />
+        <el-table-column prop="createAccount" label="创建人" width="120" />
+        <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
+        <el-table-column prop="updateAccount" label="修改人" width="120" />
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="scope">
+            <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button
+              :type="scope.row.status === 'active' ? 'danger' : 'success'"
+              link size="small"
+              @click="handleStatusChange(scope.row)"
+            >
+              {{ scope.row.status === 'active' ? '禁用' : '启用' }}
+            </el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <div class="text-gray-400 py-10 text-center">暂无数据</div>
         </template>
-      </el-table-column>
-      <el-table-column prop="provider" label="服务商" width="120" />
-      <el-table-column prop="type" label="类型" width="120">
-        <template #default="scope">
-          <el-tag :type="getTypeTagType(scope.row.type)">
-            {{ getTypeLabel(scope.row.type) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" width="100">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
-            {{ scope.row.status === 'active' ? '启用' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="createTime" label="创建时间" width="160" sortable />
-      <el-table-column prop="createAccount" label="创建人" width="120" />
-      <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
-      <el-table-column prop="updateAccount" label="修改人" width="120" />
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="scope">
-          <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button
-            :type="scope.row.status === 'active' ? 'danger' : 'success'"
-            link
-            @click="handleStatusChange(scope.row)"
-          >
-            {{ scope.row.status === 'active' ? '禁用' : '启用' }}
-          </el-button>
-          <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      </el-table>
 
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pagination.currentPage"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="pagination.total"
-        layout="total, sizes, prev, pager, next, jumper"
-        background
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
-    </div>
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </el-card>
 
     <!-- 新增/编辑对话框 -->
     <el-dialog
@@ -99,34 +131,46 @@
         <el-form-item label="显示名称" prop="displayName">
           <el-input v-model="form.displayName" placeholder="请输入显示名称，例如：华东-电信-高级版" />
         </el-form-item>
-        <el-form-item label="地域" prop="region">
-          <el-select v-model="form.region" placeholder="请选择地域" style="width: 100%" :loading="loading.regions">
-            <el-option
-              v-for="region in regions"
-              :key="region.id"
-              :label="region.name"
-              :value="region.id"
-              :disabled="region.status !== 'active'"
-            >
-              <span>{{ region.name }}</span>
-              <el-tag size="small" type="info" class="ml-2" v-if="region.distributed">分布式</el-tag>
-            </el-option>
-          </el-select>
+        <el-form-item label="链路模板" prop="linkTemplate">
+          <el-radio-group v-model="form.linkTemplate" @change="handleTemplateChange">
+            <el-radio label="L4">四层防护链路 (L4 Protection)</el-radio>
+            <el-radio label="L7">七层防护链路 (L7 Protection)</el-radio>
+          </el-radio-group>
         </el-form-item>
-        <el-form-item label="服务商" prop="provider">
-          <el-select v-model="form.provider" placeholder="请选择服务商" style="width: 100%">
-            <el-option label="电信" value="telecom" />
-            <el-option label="联通" value="unicom" />
-            <el-option label="移动" value="mobile" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="form.type" placeholder="请选择类型" style="width: 100%">
-            <el-option label="基础版" value="basic" />
-            <el-option label="标准版" value="standard" />
-            <el-option label="高级版" value="premium" />
-          </el-select>
-        </el-form-item>
+        <template v-if="form.linkTemplate === 'L4'">
+          <el-form-item label="ADS" prop="slots.ADS">
+            <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="SLB" prop="slots.SLB">
+            <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+        </template>
+        <template v-else>
+          <el-form-item label="ADS" prop="slots.ADS">
+            <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="SLB" prop="slots.SLB">
+            <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="WAF-CC" prop="slots.WAFCC">
+            <el-select v-model="form.slots.WAFCC" placeholder="请选择WAF-CC集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.WAFCC" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="WAF" prop="slots.WAF">
+            <el-select v-model="form.slots.WAF" placeholder="请选择WAF集群" style="width: 100%">
+              <el-option v-for="item in slotOptions.WAF" :key="item.id" :label="item.displayName" :value="item.id" />
+            </el-select>
+          </el-form-item>
+        </template>
         <el-form-item label="备注" prop="remark">
           <el-input 
             v-model="form.remark" 
@@ -157,9 +201,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Filter } from '@element-plus/icons-vue'
 import RegionService from '@/services/RegionService'
+import ClusterService from '@/services/ClusterService'
 
 // 生成雪花算法ID
 function generateSnowflakeId() {
@@ -182,17 +228,15 @@ const formRef = ref()
 
 // 搜索表单
 const searchForm = ref({
-  name: '',
-  region: ''
+  name: ''
 })
 
 // 表单数据
 const form = ref({
   name: '',
   displayName: '',
-  region: '',
-  provider: '',
-  type: '',
+  linkTemplate: 'L4',
+  slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
   status: 'active',
   remark: ''
 })
@@ -208,14 +252,20 @@ const rules = {
     { required: true, message: '请输入显示名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  region: [
-    { required: true, message: '请选择地域', trigger: 'change' }
+  linkTemplate: [
+    { required: true, message: '请选择链路模板', trigger: 'change' }
   ],
-  provider: [
-    { required: true, message: '请选择服务商', trigger: 'change' }
+  'slots.ADS': [
+    { required: true, message: '请选择ADS集群', trigger: 'change' }
   ],
-  type: [
-    { required: true, message: '请选择类型', trigger: 'change' }
+  'slots.SLB': [
+    { required: true, message: '请选择SLB集群', trigger: 'change' }
+  ],
+  'slots.WAFCC': [
+    { required: computed(() => form.value.linkTemplate === 'L7'), message: '请选择WAF-CC集群', trigger: 'change' }
+  ],
+  'slots.WAF': [
+    { required: computed(() => form.value.linkTemplate === 'L7'), message: '请选择WAF集群', trigger: 'change' }
   ],
   remark: [
     { max: 200, message: '长度不能超过 200 个字符', trigger: 'blur' }
@@ -228,9 +278,8 @@ const tableData = ref([
     id: generateSnowflakeId(),
     name: 'huadong-telecom-premium',
     displayName: '华东-电信-高级版',
-    region: 'EAST_CHINA',
-    provider: 'telecom',
-    type: 'premium',
+    linkTemplate: 'L4',
+    slots: { ADS: 'ads-1', SLB: 'slb-1', WAFCC: '', WAF: '' },
     status: 'active',
     remark: '华东地区电信高级版集群',
     createTime: '2024-01-01 10:00:00',
@@ -242,9 +291,8 @@ const tableData = ref([
     id: generateSnowflakeId(),
     name: 'huanan-unicom-basic',
     displayName: '华南-联通-基础版',
-    region: 'SOUTH_CHINA',
-    provider: 'unicom',
-    type: 'basic',
+    linkTemplate: 'L7',
+    slots: { ADS: 'ads-2', SLB: 'slb-2', WAFCC: 'wafcc-1', WAF: 'waf-1' },
     status: 'active',
     remark: '华南地区联通基础版集群',
     createTime: '2024-01-02 14:30:00',
@@ -255,9 +303,11 @@ const tableData = ref([
 ])
 
 // 分页
+const PAGE_SIZE_KEY = 'cluster-group-page-size';
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
 const pagination = ref({
   currentPage: 1,
-  pageSize: 10,
+  pageSize: defaultPageSize,
   total: 0
 })
 
@@ -265,26 +315,6 @@ const pagination = ref({
 const getRegionName = (regionId) => {
   const region = regions.value.find(r => r.id === regionId)
   return region ? region.name : '-'
-}
-
-// 获取类型标签样式
-const getTypeTagType = (type) => {
-  const typeMap = {
-    basic: 'info',
-    standard: 'warning',
-    premium: 'success'
-  }
-  return typeMap[type] || 'info'
-}
-
-// 获取类型标签文本
-const getTypeLabel = (type) => {
-  const typeMap = {
-    basic: '基础版',
-    standard: '标准版',
-    premium: '高级版'
-  }
-  return typeMap[type] || type
 }
 
 // 获取地域数据
@@ -307,7 +337,6 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.value.name = ''
-  searchForm.value.region = ''
   handleSearch()
 }
 
@@ -317,9 +346,8 @@ const handleAdd = () => {
   form.value = {
     name: '',
     displayName: '',
-    region: '',
-    provider: '',
-    type: '',
+    linkTemplate: 'L4',
+    slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
     status: 'active',
     remark: ''
   }
@@ -329,7 +357,19 @@ const handleAdd = () => {
 // 编辑
 const handleEdit = (row) => {
   isEdit.value = true
-  form.value = { ...row }
+  form.value = {
+    name: row.name,
+    displayName: row.displayName,
+    linkTemplate: row.linkTemplate || 'L4',
+    slots: {
+      ADS: row.slots?.ADS || '',
+      SLB: row.slots?.SLB || '',
+      WAFCC: row.slots?.WAFCC || '',
+      WAF: row.slots?.WAF || ''
+    },
+    status: row.status,
+    remark: row.remark
+  }
   dialogVisible.value = true
 }
 
@@ -403,12 +443,76 @@ const handleDialogClose = () => {
 // 分页
 const handleSizeChange = (val) => {
   pagination.value.pageSize = val
+  localStorage.setItem(PAGE_SIZE_KEY, val)
   handleSearch()
 }
 
 const handleCurrentChange = (val) => {
   pagination.value.currentPage = val
   handleSearch()
+}
+
+// 状态过滤
+const statusPopoverVisible = ref(false)
+const statusFilterValue = ref([])
+const statusFilters = [
+  { text: '启用', value: 'active' },
+  { text: '禁用', value: 'disabled' }
+]
+function resetStatusFilter() { statusFilterValue.value = [] }
+function confirmStatusFilter() { statusPopoverVisible.value = false }
+
+// 过滤后的表格数据
+const filteredTableData = computed(() => {
+  return tableData.value.filter(row => {
+    // 名称搜索
+    const nameMatch = !searchForm.value.name || row.name.includes(searchForm.value.name)
+    // 状态过滤
+    const statusMatch = !statusFilterValue.value.length || statusFilterValue.value.includes(row.status)
+    return nameMatch && statusMatch
+  })
+})
+
+// 动态槽位选项
+const slotOptions = ref({
+  ADS: [
+    { id: 'ads-1', displayName: 'ADS-集群A' },
+    { id: 'ads-2', displayName: 'ADS-集群B' }
+  ],
+  SLB: [
+    { id: 'slb-1', displayName: 'SLB-集群A' },
+    { id: 'slb-2', displayName: 'SLB-集群B' }
+  ],
+  WAFCC: [
+    { id: 'wafcc-1', displayName: 'WAF-CC-集群A' },
+    { id: 'wafcc-2', displayName: 'WAF-CC-集群B' }
+  ],
+  WAF: [
+    { id: 'waf-1', displayName: 'WAF-集群A' },
+    { id: 'waf-2', displayName: 'WAF-集群B' }
+  ]
+})
+
+// 监听模板变化，动态加载可选集群
+function handleTemplateChange() {
+  form.value.slots = { ADS: '', SLB: '', WAFCC: '', WAF: '' }
+}
+
+// mock静态网元集群数据
+const mockElementClusters = [
+  { id: 'ads-1', displayName: 'ADS-集群A' },
+  { id: 'slb-1', displayName: 'SLB-集群A' },
+  { id: 'wafcc-1', displayName: 'WAF-CC-集群A' },
+  { id: 'waf-1', displayName: 'WAF-集群A' },
+  { id: 'ads-2', displayName: 'ADS-集群B' },
+  { id: 'slb-2', displayName: 'SLB-集群B' },
+  { id: 'wafcc-2', displayName: 'WAF-CC-集群B' },
+  { id: 'waf-2', displayName: 'WAF-集群B' }
+]
+function getClusterNameById(id) {
+  if (!id) return ''
+  const found = mockElementClusters.find(c => c.id === id)
+  return found ? found.displayName : id
 }
 
 onMounted(() => {
@@ -422,24 +526,21 @@ onMounted(() => {
   padding: 20px;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.box-card {
   margin-bottom: 20px;
 }
 
-.page-header h2 {
-  margin: 0;
-  font-size: 20px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
   font-weight: 500;
 }
 
 .search-area {
   margin-bottom: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  padding: 20px 20px 0 20px;
 }
 
 .pagination-container {
@@ -462,11 +563,25 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.text-gray-400 {
+  color: #9ca3af;
+}
+
 .mt-2 {
   margin-top: 8px;
 }
 
-.ml-2 {
-  margin-left: 8px;
+.ellipsis-cell {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.dense-row td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 </style> 
