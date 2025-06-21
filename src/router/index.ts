@@ -6,6 +6,8 @@ import UserManagement from '../views/UserManagement.vue'
 import CustomerManagement from '../views/CustomerManagement.vue'
 import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
 import Placeholder from '../views/Placeholder.vue'
+import WafManagement from '../views/WafManagement.vue'
+import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
 
@@ -45,12 +47,12 @@ const routes = [
   {
     path: '/slb',
     name: 'SLB',
-    component: Placeholder
+    component: SlbManagement
   },
   {
     path: '/waf',
     name: 'WAF',
-    component: Placeholder
+    component: WafManagement
   },
   {
     path: '/waf-cc',

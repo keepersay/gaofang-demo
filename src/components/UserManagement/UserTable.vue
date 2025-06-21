@@ -26,6 +26,8 @@
       @sort-change="$emit('sort-change', $event)"
       style="min-height: 320px; margin-top: 20px;"
       max-height="500"
+      :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
+      row-class-name="dense-row"
     >
       <el-table-column prop="id" label="用户ID" min-width="100" />
       <el-table-column prop="username" label="用户" min-width="120" />
@@ -216,6 +218,9 @@ function confirmStatusFilter() {
   emits('filter-change', { status: statusFilterValue.value })
   statusPopoverVisible.value = false
 }
+
+const PAGE_SIZE_KEY = 'user-management-page-size';
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
 </script>
 
 <style scoped>
@@ -254,5 +259,10 @@ function confirmStatusFilter() {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.dense-row td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 </style> 

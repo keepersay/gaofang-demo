@@ -9,7 +9,7 @@
     <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
       <el-form-item label="名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入集群组名称" />
-      </el-form-item>
+        </el-form-item>
       <el-form-item label="地域" prop="region">
         <el-select 
           v-model="form.region" 
@@ -30,8 +30,8 @@
               分布式
             </el-tag>
           </el-option>
-        </el-select>
-      </el-form-item>
+          </el-select>
+        </el-form-item>
       <el-form-item 
         label="主集群" 
         prop="primaryClusters"
@@ -63,10 +63,10 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-              </div>
-            </div>
+      </div>
+    </div>
           </el-option>
-        </el-select>
+          </el-select>
         <div class="form-tip">
           {{ isDistributed ? '可选择多个主集群实现负载均衡' : '非分布式模式下只能选择当前地域的集群' }}
         </div>
@@ -100,8 +100,8 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-              </div>
-            </div>
+      </div>
+    </div>
           </el-option>
         </el-select>
         <div class="form-tip">备集群用于故障切换，最多选择1个</div>

@@ -9,9 +9,15 @@
       </template>
       <!-- 搜索区域 -->
       <div class="search-area">
-        <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form :inline="true" :model="searchForm">
           <el-form-item label="名称">
-            <el-input v-model="searchForm.name" placeholder="请输入地域名称" clearable />
+            <el-input
+              v-model="searchForm.name"
+              placeholder="请输入地域名称"
+              clearable
+              style="max-width: 260px;"
+              @keyup.enter="handleSearch"
+            />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -20,12 +26,27 @@
         </el-form>
       </div>
       <!-- 表格区域 -->
-      <el-table :data="filteredTableData" style="width: 100%" v-loading="loading" border stripe @sort-change="handleSortChange">
-        <el-table-column prop="id" label="ID" width="220" fixed="left" />
-        <el-table-column prop="name" label="名称" width="120" />
-        <el-table-column prop="isDistributed" label="是否分布式" width="120">
+      <el-table
+        :data="tableData"
+        style="width: 100%; min-height: 320px; margin-top: 20px;"
+        v-loading="loading"
+        border
+        stripe
+        max-height="500"
+        :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
+        row-class-name="dense-row"
+      >
+        <el-table-column prop="id" label="ID" width="180" fixed="left" />
+        <el-table-column prop="name" label="名称" width="150">
+          <template #default="scope">
+            <el-tooltip effect="dark" :content="scope.row.name" placement="top">
+              <span class="ellipsis-cell">{{ scope.row.name }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="distributed" label="分布式" width="100">
           <template #header>
-            <span>是否分布式</span>
+            <span>分布式</span>
             <el-popover
               placement="bottom"
               width="160"
@@ -48,8 +69,8 @@
             </el-popover>
           </template>
           <template #default="scope">
-            <el-tag :type="scope.row.isDistributed ? 'success' : 'info'">
-              {{ scope.row.isDistributed ? '是' : '否' }}
+            <el-tag :type="scope.row.distributed ? 'success' : 'info'">
+              {{ scope.row.distributed ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -83,24 +104,27 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" width="200" show-overflow-tooltip />
-        <el-table-column prop="createTime" label="添加时间" width="160" sortable="custom" />
-        <el-table-column prop="createAccount" label="添加账号" width="120" />
-        <el-table-column prop="updateTime" label="最后修改时间" width="160" sortable="custom" />
-        <el-table-column prop="updateAccount" label="最后修改账号" width="120" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="createTime" label="创建时间" width="160" sortable />
+        <el-table-column prop="createAccount" label="创建人" width="120" />
+        <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
+        <el-table-column prop="updateAccount" label="修改人" width="120" />
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="scope">
-            <el-button type="primary" link size="small" @click="handleEdit(scope.row.id, scope.row)">编辑</el-button>
-            <el-button 
-              :type="scope.row.status === 'active' ? 'danger' : 'success'" 
-              link size="small" 
+            <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button
+              :type="scope.row.status === 'active' ? 'danger' : 'success'"
+              link size="small"
               @click="handleStatusChange(scope.row)"
             >
               {{ scope.row.status === 'active' ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(scope.row.id)">删除</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="text-gray-400 py-10 text-center">暂无数据</div>
+        </template>
       </el-table>
       <!-- 分页 -->
       <div class="pagination-container">
@@ -119,19 +143,17 @@
     <!-- 新增/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogTitle"
+      :title="isEdit ? '编辑地域' : '新建地域'"
       width="500px"
+      :close-on-click-modal="false"
       @close="handleDialogClose"
     >
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入地域名称" />
         </el-form-item>
-        <el-form-item label="是否分布式" prop="isDistributed">
-          <el-radio-group v-model="form.isDistributed">
-            <el-radio :value="true">是</el-radio>
-            <el-radio :value="false">否</el-radio>
-          </el-radio-group>
+        <el-form-item label="分布式" prop="distributed">
+          <el-switch v-model="form.distributed" active-text="是" inactive-text="否" />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -186,9 +208,11 @@ const tableData = ref([])
 const loading = ref(false)
 
 // 分页
-const pagination = reactive({
+const PAGE_SIZE_KEY = 'region-management-page-size'
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10
+const pagination = ref({
   currentPage: 1,
-  pageSize: 10,
+  pageSize: defaultPageSize,
   total: 0
 })
 
@@ -203,7 +227,7 @@ const deleteRow = ref(null)
 const form = reactive({
   id: '',
   name: '',
-  isDistributed: false,
+  distributed: false,
   status: 'active',
   remark: '',
   createTime: '',
@@ -257,7 +281,7 @@ const filteredTableData = computed(() => {
   }
   // 是否分布式过滤
   if (distributedFilterValue.value.length) {
-    data = data.filter(item => distributedFilterValue.value.includes(item.isDistributed))
+    data = data.filter(item => distributedFilterValue.value.includes(item.distributed))
   }
   // 状态过滤
   if (statusFilterValue.value.length) {
@@ -285,7 +309,7 @@ const filteredTableData = computed(() => {
 
 // 搜索
 const handleSearch = () => {
-  pagination.currentPage = 1
+  pagination.value.currentPage = 1
   fetchData()
 }
 
@@ -303,7 +327,7 @@ const handleAdd = async () => {
   Object.assign(form, {
     id: '',
     name: '',
-    isDistributed: false,
+    distributed: false,
     status: 'active',
     remark: '',
     createTime: '',
@@ -380,7 +404,7 @@ const handleSubmit = () => {
           updateAccount: currentUser
         }
         tableData.value.push(newRegion)
-        pagination.total++
+        pagination.value.total++
         ElMessage.success('新增成功')
       }
       dialogVisible.value = false
@@ -395,12 +419,13 @@ const handleDialogClose = () => {
 
 // 分页
 const handleSizeChange = (val) => {
-  pagination.pageSize = val
-  fetchData()
+  pagination.value.pageSize = val
+  localStorage.setItem(PAGE_SIZE_KEY, val)
+  handleSearch()
 }
 
 const handleCurrentChange = (val) => {
-  pagination.currentPage = val
+  pagination.value.currentPage = val
   fetchData()
 }
 
@@ -411,32 +436,32 @@ onMounted(() => {
 
 <style scoped>
 .region-management {
-  padding: 20px;
+  padding: 0;
+  margin: 0;
+  background: #f5f6fa;
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 8px 0 8px 0;
 }
 
 .search-area {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.search-form {
-  margin-bottom: 0;
+  margin-bottom: 8px;
+  padding: 8px 8px 0 8px;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 8px;
   display: flex;
   justify-content: flex-end;
 }
@@ -455,7 +480,25 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.text-gray-400 {
+  color: #9ca3af;
+}
+
 .mt-2 {
   margin-top: 8px;
+}
+
+.ellipsis-cell {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.dense-row td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 </style> 

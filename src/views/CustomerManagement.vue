@@ -34,7 +34,9 @@
       </div>
 
       <!-- 表格区域 -->
-      <el-table :data="tableData" style="width: 100%" v-loading="loading" border stripe>
+      <el-table :data="tableData" style="width: 100%; min-height: 320px;" v-loading="loading" border stripe
+        max-height="500" row-class-name="dense-row"
+        :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }">
         <el-table-column prop="customerId" label="客户ID" width="120" fixed="left" />
         <el-table-column prop="customerName" label="客户名" width="150" fixed="left" />
         <el-table-column prop="phone" label="手机号" width="130" />
@@ -65,6 +67,9 @@
             <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="text-gray-400 py-10 text-center">暂无数据</div>
+        </template>
       </el-table>
 
       <!-- 分页 -->
@@ -412,24 +417,30 @@ onMounted(() => {
 
 <style scoped>
 .customer-management {
-  padding: 20px;
+  padding: 0;
+  margin: 0;
+  background: #f5f6fa;
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 8px 0 8px 0;
 }
 
 .search-area {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  margin-bottom: 8px;
+  padding: 8px 8px 0 8px;
+  background: transparent;
+  border-radius: 0;
 }
 
 .search-form {
@@ -437,7 +448,7 @@ onMounted(() => {
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 8px;
   display: flex;
   justify-content: flex-end;
 }
@@ -456,7 +467,25 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.text-gray-400 {
+  color: #9ca3af;
+}
+
 .mt-2 {
   margin-top: 8px;
+}
+
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.dense-row td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 </style> 

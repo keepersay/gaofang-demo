@@ -197,7 +197,7 @@ const tableData = ref([
     region: 'GLOBAL',
     distributed: true,
     primaryClusters: ['LC202401010010001', 'LC202401010009001'], // 全球-联通-高级版、全国-电信-高级版
-    standbyClusters: ['LC202401010001001'], // 华东-电信-高级版
+    standbyClusters: ['LC202401010001001'], // 上海-电信-高级版
     status: 'active',
     remark: '全球分布式集群组',
     createTime: '2024-01-01 10:00:00',
@@ -208,12 +208,12 @@ const tableData = ref([
   {
     id: 'LCG7503281108207412397',
     name: '示例集群组2',
-    region: 'EAST_CHINA',
+    region: 'SHANGHAI',
     distributed: false,
-    primaryClusters: ['LC202401010001001'], // 华东-电信-高级版
-    standbyClusters: ['LC202401010002001'], // 华东-联通-高级版
+    primaryClusters: ['LC202401010001001'], // 上海-电信-高级版
+    standbyClusters: ['LC202401010002001'], // 上海-联通-高级版
     status: 'active',
-    remark: '华东地区集群组',
+    remark: '上海地区集群组',
     createTime: '2024-01-02 14:30:00',
     createAccount: 'admin',
     updateTime: '2024-01-02 14:30:00',
@@ -222,12 +222,12 @@ const tableData = ref([
   {
     id: 'LCG7503281108208888888',
     name: '示例集群组3',
-    region: 'SOUTH_CHINA',
+    region: 'GUANGZHOU',
     distributed: false,
-    primaryClusters: ['LC202401010003001'], // 华南-电信-基础版
-    standbyClusters: ['LC202401010004001'], // 华南-联通-基础版
+    primaryClusters: ['LC202401010003001'], // 广州-电信-基础版
+    standbyClusters: ['LC202401010004001'], // 广州-联通-基础版
     status: 'active',
-    remark: '华南地区集群组',
+    remark: '广州地区集群组',
     createTime: '2024-01-03 09:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-03 09:00:00',
@@ -236,12 +236,12 @@ const tableData = ref([
   {
     id: 'LCG7503281108209999999',
     name: '示例集群组4',
-    region: 'NORTH_CHINA',
+    region: 'BEIJING',
     distributed: false,
-    primaryClusters: ['LC202401010005001'], // 华北-移动-标准版
-    standbyClusters: ['LC202401010006001'], // 华北-联通-标准版
+    primaryClusters: ['LC202401010005001'], // 北京-移动-标准版
+    standbyClusters: ['LC202401010006001'], // 北京-联通-标准版
     status: 'active',
-    remark: '华北地区集群组',
+    remark: '北京地区集群组',
     createTime: '2024-01-04 11:20:00',
     createAccount: 'admin',
     updateTime: '2024-01-04 11:20:00',
@@ -250,12 +250,12 @@ const tableData = ref([
   {
     id: 'LCG7503281108211111111',
     name: '示例集群组5',
-    region: 'SOUTHWEST_CHINA',
+    region: 'WUXI',
     distributed: false,
-    primaryClusters: ['LC202401010007001'], // 西南-电信-基础版
-    standbyClusters: ['LC202401010008001'], // 西南-联通-基础版
+    primaryClusters: ['LC202401010007001'], // 无锡-电信-基础版
+    standbyClusters: ['LC202401010008001'], // 无锡-联通-基础版
     status: 'active',
-    remark: '西南地区集群组',
+    remark: '无锡地区集群组',
     createTime: '2024-01-05 15:10:00',
     createAccount: 'admin',
     updateTime: '2024-01-05 15:10:00',

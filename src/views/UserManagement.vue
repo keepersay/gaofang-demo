@@ -8,23 +8,23 @@
         </div>
       </template>
       
-      <UserTable
-        :data="pagedData"
-        :total="filteredData.length"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :search-query="searchQuery"
-        :filtered-role="filters.role"
-        :filtered-status="filters.status"
-        @edit="onEdit"
-        @disable_enable="onDisableEnable"
-        @delete="onDelete"
-        @search="onSearch"
-        @page-change="onPageChange"
-        @size-change="onPageSizeChange"
-        @filter-change="onFilterChange"
-        @sort-change="onSortChange"
-      />
+        <UserTable
+          :data="pagedData"
+          :total="filteredData.length"
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :search-query="searchQuery"
+          :filtered-role="filters.role"
+          :filtered-status="filters.status"
+          @edit="onEdit"
+          @disable_enable="onDisableEnable"
+          @delete="onDelete"
+          @search="onSearch"
+          @page-change="onPageChange"
+          @size-change="onPageSizeChange"
+          @filter-change="onFilterChange"
+          @sort-change="onSortChange"
+        />
 
       <!-- 分页 -->
       <div class="pagination-container">
@@ -39,33 +39,33 @@
           @current-change="onPageChange"
         />
       </div>
-    </el-card>
+      </el-card>
 
-    <UserModal
-      :visible="modalVisible"
-      :is-edit="isEdit"
-      :edit-data="editData"
-      @close="modalVisible = false"
-      @submit="handleModalSubmit"
-    />
+      <UserModal
+        :visible="modalVisible"
+        :is-edit="isEdit"
+        :edit-data="editData"
+        @close="modalVisible = false"
+        @submit="handleModalSubmit"
+      />
 
-    <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
-      <div>确定要删除用户 <b>{{ deleteRow?.username }}</b> 吗？</div>
-      <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
-      <template #footer>
-        <el-button @click="deleteVisible = false">取消</el-button>
-        <el-button type="danger" @click="confirmDelete">确认删除</el-button>
-      </template>
-    </el-dialog>
+      <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
+        <div>确定要删除用户 <b>{{ deleteRow?.username }}</b> 吗？</div>
+        <div class="text-xs text-gray-500 mt-2">ID: {{ deleteRow?.id }}</div>
+        <template #footer>
+          <el-button @click="deleteVisible = false">取消</el-button>
+          <el-button type="danger" @click="confirmDelete">确认删除</el-button>
+        </template>
+      </el-dialog>
 
-    <el-dialog v-model="disableEnableVisible" :title="disableEnableRow?.status === 'active' ? '确认禁用' : '确认启用'" width="400px">
-      <div>确定要{{ disableEnableRow?.status === 'active' ? '禁用' : '启用' }}用户 <b>{{ disableEnableRow?.username }}</b> 吗？</div>
-      <div class="text-xs text-gray-500 mt-2">ID: {{ disableEnableRow?.id }}</div>
-      <template #footer>
-        <el-button @click="disableEnableVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmDisableEnable">确认</el-button>
-      </template>
-    </el-dialog>
+      <el-dialog v-model="disableEnableVisible" :title="disableEnableRow?.status === 'active' ? '确认禁用' : '确认启用'" width="400px">
+        <div>确定要{{ disableEnableRow?.status === 'active' ? '禁用' : '启用' }}用户 <b>{{ disableEnableRow?.username }}</b> 吗？</div>
+        <div class="text-xs text-gray-500 mt-2">ID: {{ disableEnableRow?.id }}</div>
+        <template #footer>
+          <el-button @click="disableEnableVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmDisableEnable">确认</el-button>
+        </template>
+      </el-dialog>
   </div>
 </template>
 

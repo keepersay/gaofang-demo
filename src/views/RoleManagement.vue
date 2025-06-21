@@ -9,9 +9,15 @@
       </template>
       <!-- 搜索区域 -->
       <div class="search-area">
-        <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form :inline="true" :model="searchForm">
           <el-form-item label="角色名称">
-            <el-input v-model="searchForm.name" placeholder="请输入角色名称" clearable />
+            <el-input
+              v-model="searchForm.name"
+              placeholder="请输入角色名称"
+              clearable
+              style="max-width: 260px;"
+              @keyup.enter="handleSearch"
+            />
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -20,15 +26,57 @@
         </el-form>
       </div>
       <!-- 表格区域 -->
-      <el-table :data="filteredTableData" style="width: 100%" v-loading="loading" border stripe>
+      <el-table
+        :data="filteredTableData"
+        style="width: 100%; min-height: 320px;"
+        v-loading="loading"
+        border
+        stripe
+        max-height="500"
+        :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
+        row-class-name="dense-row"
+        @sort-change="handleSortChange"
+      >
         <el-table-column prop="id" label="ID" width="220" fixed="left" />
-        <el-table-column prop="name" label="角色名称" width="140" />
-        <el-table-column prop="key" label="角色标识" width="120" />
+        <el-table-column prop="name" label="角色名称" width="140">
+          <template #default="scope">
+            <el-tooltip effect="dark" :content="scope.row.name" placement="top">
+              <span class="ellipsis-cell">{{ scope.row.name }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="key" label="角色标识" width="120">
+          <template #default="scope">
+            <el-tooltip effect="dark" :content="scope.row.key" placement="top">
+              <span class="ellipsis-cell">{{ scope.row.key }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
         <el-table-column prop="remark" label="描述" width="200" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100" :filters="[
-          { text: '启用', value: 'active' },
-          { text: '禁用', value: 'disabled' }
-        ]" :filter-method="filterStatus">
+        <el-table-column prop="status" label="状态" width="100">
+          <template #header>
+            <span>状态</span>
+            <el-popover
+              placement="bottom"
+              width="160"
+              trigger="click"
+              v-model:visible="statusPopoverVisible"
+            >
+              <div>
+                <el-checkbox-group v-model="statusFilterValue">
+                  <el-checkbox label="active">启用</el-checkbox>
+                  <el-checkbox label="disabled">禁用</el-checkbox>
+                </el-checkbox-group>
+                <div class="mt-2 flex justify-end">
+                  <el-button size="small" @click="resetStatusFilter">重置</el-button>
+                  <el-button size="small" type="primary" @click="confirmStatusFilter">确定</el-button>
+                </div>
+              </div>
+              <template #reference>
+                <el-icon :color="statusFilterValue.length ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
+              </template>
+            </el-popover>
+          </template>
           <template #default="scope">
             <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
               {{ scope.row.status === 'active' ? '启用' : '禁用' }}
@@ -49,6 +97,9 @@
             <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="text-gray-400 py-10 text-center">暂无数据</div>
+        </template>
       </el-table>
       <!-- 分页 -->
       <div class="pagination-container">
@@ -120,6 +171,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Filter } from '@element-plus/icons-vue'
 
 // 雪花算法ID生成（简单模拟）
 function generateSnowflakeId() {
@@ -139,9 +191,11 @@ const tableData = ref([])
 const loading = ref(false)
 
 // 分页
+const PAGE_SIZE_KEY = 'role-management-page-size';
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
 const pagination = reactive({
   currentPage: 1,
-  pageSize: 10,
+  pageSize: defaultPageSize,
   total: 0
 })
 
@@ -407,7 +461,8 @@ const handleDialogClose = () => {
 // 分页
 const handleSizeChange = (val) => {
   pagination.pageSize = val
-  fetchData()
+  localStorage.setItem(PAGE_SIZE_KEY, val)
+  handleSearch()
 }
 const handleCurrentChange = (val) => {
   pagination.currentPage = val
@@ -419,6 +474,11 @@ const filterStatus = (value, row) => {
   return row.status === value
 }
 
+const statusPopoverVisible = ref(false)
+const statusFilterValue = ref([])
+function resetStatusFilter() { statusFilterValue.value = [] }
+function confirmStatusFilter() { statusPopoverVisible.value = false }
+
 onMounted(() => {
   fetchData()
 })
@@ -426,32 +486,34 @@ onMounted(() => {
 
 <style scoped>
 .role-management {
-  padding: 20px;
+  padding: 0;
+  margin: 0;
+  background: #f5f6fa;
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 8px 0 8px 0;
 }
 
 .search-area {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.search-form {
-  margin-bottom: 0;
+  margin-bottom: 8px;
+  padding: 8px 8px 0 8px;
+  background: transparent;
+  border-radius: 0;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 8px;
   display: flex;
   justify-content: flex-end;
 }
@@ -470,36 +532,34 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.text-gray-400 {
+  color: #9ca3af;
+}
+
 .mt-2 {
   margin-top: 8px;
 }
 
-/* 自定义过滤图标为漏斗 */
-:deep(.el-table__column-filter-trigger) {
-  margin-left: 4px;
-}
-
-:deep(.el-table__column-filter-trigger i) {
-  display: none;
-}
-
-:deep(.el-table__column-filter-trigger)::after {
-  content: '';
+.ellipsis-cell {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  background: currentColor;
-  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>') no-repeat center;
-  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>') no-repeat center;
-  opacity: 0.4;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
-:deep(.el-table__column-filter-trigger:hover)::after {
-  opacity: 0.8;
+.dense-row td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 
-:deep(.el-table__column-filter-trigger.is-active)::after {
-  opacity: 1;
-  color: var(--el-color-primary);
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.text-center {
+  text-align: center;
 }
 </style> 

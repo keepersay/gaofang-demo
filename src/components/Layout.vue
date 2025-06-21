@@ -19,7 +19,7 @@
       >
         <el-menu-item index="/overview">
           <el-icon><PieChart /></el-icon>
-          <span>总览</span>
+            <span>总览</span>
         </el-menu-item>
         <el-sub-menu index="net-element" v-if="true">
           <template #title>
@@ -69,7 +69,7 @@
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><polyline points="4,20 10,10 14,14 20,4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="10" cy="10" r="2" fill="currentColor"/><circle cx="14" cy="14" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
             </el-icon>
             <span>流量分析</span>
-          </el-menu-item>
+        </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/cluster-group-management">
           <template #title>
@@ -168,7 +168,7 @@
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 2l7 4v5c0 5-3.5 9-7 11-3.5-2-7-6-7-11V6l7-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M12 2l7 4v5c0 5-3.5 9-7 11V2z" fill="currentColor" fill-opacity=".15"/></svg>
             </el-icon>
             <span>角色管理</span>
-          </el-menu-item>
+        </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>

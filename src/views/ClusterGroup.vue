@@ -42,7 +42,7 @@
           <template #header>
             <span>状态</span>
             <el-popover placement="bottom" width="160" trigger="click" v-model:visible="statusPopoverVisible">
-              <div>
+  <div>
                 <el-checkbox-group v-model="statusFilterValue">
                   <el-checkbox v-for="item in statusFilters" :key="item.value" :value="item.value">{{ item.text }}</el-checkbox>
                 </el-checkbox-group>
@@ -409,7 +409,7 @@ const pagination = ref({
 const getRegionName = (regionId) => {
   const region = regions.value.find(r => r.id === regionId)
   return region ? region.name : '-'
-}
+  }
 
 // 获取地域数据
 const fetchRegions = async () => {
@@ -505,7 +505,7 @@ const handleSubmit = () => {
     if (valid) {
       const currentTime = new Date().toLocaleString()
       if (isEdit.value) {
-        // 编辑
+    // 编辑
         const index = tableData.value.findIndex(item => item.id === form.value.id)
         if (index > -1) {
           tableData.value[index] = {
@@ -515,8 +515,8 @@ const handleSubmit = () => {
             updateAccount: 'current_user'
           }
         }
-        ElMessage.success('编辑成功')
-      } else {
+      ElMessage.success('编辑成功')
+    } else {
         // 新增
         const newData = {
           ...form.value,
@@ -529,9 +529,9 @@ const handleSubmit = () => {
         tableData.value.push(newData)
         pagination.value.total++
         ElMessage.success('新增成功')
-      }
+  }
       dialogVisible.value = false
-    }
+}
   })
 }
 
