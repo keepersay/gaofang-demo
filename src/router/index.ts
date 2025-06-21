@@ -119,6 +119,12 @@ const routes = [
     path: '/order',
     name: 'Order',
     component: Placeholder
+  },
+  {
+    path: '/global-config',
+    name: 'GlobalConfig',
+    component: Placeholder,
+    meta: { title: '全局配置' }
   }
 ]
 
