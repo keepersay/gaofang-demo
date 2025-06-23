@@ -1,3 +1,11 @@
+// 生成雪花算法ID
+function generateSnowflakeId() {
+  const timestamp = Date.now() % 1e12
+  const machineId = Math.floor(Math.random() * 1024)
+  const sequence = Math.floor(Math.random() * 4096)
+  return `LC${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
+}
+
 // 模拟逻辑集群数据
 const mockClusters = [
   {
@@ -194,7 +202,7 @@ class ClusterService {
       setTimeout(() => {
         const newCluster = {
           ...cluster,
-          id: `LC${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+          id: generateSnowflakeId(),
           createTime: new Date().toLocaleString(),
           createAccount: 'current_user',
           updateTime: new Date().toLocaleString(),
@@ -208,7 +216,7 @@ class ClusterService {
 
   // 更新逻辑集群
   static async updateCluster(id, cluster) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
         const index = mockClusters.findIndex(c => c.id === id)
         if (index > -1) {
@@ -220,7 +228,7 @@ class ClusterService {
           }
           resolve(mockClusters[index])
         } else {
-          resolve(null)
+          reject(new Error('逻辑集群不存在'))
         }
       }, 300)
     })
@@ -276,6 +284,33 @@ class ClusterService {
       valid: true,
       message: ''
     }
+  }
+
+  // 根据机房ID获取集群列表
+  static async getClustersByDataCenterId(dataCenterId) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const clusters = mockClusters.filter(c => c.dataCenterId === dataCenterId)
+        resolve(clusters)
+      }, 100)
+    })
+  }
+
+  // 更新集群状态
+  static async updateClusterStatus(id, status) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockClusters.findIndex(c => c.id === id)
+        if (index > -1) {
+          mockClusters[index].status = status
+          mockClusters[index].updateTime = new Date().toLocaleString()
+          mockClusters[index].updateAccount = 'current_user'
+          resolve(mockClusters[index])
+        } else {
+          reject(new Error('集群不存在'))
+        }
+      }, 100)
+    })
   }
 }
 

@@ -84,6 +84,19 @@
         <el-table-column prop="contactPerson" label="联系人" width="120" />
         <el-table-column prop="contactPhone" label="联系电话" width="140" />
         <el-table-column prop="contactEmail" label="联系邮箱" width="180" />
+        <el-table-column label="关联集群" width="100">
+          <template #default="scope">
+            <el-button 
+              type="info" 
+              link 
+              size="small" 
+              @click="handleViewRelatedClusters(scope.row)"
+              v-loading.inline="relatedClustersLoading === scope.row.id"
+            >
+              查看关联
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
         <el-table-column prop="createTime" label="创建时间" width="160" sortable />
         <el-table-column prop="createAccount" label="创建人" width="120" />
@@ -181,6 +194,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Filter } from '@element-plus/icons-vue'
 import DataCenterService from '@/services/DataCenterService'
 import RegionService from '@/services/RegionService'
+import ClusterService from '@/services/ClusterService'
 
 // 搜索表单
 const searchForm = reactive({
@@ -190,6 +204,7 @@ const searchForm = reactive({
 // 表格数据
 const tableData = ref([])
 const loading = ref(false)
+const relatedClustersLoading = ref(null)
 const isEdit = ref(false)
 const regions = ref([])
 const regionTree = ref([])
@@ -371,9 +386,25 @@ const handleEdit = (row) => {
 }
 
 // 删除
-const handleDelete = (row) => {
-  deleteRow.value = row
-  deleteVisible.value = true
+const handleDelete = async (row) => {
+  // 检查是否有关联的集群
+  try {
+    const relatedClusters = await ClusterService.getClustersByDataCenterId(row.id)
+    if (relatedClusters.length > 0) {
+      ElMessageBox.alert(
+        `该机房已被${relatedClusters.length}个集群关联使用，无法删除。请先移除关联集群再进行删除操作。`,
+        '无法删除',
+        { type: 'warning' }
+      )
+      return
+    }
+    
+    deleteRow.value = row
+    deleteVisible.value = true
+  } catch (error) {
+    console.error('检查关联集群失败:', error)
+    ElMessage.error('操作失败')
+  }
 }
 
 // 确认删除
@@ -429,6 +460,37 @@ const handleSubmit = async () => {
 // 对话框关闭
 const handleDialogClose = () => {
   formRef.value?.resetFields()
+}
+
+// 查看关联集群
+const handleViewRelatedClusters = async (row) => {
+  relatedClustersLoading.value = row.id
+  try {
+    const relatedClusters = await ClusterService.getClustersByDataCenterId(row.id)
+    if (relatedClusters.length === 0) {
+      ElMessage.info('当前机房暂无关联集群')
+      return
+    }
+    
+    // 构建集群信息展示内容
+    const clusterListHtml = relatedClusters
+      .map(cluster => `<li>${cluster.displayName} (${cluster.name})</li>`)
+      .join('')
+    
+    ElMessageBox.alert(
+      `<div>
+        <p>机房 <b>${row.name}</b> 关联的集群列表:</p>
+        <ul>${clusterListHtml}</ul>
+      </div>`,
+      '关联集群',
+      { dangerouslyUseHTMLString: true }
+    )
+  } catch (error) {
+    console.error('获取关联集群失败:', error)
+    ElMessage.error('获取关联集群失败')
+  } finally {
+    relatedClustersLoading.value = null
+  }
 }
 
 // 初始化

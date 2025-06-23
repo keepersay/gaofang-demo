@@ -19,6 +19,16 @@
               @keyup.enter="handleSearch"
             />
           </el-form-item>
+          <el-form-item label="机房">
+            <el-select v-model="searchForm.dataCenterId" placeholder="请选择机房" style="width: 100%">
+              <el-option
+                v-for="item in dataCenters"
+                :key="item.id"
+                :label="`${item.name} (${getRegionName(item.regionId)})`"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -63,6 +73,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
+        <el-table-column label="所属机房" width="180">
+          <template #default="scope">
+            <div v-if="scope.row.dataCenterId">
+              <el-tag type="success" size="small">{{ getDataCenterName(scope.row.dataCenterId) }}</el-tag>
+              <span class="text-gray-500 ml-1 text-xs">{{ getRegionName(dataCenters.find(dc => dc.id === scope.row.dataCenterId)?.regionId) }}</span>
+            </div>
+            <span v-else class="text-gray-400">未关联</span>
+          </template>
+        </el-table-column>
         <el-table-column label="网元链路" min-width="220">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; gap: 2px;">
@@ -196,6 +215,16 @@
             </el-select>
           </el-form-item>
         </template>
+        <el-form-item label="机房" prop="dataCenterId">
+          <el-select v-model="form.dataCenterId" placeholder="请选择机房" style="width: 100%">
+            <el-option
+              v-for="item in dataCenters"
+              :key="item.id"
+              :label="`${item.name} (${getRegionName(item.regionId)})`"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="VIP池">
           <el-tag
             v-for="(ip, idx) in form.ipPools.vip"
@@ -279,6 +308,7 @@ import { ElMessage } from 'element-plus'
 import { Filter } from '@element-plus/icons-vue'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
+import DataCenterService from '@/services/DataCenterService'
 
 // 生成雪花算法ID
 function generateSnowflakeId() {
@@ -290,18 +320,21 @@ function generateSnowflakeId() {
 
 const loading = ref({
   regions: false,
-  table: false
+  table: false,
+  dataCenters: false
 })
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const deleteVisible = ref(false)
 const deleteRow = ref(null)
 const regions = ref([])
+const dataCenters = ref([])
 const formRef = ref()
 
 // 搜索表单
 const searchForm = ref({
-  name: ''
+  name: '',
+  dataCenterId: ''
 })
 
 // 表单数据
@@ -312,7 +345,8 @@ const form = ref({
   ipPools: { vip: [], origin: [], snat: [] },
   status: 'active',
   remark: '',
-  enableL7: false
+  enableL7: false,
+  dataCenterId: ''
 })
 
 // 表单验证规则
@@ -338,6 +372,9 @@ const rules = {
   'slots.WAF': [
     { required: computed(() => form.value.enableL7), message: '请选择WAF集群', trigger: 'change' }
   ],
+  dataCenterId: [
+    { required: true, message: '请选择所属机房', trigger: 'change' }
+  ],
   remark: [
     { max: 200, message: '长度不能超过 200 个字符', trigger: 'blur' }
   ]
@@ -350,6 +387,7 @@ const tableData = ref([
     name: 'huadong-telecom-premium',
     displayName: '华东-电信-高级版',
     enableL7: false,
+    dataCenterId: 'DC202401010002',
     slots: { ADS: 'ads-1', SLB: 'slb-1', WAFCC: '', WAF: '' },
     ipPools: {
       vip: ['1.1.1.1/24', '2.2.2.2-2.2.2.10', '3.3.3.3'],
@@ -368,6 +406,7 @@ const tableData = ref([
     name: 'huanan-unicom-basic',
     displayName: '华南-联通-基础版',
     enableL7: true,
+    dataCenterId: 'DC202401010003',
     slots: { ADS: 'ads-2', SLB: 'slb-2', WAFCC: 'wafcc-1', WAF: 'waf-1' },
     ipPools: {
       vip: ['4.4.4.4'],
@@ -396,9 +435,9 @@ const pagination = ref({
 const getRegionName = (regionId) => {
   const region = regions.value.find(r => r.id === regionId)
   return region ? region.name : '-'
-  }
+}
 
-// 获取地域数据
+// 获取地域和机房数据
 const fetchRegions = async () => {
   loading.value.regions = true
   try {
@@ -410,6 +449,38 @@ const fetchRegions = async () => {
   }
 }
 
+// 获取机房数据
+const fetchDataCenters = async () => {
+  loading.value.dataCenters = true
+  try {
+    dataCenters.value = await DataCenterService.getDataCenters()
+  } catch (error) {
+    console.error('获取机房数据失败:', error)
+  } finally {
+    loading.value.dataCenters = false
+  }
+}
+
+// 获取集群数据
+const fetchClusters = async () => {
+  loading.value.table = true
+  try {
+    tableData.value = await ClusterService.getClusters()
+    pagination.value.total = tableData.value.length
+  } catch (error) {
+    console.error('获取集群数据失败:', error)
+    ElMessage.error('获取集群数据失败')
+  } finally {
+    loading.value.table = false
+  }
+}
+
+// 获取机房名称
+const getDataCenterName = (dataCenterId) => {
+  const dataCenter = dataCenters.value.find(dc => dc.id === dataCenterId)
+  return dataCenter ? dataCenter.name : '-'
+}
+
 // 搜索
 const handleSearch = () => {
   // 实现搜索逻辑
@@ -418,6 +489,7 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.value.name = ''
+  searchForm.value.dataCenterId = ''
   handleSearch()
 }
 
@@ -431,7 +503,8 @@ const handleAdd = () => {
     ipPools: { vip: [], origin: [], snat: [] },
     status: 'active',
     remark: '',
-    enableL7: false
+    enableL7: false,
+    dataCenterId: ''
   }
   dialogVisible.value = true
 }
@@ -440,6 +513,7 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   isEdit.value = true
   form.value = {
+    id: row.id,
     name: row.name,
     displayName: row.displayName,
     slots: {
@@ -455,7 +529,8 @@ const handleEdit = (row) => {
     },
     status: row.status,
     remark: row.remark,
-    enableL7: row.enableL7 || false
+    enableL7: row.enableL7 || false,
+    dataCenterId: row.dataCenterId || ''
   }
   dialogVisible.value = true
 }
@@ -467,58 +542,53 @@ const handleDelete = (row) => {
 }
 
 // 确认删除
-const confirmDelete = () => {
-  const index = tableData.value.findIndex(item => item.id === deleteRow.value.id)
-  if (index > -1) {
-    tableData.value.splice(index, 1)
-    pagination.value.total--
+const confirmDelete = async () => {
+  try {
+    await ClusterService.deleteCluster(deleteRow.value.id)
+    await fetchClusters()
     ElMessage.success('删除成功')
+    deleteVisible.value = false
+  } catch (error) {
+    console.error('删除失败:', error)
+    ElMessage.error('删除失败')
   }
-  deleteVisible.value = false
 }
 
 // 状态变更
-const handleStatusChange = (row) => {
-  row.status = row.status === 'active' ? 'disabled' : 'active'
-  row.updateTime = new Date().toLocaleString()
-  row.updateAccount = 'current_user'
-  const action = row.status === 'active' ? '启用' : '禁用'
-  ElMessage.success(`集群已${action}`)
+const handleStatusChange = async (row) => {
+  const newStatus = row.status === 'active' ? 'disabled' : 'active'
+  try {
+    await ClusterService.updateClusterStatus(row.id, newStatus)
+    row.status = newStatus
+    const action = newStatus === 'active' ? '启用' : '禁用'
+    ElMessage.success(`集群已${action}`)
+  } catch (error) {
+    console.error('状态变更失败:', error)
+    ElMessage.error('状态变更失败')
+  }
 }
 
 // 提交表单
-const handleSubmit = () => {
-  formRef.value?.validate((valid) => {
+const handleSubmit = async () => {
+  formRef.value?.validate(async (valid) => {
     if (valid) {
-      const currentTime = new Date().toLocaleString()
-      if (isEdit.value) {
-    // 编辑
-        const index = tableData.value.findIndex(item => item.id === form.value.id)
-        if (index > -1) {
-          tableData.value[index] = {
-            ...tableData.value[index],
-            ...form.value,
-            updateTime: currentTime,
-            updateAccount: 'current_user'
-          }
+      try {
+        if (isEdit.value) {
+          // 编辑
+          await ClusterService.updateCluster(form.value.id, form.value)
+          ElMessage.success('编辑成功')
+        } else {
+          // 新增
+          await ClusterService.addCluster(form.value)
+          ElMessage.success('新增成功')
         }
-      ElMessage.success('编辑成功')
-    } else {
-        // 新增
-        const newData = {
-          ...form.value,
-          id: generateSnowflakeId(),
-          createTime: currentTime,
-          createAccount: 'current_user',
-          updateTime: currentTime,
-          updateAccount: 'current_user'
-        }
-        tableData.value.push(newData)
-        pagination.value.total++
-        ElMessage.success('新增成功')
-  }
-      dialogVisible.value = false
-}
+        dialogVisible.value = false
+        await fetchClusters()
+      } catch (error) {
+        console.error('保存失败:', error)
+        ElMessage.error('保存失败')
+      }
+    }
   })
 }
 
@@ -556,7 +626,9 @@ const filteredTableData = computed(() => {
     const nameMatch = !searchForm.value.name || row.name.includes(searchForm.value.name)
     // 状态过滤
     const statusMatch = !statusFilterValue.value.length || statusFilterValue.value.includes(row.status)
-    return nameMatch && statusMatch
+    // 机房过滤
+    const dataCenterMatch = !searchForm.value.dataCenterId || row.dataCenterId === searchForm.value.dataCenterId
+    return nameMatch && statusMatch && dataCenterMatch
   })
 })
 
@@ -635,7 +707,8 @@ function addSnatIp() {
 
 onMounted(() => {
   fetchRegions()
-  pagination.value.total = tableData.value.length
+  fetchDataCenters()
+  fetchClusters()
 })
 </script>
 
