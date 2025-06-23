@@ -24,6 +24,7 @@
         <el-sub-menu index="net-element" v-if="true">
           <template #title>
             <el-icon>
+              <!-- 资源组/多集群风格 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="8" width="10" height="8" rx="2" fill="currentColor" fill-opacity=".15"/></svg>
             </el-icon>
             <span>网元管理</span>
@@ -77,7 +78,7 @@
               <!-- 资源组/多集群风格 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="7" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="11" width="10" height="2" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
             </el-icon>
-            <span>逻辑集群管理</span>
+            <span>网元编排</span>
           </template>
           <el-menu-item index="/region-management">
             <el-icon><Location /></el-icon>
@@ -88,6 +89,12 @@
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".15"/><path d="M7 10h10M7 14h10M12 6v12" stroke="currentColor" stroke-width="1.2"/></svg>
             </el-icon>
             <span>机房管理</span>
+          </el-menu-item>
+          <el-menu-item index="/ip-pool-management">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M4 14.5v-5a8 8 0 0116 0v5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 14.5h4a2 2 0 012 2v2a2 2 0 01-2 2H4v-6zM20 14.5h-4a2 2 0 00-2 2v2a2 2 0 002 2h4v-6z" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="10" y="18" width="4" height="1.5" rx=".75" fill="currentColor"/></svg>
+            </el-icon>
+            <span>网池管理</span>
           </el-menu-item>
           <el-menu-item index="/cluster-group">
             <el-icon>
@@ -116,7 +123,7 @@
             <el-icon><Box /></el-icon>
             <span>商品套餐</span>
           </el-menu-item>
-          <el-menu-item index="/customer">
+          <el-menu-item index="/customer-management">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
             </el-icon>
@@ -143,8 +150,8 @@
             </el-icon>
             <span>日志管理</span>
           </template>
-          <el-menu-item index="/log/login">登录日志</el-menu-item>
-          <el-menu-item index="/log/operation">操作日志</el-menu-item>
+          <el-menu-item index="/login-log">登录日志</el-menu-item>
+          <el-menu-item index="/operation-log">操作日志</el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="system-management">
           <template #title>
@@ -161,14 +168,14 @@
             </el-icon>
             <span>全局配置</span>
           </el-menu-item>
-          <el-menu-item index="/user">
+          <el-menu-item index="/user-management">
             <el-icon>
               <!-- 用户风格，参考云账号/用户 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
             </el-icon>
             <span>用户管理</span>
           </el-menu-item>
-          <el-menu-item index="/role">
+          <el-menu-item index="/role-management">
             <el-icon>
               <!-- 盾牌风格，参考权限/角色管理 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 2l7 4v5c0 5-3.5 9-7 11-3.5-2-7-6-7-11V6l7-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M12 2l7 4v5c0 5-3.5 9-7 11V2z" fill="currentColor" fill-opacity=".15"/></svg>

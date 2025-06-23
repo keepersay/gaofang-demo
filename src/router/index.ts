@@ -5,7 +5,6 @@ import ClusterGroupManagement from '../views/ClusterGroupManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
 import CustomerManagement from '../views/CustomerManagement.vue'
 import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
-import Placeholder from '../views/Placeholder.vue'
 import WafManagement from '../views/WafManagement.vue'
 import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
@@ -50,6 +49,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/DataCenterManagement.vue')
   },
   {
+    path: '/ip-pool-management',
+    name: 'IpPoolManagement',
+    component: () => import('../views/IpPoolManagement.vue')
+  },
+  {
     path: '/cluster-group',
     name: 'ClusterGroup',
     component: ClusterGroup
@@ -90,34 +94,34 @@ const routes: Array<RouteRecordRaw> = [
     component: CustomerManagement
   },
   {
-    path: '/placeholder',
-    name: 'Placeholder',
-    component: Placeholder
-  },
-  {
-    path: '/ads',
-    name: 'ADS',
-    component: Placeholder
-  },
-  {
     path: '/waf',
     name: 'WAF',
     component: WafManagement
   },
   {
+    path: '/slb',
+    name: 'SLB',
+    component: SlbManagement
+  },
+  {
+    path: '/ads',
+    name: 'ADS',
+    component: () => import('@/views/Placeholder.vue')
+  },
+  {
     path: '/waf-cc',
     name: 'WAFCC',
-    component: Placeholder
+    component: () => import('@/views/Placeholder.vue')
   },
   {
     path: '/blackhole',
     name: 'Blackhole',
-    component: Placeholder
+    component: () => import('@/views/Placeholder.vue')
   },
   {
     path: '/traffic',
     name: 'TrafficAnalysis',
-    component: Placeholder
+    component: () => import('@/views/Placeholder.vue')
   },
   {
     path: '/dns',
@@ -128,17 +132,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/business-instance',
     name: 'BusinessInstance',
-    component: Placeholder
+    component: () => import('@/views/Placeholder.vue')
   },
   {
     path: '/order',
     name: 'Order',
-    component: Placeholder
+    component: () => import('@/views/Placeholder.vue')
   },
   {
     path: '/global-config',
     name: 'GlobalConfig',
-    component: Placeholder,
+    component: () => import('@/views/Placeholder.vue'),
     meta: { title: '全局配置' }
   }
 ]
