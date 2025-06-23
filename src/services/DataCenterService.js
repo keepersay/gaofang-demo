@@ -63,6 +63,62 @@ const mockDataCenters = [
     createAccount: 'admin',
     updateTime: '2024-01-04 12:00:00',
     updateAccount: 'admin'
+  },
+  {
+    id: 'DC202407200001',
+    name: '首尔机房01',
+    regionId: 'ICN',
+    status: 'active',
+    contactPerson: '金智恩',
+    contactPhone: '+82-10-1234-5678',
+    contactEmail: 'jieun.kim@example.kr',
+    remark: '韩国首尔核心数据中心',
+    createTime: '2024-05-10 09:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-05-10 09:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'DC202407200002',
+    name: '法兰克福机房01',
+    regionId: 'FRA',
+    status: 'active',
+    contactPerson: 'Hans Schmidt',
+    contactPhone: '+49-89-12345678',
+    contactEmail: 'hans.schmidt@example.de',
+    remark: '德国法兰克福高性能数据中心',
+    createTime: '2024-04-15 10:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-04-15 10:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'DC202407200003',
+    name: '迪拜机房01',
+    regionId: 'DXB',
+    status: 'active',
+    contactPerson: 'Mohammad Al-Farsi',
+    contactPhone: '+971-4-123-4567',
+    contactEmail: 'mohammad.alfarsi@example.ae',
+    remark: '阿联酋迪拜核心数据中心',
+    createTime: '2024-03-20 11:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-03-20 11:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'DC202407200004',
+    name: '洛杉矶机房01',
+    regionId: 'LAX',
+    status: 'active',
+    contactPerson: 'John Smith',
+    contactPhone: '+1-213-555-1234',
+    contactEmail: 'john.smith@example.com',
+    remark: '美国洛杉矶高带宽数据中心',
+    createTime: '2024-02-25 08:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-02-25 08:00:00',
+    updateAccount: 'admin'
   }
 ]
 
