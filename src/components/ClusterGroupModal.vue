@@ -11,26 +11,21 @@
         <el-input v-model="form.name" placeholder="请输入集群组名称" />
         </el-form-item>
       <el-form-item label="地域" prop="region">
-        <el-select 
-          v-model="form.region" 
-          placeholder="请选择地域" 
-          clearable 
+        <el-cascader
+          v-model="form.region"
+          :options="regionOptions"
+          placeholder="请选择地域"
+          clearable
           :loading="loading.regions"
+          :props="{
+            checkStrictly: true,
+            value: 'id',
+            label: 'name',
+            emitPath: false,
+            expandTrigger: 'hover'
+          }"
           @change="handleRegionChange"
-        >
-          <el-option
-            v-for="region in regions"
-            :key="region.id"
-            :label="region.name"
-            :value="region.id"
-            :disabled="region.status !== 'active'"
-          >
-            <span>{{ region.name }}</span>
-            <el-tag size="small" type="info" class="ml-2" v-if="region.distributed">
-              分布式
-            </el-tag>
-          </el-option>
-          </el-select>
+        />
         </el-form-item>
       <el-form-item 
         label="主集群" 
@@ -68,7 +63,7 @@
           </el-option>
           </el-select>
         <div class="form-tip">
-          {{ isDistributed ? '可选择多个主集群实现负载均衡' : '非分布式模式下只能选择当前地域的集群' }}
+          {{ '请选择主集群' }}
         </div>
       </el-form-item>
       <el-form-item 
@@ -150,7 +145,8 @@ const emit = defineEmits(['update:visible', 'submit'])
 
 const dialogVisible = ref(false)
 const formRef = ref()
-const regions = ref([])
+const regions = ref([]) // 扁平结构的地域列表
+const regionTree = ref([]) // 树形结构的地域列表
 const clusters = ref([])
 const loading = ref({
   regions: false,
@@ -167,20 +163,16 @@ const form = ref({
   remark: ''
 })
 
-// 计算属性：是否为分布式
-const isDistributed = computed(() => {
-  const selectedRegion = regions.value.find(r => r.id === form.value.region)
-  return selectedRegion?.distributed || false
+// 构建地域树形选择器选项
+const regionOptions = computed(() => {
+  return regionTree.value
 })
 
 // 计算属性：可选的主集群
 const availablePrimaryClusters = computed(() => {
   if (!form.value.region) return []
-  if (isDistributed.value) {
-    return clusters.value.filter(c => c.status === 'active')
-  } else {
-    return clusters.value.filter(c => c.region === form.value.region && c.status === 'active')
-  }
+  // 获取所选地域的集群
+  return clusters.value.filter(c => c.region === form.value.region && c.status === 'active')
 })
 
 // 计算属性：可选的备集群
@@ -235,6 +227,9 @@ const getTypeLabel = (type) => {
 const fetchRegions = async () => {
   loading.value.regions = true
   try {
+    // 获取树形地域数据
+    regionTree.value = await RegionService.getRegionTree()
+    // 同时获取扁平化地域数据
     regions.value = await RegionService.getRegions()
   } catch (error) {
     console.error('获取地域数据失败:', error)
@@ -257,52 +252,25 @@ const fetchClusters = async () => {
   }
 }
 
-// 地域变更处理
-const handleRegionChange = () => {
-  form.value.primaryClusters = []
-  form.value.standbyClusters = []
-}
-
-// 验证主集群
+// 表单校验
 const validatePrimaryClusters = (rule, value, callback) => {
-  if (!form.value.region) {
-    callback(new Error('请先选择地域'))
-    return
+  if (!value || value.length === 0) {
+    callback(new Error('请选择至少一个主集群'))
+  } else {
+    callback()
   }
-
-  if (value.length === 0) {
-    callback(new Error('请至少选择1个主集群'))
-    return
-  }
-
-  if (!isDistributed.value && value.length > 1) {
-    callback(new Error('非分布式模式下只能选择1个主集群'))
-    return
-  }
-
-  // 验证非分布式时主集群地域必须与所选地域相同
-  if (!isDistributed.value) {
-    const primaryCluster = clusters.value.find(c => c.id === value[0])
-    if (primaryCluster && primaryCluster.region !== form.value.region) {
-      callback(new Error('非分布式模式下主集群必须与所选地域相同'))
-      return
-    }
-  }
-
-  callback()
 }
 
-// 验证备集群
 const validateStandbyClusters = (rule, value, callback) => {
-  if (value.length > 1) {
-    callback(new Error('备集群最多只能选择1个'))
-    return
+  if (value && value.length > 1) {
+    callback(new Error('备集群最多选择1个'))
+  } else if (value && value.some(id => form.value.primaryClusters.includes(id))) {
+    callback(new Error('备集群不能与主集群重复'))
+  } else {
+    callback()
   }
-
-  callback()
 }
 
-// 表单验证规则
 const rules = {
   name: [
     { required: true, message: '请输入集群组名称', trigger: 'blur' },
@@ -311,84 +279,98 @@ const rules = {
   region: [
     { required: true, message: '请选择地域', trigger: 'change' }
   ],
-  remark: [
-    { max: 200, message: '长度不能超过 200 个字符', trigger: 'blur' }
+  status: [
+    { required: true, message: '请选择状态', trigger: 'change' }
   ]
 }
 
-// 监听visible属性变化
+// 监听地域变更
+const handleRegionChange = (value) => {
+  if (value !== form.value.region) {
+    form.value.primaryClusters = []
+    form.value.standbyClusters = []
+  }
+}
+
+// 监听visible变化
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
-  if (val && props.isEdit && props.editData) {
-    form.value = { ...props.editData }
-  } else if (val) {
-    form.value = {
-      name: '',
-      region: '',
-      primaryClusters: [],
-      standbyClusters: [],
-      status: 'active',
-      remark: ''
+  if (val) {
+    // 初始化数据
+    if (props.isEdit && props.editData) {
+      Object.keys(form.value).forEach(key => {
+        if (props.editData[key] !== undefined) {
+          if (Array.isArray(props.editData[key])) {
+            form.value[key] = [...props.editData[key]]
+          } else {
+            form.value[key] = props.editData[key]
+          }
+        }
+      })
+    } else {
+      // 新建重置表单
+      form.value = {
+        name: '',
+        region: '',
+        primaryClusters: [],
+        standbyClusters: [],
+        status: 'active',
+        remark: ''
+      }
     }
   }
 })
 
-// 监听对话框可见性变化
-watch(() => dialogVisible.value, (val) => {
+// 监听dialogVisible变化
+watch(dialogVisible, (val) => {
   emit('update:visible', val)
 })
-
-// 提交表单
-const handleSubmit = () => {
-  formRef.value?.validate((valid) => {
-    if (valid) {
-      emit('submit', {
-        ...form.value,
-        distributed: isDistributed.value
-      })
-      dialogVisible.value = false
-    }
-  })
-}
 
 // 关闭对话框
 const onClose = () => {
   formRef.value?.resetFields()
 }
 
-// 组件挂载时获取数据
-onMounted(() => {
+// 提交
+const handleSubmit = () => {
+  formRef.value?.validate((valid) => {
+    if (valid) {
+      emit('submit', {
+        id: props.editData?.id || '',
+        ...form.value
+      })
+      dialogVisible.value = false
+    } else {
+      return false
+    }
+  })
+}
+
+// 初始化数据
+const initData = () => {
   fetchRegions()
   fetchClusters()
+}
+
+onMounted(() => {
+  initData()
 })
 </script>
 
 <style scoped>
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.form-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-}
-
-.ml-2 {
-  margin-left: 8px;
-}
-
 .cluster-option {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
 }
-
 .cluster-option-tags {
   display: flex;
   gap: 4px;
+}
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 </style> 

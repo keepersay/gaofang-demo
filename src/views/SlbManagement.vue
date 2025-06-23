@@ -60,14 +60,14 @@ const defaultProps = {
 }
 
 // 地域和SLB集群数据
-const regions = ref([])
+const regionTree = ref([])
 const loading = ref(false)
 
-// 从RegionService获取地域数据
+// 从RegionService获取树形结构地域数据
 const fetchRegions = async () => {
   loading.value = true
   try {
-    regions.value = await RegionService.getRegions()
+    regionTree.value = await RegionService.getRegionTree()
     loading.value = false
   } catch (error) {
     console.error('获取地域数据失败:', error)
@@ -75,29 +75,40 @@ const fetchRegions = async () => {
   }
 }
 
-// 构建树形数据
+// 构建SLB管理树形数据
 const treeData = computed(() => {
-  return regions.value.map(region => {
-    // 为每个地域生成2个模拟SLB集群
-    const children = [
-      { 
-        id: `${region.id}_CLUSTER1`, 
-        label: `${region.name}SLB集群1`,
-        regionId: region.id
-      },
-      { 
-        id: `${region.id}_CLUSTER2`, 
-        label: `${region.name}SLB集群2`,
-        regionId: region.id
-      }
-    ]
+  // 递归处理树形结构
+  function processRegions(regions) {
+    if (!regions || regions.length === 0) return []
     
-    return {
-      id: region.id,
-      label: region.name,
-      children
-    }
-  })
+    return regions.map(region => {
+      // 为每个末级地域生成2个模拟SLB集群
+      const hasChildren = region.children && region.children.length > 0
+      const childrenNodes = hasChildren ? processRegions(region.children) : [
+        { 
+          id: `${region.id}_CLUSTER1`, 
+          label: `${region.name}SLB集群1`,
+          regionId: region.id,
+          nodeType: 'cluster'
+        },
+        { 
+          id: `${region.id}_CLUSTER2`, 
+          label: `${region.name}SLB集群2`,
+          regionId: region.id,
+          nodeType: 'cluster'
+        }
+      ]
+      
+      return {
+        id: region.id,
+        label: region.name,
+        nodeType: 'region',
+        children: childrenNodes
+      }
+    })
+  }
+  
+  return processRegions(regionTree.value)
 })
 
 // 监听搜索输入

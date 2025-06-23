@@ -181,7 +181,8 @@ const isEdit = ref(false)
 const editData = ref(null)
 const deleteVisible = ref(false)
 const deleteRow = ref(null)
-const regions = ref([])
+const regionTree = ref([])
+const regions = ref([]) // 保留扁平化的地域数据用于查询
 const clusters = ref([])
 
 // 搜索表单
@@ -194,103 +195,45 @@ const tableData = ref([
   {
     id: 'LCG7503281108201961885',
     name: '示例集群组1',
-    region: 'GLOBAL',
-    distributed: true,
-    primaryClusters: ['LC202401010010001', 'LC202401010009001'], // 全球-联通-高级版、全国-电信-高级版
-    standbyClusters: ['LC202401010001001'], // 上海-电信-高级版
+    region: 'CHN',
+    distributed: false,
+    primaryClusters: ['LC202401010010001', 'LC202401010009001'],
+    standbyClusters: ['LC202401010001001'],
     status: 'active',
-    remark: '全球分布式集群组',
+    remark: '示例集群组1',
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-01-10 11:00:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LCG7503281108207412397',
+    id: 'LCG7503281108201961886',
     name: '示例集群组2',
-    region: 'SHANGHAI',
+    region: 'PEK',
     distributed: false,
-    primaryClusters: ['LC202401010001001'], // 上海-电信-高级版
-    standbyClusters: ['LC202401010002001'], // 上海-联通-高级版
+    primaryClusters: ['LC202401010002001'],
+    standbyClusters: [],
     status: 'active',
-    remark: '上海地区集群组',
-    createTime: '2024-01-02 14:30:00',
+    remark: '示例集群组2',
+    createTime: '2024-01-02 11:00:00',
     createAccount: 'admin',
-    updateTime: '2024-01-02 14:30:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'LCG7503281108208888888',
-    name: '示例集群组3',
-    region: 'GUANGZHOU',
-    distributed: false,
-    primaryClusters: ['LC202401010003001'], // 广州-电信-基础版
-    standbyClusters: ['LC202401010004001'], // 广州-联通-基础版
-    status: 'active',
-    remark: '广州地区集群组',
-    createTime: '2024-01-03 09:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-03 09:00:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'LCG7503281108209999999',
-    name: '示例集群组4',
-    region: 'BEIJING',
-    distributed: false,
-    primaryClusters: ['LC202401010005001'], // 北京-移动-标准版
-    standbyClusters: ['LC202401010006001'], // 北京-联通-标准版
-    status: 'active',
-    remark: '北京地区集群组',
-    createTime: '2024-01-04 11:20:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-04 11:20:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'LCG7503281108211111111',
-    name: '示例集群组5',
-    region: 'WUXI',
-    distributed: false,
-    primaryClusters: ['LC202401010007001'], // 无锡-电信-基础版
-    standbyClusters: ['LC202401010008001'], // 无锡-联通-基础版
-    status: 'active',
-    remark: '无锡地区集群组',
-    createTime: '2024-01-05 15:10:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-05 15:10:00',
+    updateTime: '2024-01-11 12:00:00',
     updateAccount: 'admin'
   }
 ])
 
-// 分页
-const PAGE_SIZE_KEY = 'cluster-group-management-page-size';
-const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
-const pagination = ref({
-  currentPage: 1,
-  pageSize: defaultPageSize,
-  total: 0
-})
-
-// 获取地域名称
-const getRegionName = (regionId) => {
-  const region = regions.value.find(r => r.id === regionId)
-  return region ? region.name : '-'
-}
-
 // 获取地域数据
 const fetchRegions = async () => {
   try {
-    regions.value = await RegionService.getRegions()
+    const treeData = await RegionService.getRegionTree()
+    regionTree.value = treeData
+    
+    // 同时获取扁平化的地域数据用于查询
+    const allRegions = await RegionService.getRegions()
+    regions.value = allRegions
   } catch (error) {
     console.error('获取地域数据失败:', error)
   }
-}
-
-// 获取集群名称
-const getClusterName = (clusterId) => {
-  const cluster = clusters.value.find(c => c.id === clusterId)
-  return cluster ? cluster.displayName : '-'
 }
 
 // 获取集群数据
@@ -302,12 +245,45 @@ const fetchClusters = async () => {
   }
 }
 
-// 搜索
-const handleSearch = () => {
-  // 实现搜索逻辑
+// 初始化数据
+const fetchData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([fetchRegions(), fetchClusters()])
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
-// 重置搜索
+// 获取地域名称
+const getRegionName = (regionId) => {
+  const region = regions.value.find(r => r.id === regionId)
+  return region ? region.name : regionId
+}
+
+// 获取集群名称
+const getClusterName = (clusterId) => {
+  const cluster = clusters.value.find(c => c.id === clusterId)
+  return cluster ? cluster.name : clusterId
+}
+
+// 分页
+const pagination = ref({
+  currentPage: 1,
+  pageSize: 10,
+  total: tableData.value.length
+})
+
+// 搜索
+const handleSearch = () => {
+  // 实际项目中需要调用后端API
+  pagination.value.currentPage = 1
+  console.log('搜索:', searchForm.value)
+}
+
+// 重置
 const handleReset = () => {
   searchForm.value.name = ''
   handleSearch()
@@ -316,7 +292,16 @@ const handleReset = () => {
 // 新增
 const handleAdd = () => {
   isEdit.value = false
-  editData.value = null
+  editData.value = {
+    id: '',
+    name: '',
+    region: '',
+    distributed: false,
+    primaryClusters: [],
+    standbyClusters: [],
+    status: 'active',
+    remark: ''
+  }
   modalVisible.value = true
 }
 
@@ -335,10 +320,11 @@ const handleDelete = (row) => {
 
 // 确认删除
 const confirmDelete = () => {
+  // 实际项目中需要调用后端API
   const index = tableData.value.findIndex(item => item.id === deleteRow.value.id)
   if (index > -1) {
     tableData.value.splice(index, 1)
-    pagination.total--
+    pagination.value.total--
     ElMessage.success('删除成功')
   }
   deleteVisible.value = false
@@ -346,81 +332,45 @@ const confirmDelete = () => {
 
 // 状态变更
 const handleStatusChange = (row) => {
+  // 实际项目中需要调用后端API
   row.status = row.status === 'active' ? 'disabled' : 'active'
-  row.updateTime = new Date().toLocaleString()
-  row.updateAccount = 'current_user'
   const action = row.status === 'active' ? '启用' : '禁用'
-  ElMessage.success(`集群组已${action}`)
+  ElMessage.success(`已${action}`)
 }
 
-// 模态框提交
+// 提交表单
 const handleModalSubmit = (formData) => {
   if (isEdit.value) {
     // 编辑
     const index = tableData.value.findIndex(item => item.id === formData.id)
     if (index > -1) {
-      tableData.value[index] = {
-        ...tableData.value[index],
-        ...formData,
-        updateTime: new Date().toLocaleString(),
-        updateAccount: 'current_user'
-      }
+      tableData.value[index] = { ...formData }
     }
     ElMessage.success('编辑成功')
   } else {
     // 新增
-    const newData = {
-      ...formData,
-      id: generateSnowflakeId(),
-      createTime: new Date().toLocaleString(),
-      createAccount: 'current_user',
-      updateTime: new Date().toLocaleString(),
-      updateAccount: 'current_user'
-    }
-    tableData.value.push(newData)
-    pagination.total++
+    formData.id = generateSnowflakeId()
+    formData.createTime = new Date().toLocaleString()
+    formData.createAccount = 'admin'
+    formData.updateTime = formData.createTime
+    formData.updateAccount = 'admin'
+    tableData.value.push(formData)
+    pagination.value.total++
     ElMessage.success('新增成功')
   }
 }
 
-// 分页
+// 分页相关
 const handleSizeChange = (val) => {
   pagination.value.pageSize = val
-  localStorage.setItem(PAGE_SIZE_KEY, val)
-  handleSearch()
 }
 
 const handleCurrentChange = (val) => {
   pagination.value.currentPage = val
-  handleSearch()
 }
 
-// 构建树形数据
-const treeData = computed(() => {
-  return regions.value.map(region => {
-    // 过滤掉全局和全国地域，只显示具体城市
-    if (region.id === 'GLOBAL' || region.id === 'CHINA') return null
-    
-    // 为每个地域生成2个模拟SLB集群
-    const children = [
-      { 
-        id: `${region.id}_CLUSTER1`, 
-        label: `${region.name}SLB集群1`,
-        regionId: region.id
-      },
-      { 
-        id: `${region.id}_CLUSTER2`, 
-        label: `${region.name}SLB集群2`,
-        regionId: region.id
-      }
-    ]
-  })
-})
-
 onMounted(() => {
-  fetchRegions()
-  fetchClusters()
-  pagination.total = tableData.value.length
+  fetchData()
 })
 </script>
 
