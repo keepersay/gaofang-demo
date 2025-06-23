@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import ClusterGroupModal from '@/components/ClusterGroupModal.vue'
 import RegionService from '@/services/RegionService'
@@ -394,6 +394,28 @@ const handleCurrentChange = (val) => {
   pagination.value.currentPage = val
   handleSearch()
 }
+
+// 构建树形数据
+const treeData = computed(() => {
+  return regions.value.map(region => {
+    // 过滤掉全局和全国地域，只显示具体城市
+    if (region.id === 'GLOBAL' || region.id === 'CHINA') return null
+    
+    // 为每个地域生成2个模拟SLB集群
+    const children = [
+      { 
+        id: `${region.id}_CLUSTER1`, 
+        label: `${region.name}SLB集群1`,
+        regionId: region.id
+      },
+      { 
+        id: `${region.id}_CLUSTER2`, 
+        label: `${region.name}SLB集群2`,
+        regionId: region.id
+      }
+    ]
+  })
+})
 
 onMounted(() => {
   fetchRegions()

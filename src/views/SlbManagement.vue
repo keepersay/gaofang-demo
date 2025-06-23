@@ -78,9 +78,6 @@ const fetchRegions = async () => {
 // 构建树形数据
 const treeData = computed(() => {
   return regions.value.map(region => {
-    // 过滤掉全局和全国地域，只显示具体城市
-    if (region.id === 'GLOBAL' || region.id === 'CHINA') return null
-    
     // 为每个地域生成2个模拟SLB集群
     const children = [
       { 
@@ -100,7 +97,7 @@ const treeData = computed(() => {
       label: region.name,
       children
     }
-  }).filter(Boolean) // 过滤掉null值
+  })
 })
 
 // 监听搜索输入

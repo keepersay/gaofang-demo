@@ -9,31 +9,8 @@ function generateSnowflakeId() {
 // 模拟地域数据
 const mockRegions = [
   {
-    id: 'GLOBAL',
-    name: '全球',
-    distributed: true,
-    status: 'active',
-    remark: '全球范围',
-    createTime: '2024-01-01 09:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-10 10:00:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'CHINA',
-    name: '全国',
-    distributed: true,
-    status: 'active',
-    remark: '全国范围',
-    createTime: '2024-01-02 10:00:00',
-    createAccount: 'alice',
-    updateTime: '2024-01-11 11:00:00',
-    updateAccount: 'alice'
-  },
-  {
     id: 'BEIJING',
     name: '北京',
-    distributed: false,
     status: 'active',
     remark: '北京地区',
     createTime: '2024-01-03 11:00:00',
@@ -44,7 +21,6 @@ const mockRegions = [
   {
     id: 'SHANGHAI',
     name: '上海',
-    distributed: false,
     status: 'active',
     remark: '上海地区',
     createTime: '2024-01-04 12:00:00',
@@ -55,7 +31,6 @@ const mockRegions = [
   {
     id: 'GUANGZHOU',
     name: '广州',
-    distributed: false,
     status: 'active',
     remark: '广州地区',
     createTime: '2024-01-05 13:00:00',
@@ -66,7 +41,6 @@ const mockRegions = [
   {
     id: 'WUXI',
     name: '无锡',
-    distributed: false,
     status: 'active',
     remark: '无锡地区',
     createTime: '2024-01-06 14:00:00',
@@ -99,12 +73,6 @@ class RegionService {
         }
       }, 100)
     })
-  }
-
-  // 判断地域是否为分布式
-  static isDistributed(regionId) {
-    const region = mockRegions.find(r => r.id === regionId)
-    return region ? region.distributed : false
   }
 
   // 添加地域

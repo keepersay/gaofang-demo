@@ -44,36 +44,6 @@
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="distributed" label="分布式" width="100">
-          <template #header>
-            <span>分布式</span>
-            <el-popover
-              placement="bottom"
-              width="160"
-              trigger="click"
-              v-model:visible="distributedPopoverVisible"
-            >
-              <div>
-                <el-checkbox-group v-model="distributedFilterValue">
-                  <el-checkbox :label="true">是</el-checkbox>
-                  <el-checkbox :label="false">否</el-checkbox>
-                </el-checkbox-group>
-                <div class="mt-2 flex justify-end">
-                  <el-button size="small" @click="resetDistributedFilter">重置</el-button>
-                  <el-button size="small" type="primary" @click="confirmDistributedFilter">确定</el-button>
-                </div>
-              </div>
-              <template #reference>
-                <el-icon :color="distributedFilterValue.length ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
-              </template>
-            </el-popover>
-          </template>
-          <template #default="scope">
-            <el-tag :type="scope.row.distributed ? 'success' : 'info'">
-              {{ scope.row.distributed ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #header>
             <span>状态</span>
@@ -152,9 +122,6 @@
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入地域名称" />
         </el-form-item>
-        <el-form-item label="分布式" prop="distributed">
-          <el-switch v-model="form.distributed" active-text="是" inactive-text="否" />
-        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio label="active">启用</el-radio>
@@ -227,7 +194,6 @@ const deleteRow = ref(null)
 const form = reactive({
   id: '',
   name: '',
-  distributed: false,
   status: 'active',
   remark: '',
   createTime: '',
@@ -257,12 +223,8 @@ const fetchData = async () => {
 }
 
 // 过滤相关
-const distributedPopoverVisible = ref(false)
 const statusPopoverVisible = ref(false)
-const distributedFilterValue = ref([])
 const statusFilterValue = ref([])
-function resetDistributedFilter() { distributedFilterValue.value = [] }
-function confirmDistributedFilter() { distributedPopoverVisible.value = false }
 function resetStatusFilter() { statusFilterValue.value = [] }
 function confirmStatusFilter() { statusPopoverVisible.value = false }
 
@@ -278,10 +240,6 @@ const filteredTableData = computed(() => {
   if (searchForm.name) {
     const query = searchForm.name.trim().toLowerCase()
     data = data.filter(item => item.name.toLowerCase().includes(query))
-  }
-  // 是否分布式过滤
-  if (distributedFilterValue.value.length) {
-    data = data.filter(item => distributedFilterValue.value.includes(item.distributed))
   }
   // 状态过滤
   if (statusFilterValue.value.length) {
@@ -327,7 +285,6 @@ const handleAdd = async () => {
   Object.assign(form, {
     id: '',
     name: '',
-    distributed: false,
     status: 'active',
     remark: '',
     createTime: '',
