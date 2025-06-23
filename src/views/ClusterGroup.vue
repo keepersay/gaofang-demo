@@ -19,16 +19,6 @@
               @keyup.enter="handleSearch"
             />
           </el-form-item>
-          <el-form-item label="机房">
-            <el-select v-model="searchForm.dataCenterId" placeholder="请选择机房" style="width: 100%">
-              <el-option
-                v-for="item in dataCenters"
-                :key="item.id"
-                :label="`${item.name} (${getRegionName(item.regionId)})`"
-                :value="item.id"
-              />
-            </el-select>
-          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -74,6 +64,34 @@
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
         <el-table-column label="所属机房" width="180">
+          <template #header>
+            <span>所属机房</span>
+            <el-popover placement="bottom" width="240" trigger="click" v-model:visible="dataCenterPopoverVisible">
+              <div>
+                <el-select
+                  v-model="dataCenterFilterValue"
+                  placeholder="请选择机房"
+                  style="width: 100%"
+                  filterable
+                  clearable
+                >
+                  <el-option
+                    v-for="item in dataCenters"
+                    :key="item.id"
+                    :label="`${item.name} (${getRegionName(item.regionId)})`"
+                    :value="item.id"
+                  />
+                </el-select>
+                <div class="mt-2 flex justify-end">
+                  <el-button size="small" @click="resetDataCenterFilter">重置</el-button>
+                  <el-button size="small" type="primary" @click="confirmDataCenterFilter">确定</el-button>
+                </div>
+              </div>
+              <template #reference>
+                <el-icon :color="dataCenterFilterValue ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
+              </template>
+            </el-popover>
+          </template>
           <template #default="scope">
             <div v-if="scope.row.dataCenterId">
               <el-tag type="success" size="small">{{ getDataCenterName(scope.row.dataCenterId) }}</el-tag>
@@ -333,8 +351,7 @@ const formRef = ref()
 
 // 搜索表单
 const searchForm = ref({
-  name: '',
-  dataCenterId: ''
+  name: ''
 })
 
 // 表单数据
@@ -489,7 +506,6 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.value.name = ''
-  searchForm.value.dataCenterId = ''
   handleSearch()
 }
 
@@ -619,6 +635,12 @@ const statusFilters = [
 function resetStatusFilter() { statusFilterValue.value = [] }
 function confirmStatusFilter() { statusPopoverVisible.value = false }
 
+// 机房过滤
+const dataCenterPopoverVisible = ref(false)
+const dataCenterFilterValue = ref('')
+function resetDataCenterFilter() { dataCenterFilterValue.value = '' }
+function confirmDataCenterFilter() { dataCenterPopoverVisible.value = false }
+
 // 过滤后的表格数据
 const filteredTableData = computed(() => {
   return tableData.value.filter(row => {
@@ -627,7 +649,7 @@ const filteredTableData = computed(() => {
     // 状态过滤
     const statusMatch = !statusFilterValue.value.length || statusFilterValue.value.includes(row.status)
     // 机房过滤
-    const dataCenterMatch = !searchForm.value.dataCenterId || row.dataCenterId === searchForm.value.dataCenterId
+    const dataCenterMatch = !dataCenterFilterValue.value || row.dataCenterId === dataCenterFilterValue.value
     return nameMatch && statusMatch && dataCenterMatch
   })
 })
