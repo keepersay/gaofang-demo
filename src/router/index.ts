@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import Overview from '../views/Overview.vue'
 import ClusterGroup from '../views/ClusterGroup.vue'
 import ClusterGroupManagement from '../views/ClusterGroupManagement.vue'
@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-const routes = [
+const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     redirect: '/overview'
@@ -30,24 +30,74 @@ const routes = [
     component: Overview
   },
   {
+    path: '/user-management',
+    name: 'UserManagement',
+    component: UserManagement
+  },
+  {
+    path: '/role-management',
+    name: 'RoleManagement',
+    component: () => import('../views/RoleManagement.vue')
+  },
+  {
+    path: '/region-management',
+    name: 'RegionManagement',
+    component: () => import('../views/RegionManagement.vue')
+  },
+  {
+    path: '/datacenter-management',
+    name: 'DataCenterManagement',
+    component: () => import('../views/DataCenterManagement.vue')
+  },
+  {
     path: '/cluster-group',
-    name: 'LogicalCluster',
+    name: 'ClusterGroup',
     component: ClusterGroup
   },
   {
     path: '/cluster-group-management',
-    name: 'LogicalClusterGroup',
+    name: 'ClusterGroupManagement',
     component: ClusterGroupManagement
+  },
+  {
+    path: '/waf-management',
+    name: 'WafManagement',
+    component: WafManagement
+  },
+  {
+    path: '/slb-management',
+    name: 'SlbManagement',
+    component: SlbManagement
+  },
+  {
+    path: '/operation-log',
+    name: 'OperationLog',
+    component: OperationLog
+  },
+  {
+    path: '/login-log',
+    name: 'LoginLog',
+    component: LoginLog
+  },
+  {
+    path: '/product-package',
+    name: 'ProductPackage',
+    component: ProductPackage
+  },
+  {
+    path: '/customer-management',
+    name: 'CustomerManagement',
+    component: CustomerManagement
+  },
+  {
+    path: '/placeholder',
+    name: 'Placeholder',
+    component: Placeholder
   },
   {
     path: '/ads',
     name: 'ADS',
     component: Placeholder
-  },
-  {
-    path: '/slb',
-    name: 'SLB',
-    component: SlbManagement
   },
   {
     path: '/waf',
@@ -68,41 +118,6 @@ const routes = [
     path: '/traffic',
     name: 'TrafficAnalysis',
     component: Placeholder
-  },
-  {
-    path: '/config/product',
-    name: 'ProductPackage',
-    component: ProductPackage
-  },
-  {
-    path: '/log/login',
-    name: 'LoginLogs',
-    component: LoginLog
-  },
-  {
-    path: '/log/operation',
-    name: 'OperationLogs',
-    component: OperationLog
-  },
-  {
-    path: '/customer',
-    name: 'CustomerManagement',
-    component: CustomerManagement
-  },
-  {
-    path: '/user',
-    name: 'UserManagement',
-    component: UserManagement
-  },
-  {
-    path: '/region-management',
-    name: 'RegionManagement',
-    component: () => import('../views/RegionManagement.vue')
-  },
-  {
-    path: '/role',
-    name: 'RoleManagement',
-    component: () => import('../views/RoleManagement.vue')
   },
   {
     path: '/dns',
