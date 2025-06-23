@@ -6,146 +6,158 @@ function generateSnowflakeId() {
   return `LC${timestamp}${machineId.toString().padStart(3, '0')}${sequence.toString().padStart(4, '0')}`
 }
 
-// 模拟逻辑集群数据
+// 模拟集群数据
 const mockClusters = [
   {
-    id: 'LC202401010001001',
-    name: 'shanghai-telecom-premium',
-    displayName: '上海-电信-高级版',
-    region: 'SHANGHAI',
-    provider: 'telecom',
-    type: 'premium',
+    id: 'LC202407250001',
+    name: 'huadong-telecom-premium',
+    displayName: '华东-电信-高级版',
+    enableL7: false,
+    dataCenterId: 'DC202401010002', // 上海机房01
+    slots: { ADS: 'ads-1', SLB: 'slb-1', WAFCC: '', WAF: '' },
+    ipPools: {
+      vip: ['1.1.1.1/24', '2.2.2.2-2.2.2.10', '3.3.3.3'],
+      origin: ['10.0.0.1/28'],
+      snat: ['100.64.0.1-100.64.0.5', '100.64.0.10']
+    },
     status: 'active',
-    remark: '上海地区电信高级版集群',
+    remark: '华东地区电信高级版集群',
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-01 10:00:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010002001',
-    name: 'shanghai-unicom-premium',
-    displayName: '上海-联通-高级版',
-    region: 'SHANGHAI',
-    provider: 'unicom',
-    type: 'premium',
+    id: 'LC202407250002',
+    name: 'huanan-unicom-basic',
+    displayName: '华南-联通-基础版',
+    enableL7: true,
+    dataCenterId: 'DC202401010003', // 广州机房01
+    slots: { ADS: 'ads-2', SLB: 'slb-2', WAFCC: 'wafcc-1', WAF: 'waf-1' },
+    ipPools: {
+      vip: ['4.4.4.4'],
+      origin: ['20.0.0.1-20.0.0.5', '20.0.0.10'],
+      snat: []
+    },
     status: 'active',
-    remark: '上海地区联通高级版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '华南地区联通基础版集群',
+    createTime: '2024-01-02 14:30:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-01-02 14:30:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010003001',
-    name: 'guangzhou-telecom-basic',
-    displayName: '广州-电信-基础版',
-    region: 'GUANGZHOU',
-    provider: 'telecom',
-    type: 'basic',
+    id: 'LC202407250003',
+    name: 'beijing-telecom-standard',
+    displayName: '北京-电信-标准版',
+    enableL7: true,
+    dataCenterId: 'DC202401010001', // 北京机房01
+    slots: { ADS: 'ads-3', SLB: 'slb-3', WAFCC: 'wafcc-3', WAF: 'waf-3' },
+    ipPools: {
+      vip: ['5.5.5.5/24'],
+      origin: ['30.0.0.1/28'],
+      snat: ['100.128.0.1-100.128.0.10']
+    },
     status: 'active',
-    remark: '广州地区电信基础版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '北京地区电信标准版集群',
+    createTime: '2024-02-15 09:30:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-02-15 09:30:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010004001',
-    name: 'guangzhou-unicom-basic',
-    displayName: '广州-联通-基础版',
-    region: 'GUANGZHOU',
-    provider: 'unicom',
-    type: 'basic',
-    status: 'active',
-    remark: '广州地区联通基础版集群',
-    createTime: '2024-01-01 10:00:00',
+    id: 'LC202407250004',
+    name: 'wuxi-unicom-premium',
+    displayName: '无锡-联通-高级版',
+    enableL7: false,
+    dataCenterId: 'DC202401010004', // 无锡机房01
+    slots: { ADS: 'ads-4', SLB: 'slb-4', WAFCC: '', WAF: '' },
+    ipPools: {
+      vip: ['6.6.6.6/24'],
+      origin: ['40.0.0.1/28'],
+      snat: []
+    },
+    status: 'disabled',
+    remark: '无锡地区联通高级版集群',
+    createTime: '2024-03-05 11:15:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-03-05 11:15:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010005001',
-    name: 'beijing-mobile-standard',
-    displayName: '北京-移动-标准版',
-    region: 'BEIJING',
-    provider: 'mobile',
-    type: 'standard',
+    id: 'LC202407250005',
+    name: 'seoul-premium',
+    displayName: '首尔-高级版',
+    enableL7: true,
+    dataCenterId: 'DC202407200001', // 首尔机房01
+    slots: { ADS: 'ads-5', SLB: 'slb-5', WAFCC: 'wafcc-5', WAF: 'waf-5' },
+    ipPools: {
+      vip: ['7.7.7.7/24'],
+      origin: ['50.0.0.1/28'],
+      snat: ['100.192.0.1-100.192.0.10']
+    },
     status: 'active',
-    remark: '北京地区移动标准版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '韩国首尔高级版集群',
+    createTime: '2024-05-12 08:45:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-05-12 08:45:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010006001',
-    name: 'beijing-unicom-standard',
-    displayName: '北京-联通-标准版',
-    region: 'BEIJING',
-    provider: 'unicom',
-    type: 'standard',
+    id: 'LC202407250006',
+    name: 'frankfurt-standard',
+    displayName: '法兰克福-标准版',
+    enableL7: true,
+    dataCenterId: 'DC202407200002', // 法兰克福机房01
+    slots: { ADS: 'ads-6', SLB: 'slb-6', WAFCC: 'wafcc-6', WAF: 'waf-6' },
+    ipPools: {
+      vip: ['8.8.8.8/24'],
+      origin: ['60.0.0.1/28'],
+      snat: ['100.224.0.1-100.224.0.10']
+    },
     status: 'active',
-    remark: '北京地区联通标准版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '德国法兰克福标准版集群',
+    createTime: '2024-04-18 14:20:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-04-18 14:20:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010007001',
-    name: 'wuxi-telecom-basic',
-    displayName: '无锡-电信-基础版',
-    region: 'WUXI',
-    provider: 'telecom',
-    type: 'basic',
+    id: 'LC202407250007',
+    name: 'dubai-premium',
+    displayName: '迪拜-高级版',
+    enableL7: false,
+    dataCenterId: 'DC202407200003', // 迪拜机房01
+    slots: { ADS: 'ads-7', SLB: 'slb-7', WAFCC: '', WAF: '' },
+    ipPools: {
+      vip: ['9.9.9.9/24'],
+      origin: ['70.0.0.1/28'],
+      snat: []
+    },
     status: 'active',
-    remark: '无锡地区电信基础版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '迪拜高级版集群',
+    createTime: '2024-03-22 12:30:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-03-22 12:30:00',
     updateAccount: 'admin'
   },
   {
-    id: 'LC202401010008001',
-    name: 'wuxi-unicom-basic',
-    displayName: '无锡-联通-基础版',
-    region: 'WUXI',
-    provider: 'unicom',
-    type: 'basic',
+    id: 'LC202407250008',
+    name: 'la-standard',
+    displayName: '洛杉矶-标准版',
+    enableL7: true,
+    dataCenterId: 'DC202407200004', // 洛杉矶机房01
+    slots: { ADS: 'ads-8', SLB: 'slb-8', WAFCC: 'wafcc-8', WAF: 'waf-8' },
+    ipPools: {
+      vip: ['10.10.10.10/24'],
+      origin: ['80.0.0.1/28'],
+      snat: ['100.240.0.1-100.240.0.10']
+    },
     status: 'active',
-    remark: '无锡地区联通基础版集群',
-    createTime: '2024-01-01 10:00:00',
+    remark: '美国洛杉矶标准版集群',
+    createTime: '2024-02-28 15:45:00',
     createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'LC202401010009001',
-    name: 'china-telecom-premium',
-    displayName: '全国-电信-高级版',
-    region: 'CHINA',
-    provider: 'telecom',
-    type: 'premium',
-    status: 'active',
-    remark: '全国电信高级版集群',
-    createTime: '2024-01-01 10:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
-    updateAccount: 'admin'
-  },
-  {
-    id: 'LC202401010010001',
-    name: 'global-unicom-premium',
-    displayName: '全球-联通-高级版',
-    region: 'GLOBAL',
-    provider: 'unicom',
-    type: 'premium',
-    status: 'active',
-    remark: '全球联通高级版集群',
-    createTime: '2024-01-01 10:00:00',
-    createAccount: 'admin',
-    updateTime: '2024-01-01 10:00:00',
+    updateTime: '2024-02-28 15:45:00',
     updateAccount: 'admin'
   }
 ]
