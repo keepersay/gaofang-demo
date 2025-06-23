@@ -27,7 +27,7 @@
       </div>
       <!-- 表格区域 -->
       <el-table
-        :data="filteredTableData"
+        :data="paginatedTableData"
         style="width: 100%; min-height: 500px; margin-top: 20px;"
         v-loading="loading"
         border
@@ -35,6 +35,7 @@
         max-height="700"
         :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
         row-class-name="dense-row"
+        @sort-change="handleSortChange"
       >
         <el-table-column prop="id" label="ID" width="180" fixed="left" />
         <el-table-column prop="name" label="名称" width="150">
@@ -119,6 +120,20 @@
           <div class="text-gray-400 py-10 text-center">暂无数据</div>
         </template>
       </el-table>
+
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="filteredTableData.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- 新增/编辑对话框 -->
@@ -261,8 +276,11 @@ const statusPopoverVisible = ref(false)
 const statusFilterValue = ref([])
 const sortState = ref({ prop: '', order: '' })
 
-function resetStatusFilter() { statusFilterValue.value = [] }
-function confirmStatusFilter() { statusPopoverVisible.value = false }
+function resetStatusFilter() { statusFilterValue.value = []; pagination.value.currentPage = 1; }
+function confirmStatusFilter() { 
+  statusPopoverVisible.value = false;
+  pagination.value.currentPage = 1;
+}
 function handleSortChange({ prop, order }) { sortState.value = { prop, order } }
 
 // 级联选择器的选项，用于选择地域
@@ -300,6 +318,15 @@ const fetchData = async () => {
   }
 }
 
+// 分页数据
+const PAGE_SIZE_KEY = 'datacenter-page-size';
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
+const pagination = ref({
+  currentPage: 1,
+  pageSize: defaultPageSize,
+  total: 0
+})
+
 // 过滤和排序后的表格数据
 const filteredTableData = computed(() => {
   let data = tableData.value
@@ -333,19 +360,31 @@ const filteredTableData = computed(() => {
     })
   }
   
+  // 更新总数
+  pagination.value.total = data.length
+  
   return data
+})
+
+// 分页后的表格数据
+const paginatedTableData = computed(() => {
+  const startIndex = (pagination.value.currentPage - 1) * pagination.value.pageSize
+  const endIndex = startIndex + pagination.value.pageSize
+  return filteredTableData.value.slice(startIndex, endIndex)
 })
 
 // 搜索
 const handleSearch = () => {
   // 简单处理，筛选现有数据
   console.log('搜索:', searchForm)
+  pagination.value.currentPage = 1 // 重置到第一页
 }
 
 // 重置
 const handleReset = () => {
   searchForm.name = ''
   statusFilterValue.value = []
+  pagination.value.currentPage = 1 // 重置到第一页
   handleSearch()
 }
 
@@ -493,6 +532,16 @@ const handleViewRelatedClusters = async (row) => {
   }
 }
 
+// 分页处理
+const handleSizeChange = (val) => {
+  pagination.value.pageSize = val
+  localStorage.setItem(PAGE_SIZE_KEY, val)
+}
+
+const handleCurrentChange = (val) => {
+  pagination.value.currentPage = val
+}
+
 // 初始化
 onMounted(async () => {
   await fetchRegions()
@@ -512,6 +561,8 @@ onMounted(async () => {
   margin-bottom: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -589,5 +640,19 @@ onMounted(async () => {
 
 .text-center {
   text-align: center;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+}
+
+.el-card__body {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 20px;
 }
 </style> 

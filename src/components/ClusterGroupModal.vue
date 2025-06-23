@@ -9,24 +9,39 @@
     <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
       <el-form-item label="名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入集群组名称" />
-        </el-form-item>
-      <el-form-item label="地域" prop="region">
-        <el-cascader
-          v-model="form.region"
-          :options="regionOptions"
-          placeholder="请选择地域"
+      </el-form-item>
+
+      <el-form-item label="分布式" prop="distributed">
+        <el-switch v-model="form.distributed" @change="handleDistributedChange" />
+        <span class="ml-2">{{ form.distributed ? '是' : '否' }}</span>
+        <div class="form-tip">
+          {{ form.distributed ? '分布式集群组不需要选择地域和机房' : '非分布式集群组需要选择机房' }}
+        </div>
+      </el-form-item>
+      
+      <el-form-item v-if="!form.distributed" label="机房" prop="dataCenterId">
+        <el-select 
+          v-model="form.dataCenterId" 
+          placeholder="请选择机房" 
           clearable
-          :loading="loading.regions"
-          :props="{
-            checkStrictly: true,
-            value: 'id',
-            label: 'name',
-            emitPath: false,
-            expandTrigger: 'hover'
-          }"
-          @change="handleRegionChange"
-        />
-        </el-form-item>
+          style="width: 100%"
+          :loading="loading.dataCenters"
+          @change="handleDataCenterChange"
+        >
+          <el-option
+            v-for="dc in activedataCenters"
+            :key="dc.id"
+            :label="dc.name"
+            :value="dc.id"
+          >
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <span>{{ dc.name }}</span>
+              <el-tag size="small" effect="plain">{{ getRegionName(dc.regionId) }}</el-tag>
+            </div>
+          </el-option>
+        </el-select>
+      </el-form-item>
+      
       <el-form-item 
         label="主集群" 
         prop="primaryClusters"
@@ -41,7 +56,7 @@
           placeholder="请选择主集群" 
           style="width: 100%"
           :loading="loading.clusters"
-          :disabled="!form.region"
+          :disabled="!form.distributed && !form.dataCenterId"
         >
           <el-option
             v-for="cluster in availablePrimaryClusters"
@@ -58,14 +73,15 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-      </div>
-    </div>
+              </div>
+            </div>
           </el-option>
-          </el-select>
+        </el-select>
         <div class="form-tip">
           {{ '请选择主集群' }}
         </div>
       </el-form-item>
+      
       <el-form-item 
         label="备集群" 
         prop="standbyClusters"
@@ -77,7 +93,7 @@
           placeholder="请选择备集群（可选，最多1个）" 
           style="width: 100%"
           :loading="loading.clusters"
-          :disabled="!form.region"
+          :disabled="!form.distributed && !form.dataCenterId"
         >
           <el-option
             v-for="cluster in availableStandbyClusters"
@@ -95,15 +111,17 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-      </div>
-    </div>
+              </div>
+            </div>
           </el-option>
         </el-select>
         <div class="form-tip">备集群用于故障切换，最多选择1个</div>
       </el-form-item>
+      
       <el-form-item label="备注" prop="remark">
         <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注信息" />
       </el-form-item>
+      
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="form.status">
           <el-radio label="active">启用</el-radio>
@@ -125,6 +143,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
+import DataCenterService from '@/services/DataCenterService'
 
 const props = defineProps({
   visible: {
@@ -146,41 +165,60 @@ const emit = defineEmits(['update:visible', 'submit'])
 const dialogVisible = ref(false)
 const formRef = ref()
 const regions = ref([]) // 扁平结构的地域列表
-const regionTree = ref([]) // 树形结构的地域列表
 const clusters = ref([])
+const dataCenters = ref([])
 const loading = ref({
   regions: false,
-  clusters: false
+  clusters: false,
+  dataCenters: false
 })
 
 // 表单数据
 const form = ref({
   name: '',
-  region: '',
+  distributed: false,
+  dataCenterId: '',
   primaryClusters: [],
   standbyClusters: [],
   status: 'active',
   remark: ''
 })
 
-// 构建地域树形选择器选项
-const regionOptions = computed(() => {
-  return regionTree.value
+// 激活状态的机房列表
+const activedataCenters = computed(() => {
+  return dataCenters.value.filter(dc => dc.status === 'active')
 })
 
 // 计算属性：可选的主集群
 const availablePrimaryClusters = computed(() => {
-  if (!form.value.region) return []
-  // 获取所选地域的集群
-  return clusters.value.filter(c => c.region === form.value.region && c.status === 'active')
+  if (form.value.distributed) {
+    // 分布式模式下，所有集群都可选
+    return clusters.value.filter(c => c.status === 'active')
+  } else if (form.value.dataCenterId) {
+    // 非分布式模式下，只能选择特定机房的集群
+    return clusters.value.filter(c => 
+      c.status === 'active' && c.dataCenterId === form.value.dataCenterId
+    )
+  }
+  return []
 })
 
 // 计算属性：可选的备集群
 const availableStandbyClusters = computed(() => {
-  if (!form.value.region) return []
-  return clusters.value.filter(c => 
-    c.status === 'active' && !form.value.primaryClusters.includes(c.id)
-  )
+  if (form.value.distributed) {
+    // 分布式模式下，所有未被选为主集群的集群都可以选
+    return clusters.value.filter(c => 
+      c.status === 'active' && !form.value.primaryClusters.includes(c.id)
+    )
+  } else if (form.value.dataCenterId) {
+    // 非分布式模式下，只能选择特定机房且未被选为主集群的集群
+    return clusters.value.filter(c => 
+      c.status === 'active' && 
+      c.dataCenterId === form.value.dataCenterId && 
+      !form.value.primaryClusters.includes(c.id)
+    )
+  }
+  return []
 })
 
 // 获取服务商标签样式
@@ -223,12 +261,16 @@ const getTypeLabel = (type) => {
   return typeMap[type] || type
 }
 
+// 获取地域名称
+const getRegionName = (regionId) => {
+  const region = regions.value.find(r => r.id === regionId)
+  return region ? region.name : regionId
+}
+
 // 获取地域数据
 const fetchRegions = async () => {
   loading.value.regions = true
   try {
-    // 获取树形地域数据
-    regionTree.value = await RegionService.getRegionTree()
     // 同时获取扁平化地域数据
     regions.value = await RegionService.getRegions()
   } catch (error) {
@@ -236,6 +278,19 @@ const fetchRegions = async () => {
     ElMessage.error('获取地域数据失败')
   } finally {
     loading.value.regions = false
+  }
+}
+
+// 获取机房数据
+const fetchDataCenters = async () => {
+  loading.value.dataCenters = true
+  try {
+    dataCenters.value = await DataCenterService.getDataCenters()
+  } catch (error) {
+    console.error('获取机房数据失败:', error)
+    ElMessage.error('获取机房数据失败')
+  } finally {
+    loading.value.dataCenters = false
   }
 }
 
@@ -271,22 +326,46 @@ const validateStandbyClusters = (rule, value, callback) => {
   }
 }
 
+// 根据是否为分布式，动态设置规则
 const rules = {
   name: [
     { required: true, message: '请输入集群组名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  region: [
-    { required: true, message: '请选择地域', trigger: 'change' }
+  dataCenterId: [
+    { 
+      required: true, 
+      message: '请选择机房', 
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (!form.value.distributed && !value) {
+          callback(new Error('非分布式集群组必须选择机房'))
+        } else {
+          callback()
+        }
+      }
+    }
   ],
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
   ]
 }
 
-// 监听地域变更
-const handleRegionChange = (value) => {
-  if (value !== form.value.region) {
+// 处理分布式状态变化
+const handleDistributedChange = (value) => {
+  // 清空相关字段
+  form.value.primaryClusters = []
+  form.value.standbyClusters = []
+  if (!value) {
+    // 如果改为非分布式，需要选择机房
+    form.value.dataCenterId = ''
+  }
+}
+
+// 处理机房变更
+const handleDataCenterChange = (value) => {
+  if (value !== form.value.dataCenterId) {
+    // 清空已选集群
     form.value.primaryClusters = []
     form.value.standbyClusters = []
   }
@@ -311,7 +390,8 @@ watch(() => props.visible, (val) => {
       // 新建重置表单
       form.value = {
         name: '',
-        region: '',
+        distributed: false,
+        dataCenterId: '',
         primaryClusters: [],
         standbyClusters: [],
         status: 'active',
@@ -335,10 +415,13 @@ const onClose = () => {
 const handleSubmit = () => {
   formRef.value?.validate((valid) => {
     if (valid) {
-      emit('submit', {
+      // 提交前处理数据
+      const formData = {
         id: props.editData?.id || '',
-        ...form.value
-      })
+        ...form.value,
+      }
+
+      emit('submit', formData)
       dialogVisible.value = false
     } else {
       return false
@@ -350,6 +433,7 @@ const handleSubmit = () => {
 const initData = () => {
   fetchRegions()
   fetchClusters()
+  fetchDataCenters()
 }
 
 onMounted(() => {
@@ -372,5 +456,8 @@ onMounted(() => {
   font-size: 12px;
   color: #909399;
   margin-top: 4px;
+}
+.ml-2 {
+  margin-left: 8px;
 }
 </style> 

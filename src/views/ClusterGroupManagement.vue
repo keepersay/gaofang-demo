@@ -27,7 +27,7 @@
       </div>
 
       <el-table
-        :data="tableData"
+        :data="paginatedData"
         style="width: 100%; min-height: 320px; margin-top: 20px;"
         v-loading="loading"
         border
@@ -35,14 +35,10 @@
         max-height="500"
         :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
         row-class-name="dense-row"
+        :cell-style="{ padding: '4px 0' }"
       >
         <el-table-column prop="id" label="ID" width="220" fixed="left" />
         <el-table-column prop="name" label="名称" width="150" />
-        <el-table-column prop="region" label="地域" width="150">
-          <template #default="scope">
-            {{ getRegionName(scope.row.region) }}
-          </template>
-        </el-table-column>
         <el-table-column label="是否分布式" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.distributed ? 'success' : 'info'">
@@ -50,7 +46,20 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="主集群" min-width="200">
+        <el-table-column label="机房" width="150" v-if="true">
+          <template #default="scope">
+            <template v-if="!scope.row.distributed && scope.row.dataCenterId">
+              <el-tooltip effect="dark" :content="getDataCenterName(scope.row.dataCenterId)" placement="top">
+                <el-tag type="warning" effect="plain">
+                  {{ getDataCenterName(scope.row.dataCenterId) }}
+                </el-tag>
+              </el-tooltip>
+            </template>
+            <span v-else-if="scope.row.distributed" class="text-gray-400">分布式</span>
+            <span v-else class="text-gray-400">--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="主集群" min-width="220">
           <template #default="scope">
             <div class="cluster-list">
               <el-tooltip
@@ -60,20 +69,14 @@
                 :content="getClusterName(clusterId)"
                 placement="top"
               >
-                <el-tag
-                  class="cluster-tag"
-                  type="primary"
-                  effect="plain"
-                  disable-transitions
-                  style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                >
+                <div class="custom-tag primary">
                   {{ getClusterName(clusterId) }}
-                </el-tag>
+                </div>
               </el-tooltip>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="备集群" min-width="200">
+        <el-table-column label="备集群" min-width="220">
           <template #default="scope">
             <div class="cluster-list" v-if="scope.row.standbyClusters?.length">
               <el-tooltip
@@ -83,18 +86,14 @@
                 :content="getClusterName(clusterId)"
                 placement="top"
               >
-                <el-tag
-                  class="cluster-tag"
-                  type="info"
-                  effect="plain"
-                  disable-transitions
-                  style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                >
+                <div class="custom-tag info">
                   {{ getClusterName(clusterId) }}
-                </el-tag>
+                </div>
               </el-tooltip>
             </div>
-            <span v-else class="text-gray-400">无</span>
+            <div class="cluster-list" v-else>
+              <span class="text-gray-400">无</span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
@@ -131,7 +130,7 @@
         <el-pagination
           v-model:current-page="pagination.currentPage"
           v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
+          :page-sizes="[5, 10, 20, 50]"
           :total="pagination.total"
           layout="total, sizes, prev, pager, next, jumper"
           background
@@ -166,6 +165,7 @@ import { ElMessage } from 'element-plus'
 import ClusterGroupModal from '@/components/ClusterGroupModal.vue'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
+import DataCenterService from '@/services/DataCenterService'
 
 // 生成雪花算法ID
 function generateSnowflakeId() {
@@ -184,23 +184,33 @@ const deleteRow = ref(null)
 const regionTree = ref([])
 const regions = ref([]) // 保留扁平化的地域数据用于查询
 const clusters = ref([])
+const dataCenters = ref([]) // 添加机房数据
 
 // 搜索表单
 const searchForm = ref({
   name: ''
 })
 
+// 分页
+const PAGE_SIZE_KEY = 'cluster-group-page-size';
+const defaultPageSize = Number(localStorage.getItem(PAGE_SIZE_KEY)) || 10;
+const pagination = ref({
+  currentPage: 1,
+  pageSize: defaultPageSize,
+  total: 0
+})
+
 // 表格数据
 const tableData = ref([
   {
     id: 'LCG7503281108201961885',
-    name: '示例集群组1',
-    region: 'CHN',
+    name: '上海电信集群组',
     distributed: false,
-    primaryClusters: ['LC202401010010001', 'LC202401010009001'],
-    standbyClusters: ['LC202401010001001'],
+    dataCenterId: 'DC202401010002', // 上海机房01
+    primaryClusters: ['LC202407250001'], // 华东-电信-高级版
+    standbyClusters: [],
     status: 'active',
-    remark: '示例集群组1',
+    remark: '上海电信集群，主要承载华东区域业务',
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-10 11:00:00',
@@ -208,16 +218,128 @@ const tableData = ref([
   },
   {
     id: 'LCG7503281108201961886',
-    name: '示例集群组2',
-    region: 'PEK',
+    name: '北京电信集群组',
     distributed: false,
-    primaryClusters: ['LC202401010002001'],
+    dataCenterId: 'DC202401010001', // 北京机房01
+    primaryClusters: ['LC202407250003'], // 北京-电信-标准版
     standbyClusters: [],
     status: 'active',
-    remark: '示例集群组2',
+    remark: '北京电信集群，主要承载华北区域业务',
     createTime: '2024-01-02 11:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-11 12:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961887',
+    name: '国际分布式集群组',
+    distributed: true,
+    dataCenterId: '',
+    primaryClusters: ['LC202407250005', 'LC202407250006'], // 首尔高级版, 法兰克福标准版
+    standbyClusters: ['LC202407250007'], // 迪拜高级版
+    status: 'active',
+    remark: '国际分布式集群组，覆盖亚洲、欧洲和中东地区',
+    createTime: '2024-05-15 09:30:00',
+    createAccount: 'admin',
+    updateTime: '2024-05-15 09:30:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961888',
+    name: '广州联通集群组',
+    distributed: false,
+    dataCenterId: 'DC202401010003', // 广州机房01
+    primaryClusters: ['LC202407250002'], // 华南-联通-基础版
+    standbyClusters: [],
+    status: 'active',
+    remark: '广州联通集群，主要承载华南区域业务',
+    createTime: '2024-03-05 14:20:00',
+    createAccount: 'admin',
+    updateTime: '2024-03-05 14:20:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961889',
+    name: '北美分布式集群组',
+    distributed: true,
+    dataCenterId: '',
+    primaryClusters: ['LC202407250008'], // 洛杉矶标准版
+    standbyClusters: [],
+    status: 'active',
+    remark: '北美地区分布式集群组，目前仅覆盖美国西海岸',
+    createTime: '2024-02-28 16:30:00',
+    createAccount: 'admin',
+    updateTime: '2024-04-10 09:15:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961890',
+    name: '无锡备用集群组',
+    distributed: false,
+    dataCenterId: 'DC202401010004', // 无锡机房01
+    primaryClusters: ['LC202407250004'], // 无锡-联通-高级版
+    standbyClusters: [],
+    status: 'disabled',
+    remark: '无锡备用集群组，主要用于灾备',
+    createTime: '2024-03-10 10:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-03-15 11:30:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961891',
+    name: '欧亚集群组',
+    distributed: true,
+    dataCenterId: '',
+    primaryClusters: ['LC202407250005', 'LC202407250006', 'LC202407250007'], // 首尔、法兰克福、迪拜
+    standbyClusters: [],
+    status: 'active',
+    remark: '覆盖欧亚主要区域的分布式集群组',
+    createTime: '2024-06-01 09:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-06-01 09:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961892',
+    name: '华东双机房集群组',
+    distributed: true,
+    dataCenterId: '',
+    primaryClusters: ['LC202407250001'], // 华东-电信-高级版
+    standbyClusters: ['LC202407250004'], // 无锡-联通-高级版
+    status: 'active',
+    remark: '华东地区跨机房集群组，上海主站，无锡备站',
+    createTime: '2024-04-12 14:00:00',
+    createAccount: 'admin',
+    updateTime: '2024-04-12 14:00:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961893',
+    name: '中东数据集群组',
+    distributed: false,
+    dataCenterId: 'DC202407200003', // 迪拜机房01
+    primaryClusters: ['LC202407250007'], // 迪拜高级版
+    standbyClusters: [],
+    status: 'active',
+    remark: '中东地区数据处理集群组',
+    createTime: '2024-03-25 08:45:00',
+    createAccount: 'admin',
+    updateTime: '2024-03-25 08:45:00',
+    updateAccount: 'admin'
+  },
+  {
+    id: 'LCG7503281108201961894',
+    name: '韩国业务集群组',
+    distributed: false,
+    dataCenterId: 'DC202407200001', // 首尔机房01
+    primaryClusters: ['LC202407250005'], // 首尔高级版
+    standbyClusters: [],
+    status: 'active',
+    remark: '韩国本地业务集群组，提供低延迟服务',
+    createTime: '2024-05-20 10:30:00',
+    createAccount: 'admin',
+    updateTime: '2024-05-20 10:30:00',
     updateAccount: 'admin'
   }
 ])
@@ -245,15 +367,12 @@ const fetchClusters = async () => {
   }
 }
 
-// 初始化数据
-const fetchData = async () => {
-  loading.value = true
+// 获取机房数据
+const fetchDataCenters = async () => {
   try {
-    await Promise.all([fetchRegions(), fetchClusters()])
+    dataCenters.value = await DataCenterService.getDataCenters()
   } catch (error) {
-    console.error('初始化数据失败:', error)
-  } finally {
-    loading.value = false
+    console.error('获取机房数据失败:', error)
   }
 }
 
@@ -269,12 +388,31 @@ const getClusterName = (clusterId) => {
   return cluster ? cluster.name : clusterId
 }
 
-// 分页
-const pagination = ref({
-  currentPage: 1,
-  pageSize: 10,
-  total: tableData.value.length
-})
+// 获取机房名称
+const getDataCenterName = (dataCenterId) => {
+  const dataCenter = dataCenters.value.find(dc => dc.id === dataCenterId)
+  return dataCenter ? dataCenter.name : dataCenterId
+}
+
+// 计算处理后的分页数据
+const paginatedData = computed(() => {
+  // 先过滤
+  let filteredData = tableData.value;
+  if (searchForm.value.name) {
+    const searchText = searchForm.value.name.toLowerCase();
+    filteredData = filteredData.filter(item => 
+      item.name.toLowerCase().includes(searchText)
+    );
+  }
+  
+  // 更新总数
+  pagination.value.total = filteredData.length;
+  
+  // 再分页
+  const startIndex = (pagination.value.currentPage - 1) * pagination.value.pageSize;
+  const endIndex = startIndex + pagination.value.pageSize;
+  return filteredData.slice(startIndex, endIndex);
+});
 
 // 搜索
 const handleSearch = () => {
@@ -286,6 +424,7 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   searchForm.value.name = ''
+  pagination.value.currentPage = 1
   handleSearch()
 }
 
@@ -295,8 +434,8 @@ const handleAdd = () => {
   editData.value = {
     id: '',
     name: '',
-    region: '',
     distributed: false,
+    dataCenterId: '',
     primaryClusters: [],
     standbyClusters: [],
     status: 'active',
@@ -363,6 +502,8 @@ const handleModalSubmit = (formData) => {
 // 分页相关
 const handleSizeChange = (val) => {
   pagination.value.pageSize = val
+  // 保存到本地存储
+  localStorage.setItem(PAGE_SIZE_KEY, val)
 }
 
 const handleCurrentChange = (val) => {
@@ -372,15 +513,34 @@ const handleCurrentChange = (val) => {
 onMounted(() => {
   fetchData()
 })
+
+// 初始化数据
+const fetchData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([fetchRegions(), fetchClusters(), fetchDataCenters()])
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <style scoped>
 .cluster-group-management {
-  padding: 20px;
+  padding: 0;
+  margin: 0;
+  background: #f5f6fa;
+  min-height: calc(100vh - 60px);
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -389,17 +549,22 @@ onMounted(() => {
   align-items: center;
   font-size: 18px;
   font-weight: 500;
+  padding: 8px 0 8px 0;
 }
 
 .search-area {
-  margin-bottom: 20px;
-  padding: 20px 20px 0 20px;
+  margin-bottom: 8px;
+  padding: 8px 8px 0 8px;
+  background: transparent;
+  border-radius: 0;
 }
 
 .pagination-container {
   margin-top: 20px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: flex-end;
+  padding-right: 20px;
 }
 
 .text-xs {
@@ -408,6 +573,13 @@ onMounted(() => {
 
 .text-gray-400 {
   color: #9ca3af;
+  display: inline-block;
+  line-height: 22px;
+  height: 22px;
+}
+
+.text-gray-500 {
+  color: #6b7280;
 }
 
 .mt-2 {
@@ -417,11 +589,40 @@ onMounted(() => {
 .cluster-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 2px;
+  align-items: center;
+  margin: 0;
+  min-height: 22px;
 }
 
 .cluster-tag {
-  margin: 2px;
+  margin: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.el-table .dense-row td {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  vertical-align: middle;
+}
+
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.el-card__body {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 20px;
 }
 
 .dialog-footer {
@@ -429,9 +630,37 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 10px;
 }
+</style>
 
-.dense-row td {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
+<style>
+/* 全局样式，处理Element Plus标签组件 */
+.custom-tag {
+  display: inline-block;
+  height: 20px;
+  line-height: 20px;
+  padding: 0 6px;
+  border-radius: 2px;
+  font-size: 12px;
+  color: #409eff;
+  background-color: #ecf5ff;
+  border: 1px solid #d9ecff;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+  margin: 1px;
+}
+
+.custom-tag.primary {
+  color: #409eff;
+  background-color: #ecf5ff;
+  border-color: #d9ecff;
+}
+
+.custom-tag.info {
+  color: #909399;
+  background-color: #f4f4f5;
+  border-color: #e9e9eb;
 }
 </style> 
