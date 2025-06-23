@@ -66,12 +66,17 @@
         <el-table-column label="网元链路" min-width="220">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="margin-bottom: 2px;">
+                <el-tag type="info" size="small" style="margin-right: 8px;">
+                  {{ scope.row.enableL7 ? '七层防护已开启' : '仅四层防护' }}
+                </el-tag>
+              </div>
               <div v-for="item in [
                 { label: 'ADS', value: getClusterNameById(scope.row.slots?.ADS), color: '#409EFF' },
                 { label: 'SLB', value: getClusterNameById(scope.row.slots?.SLB), color: '#67C23A' },
-                { label: 'WAF-CC', value: getClusterNameById(scope.row.slots?.WAFCC), color: '#E6A23C' },
-                { label: 'WAF', value: getClusterNameById(scope.row.slots?.WAF), color: '#F56C6C' }
-              ].filter(i => i.value)" :key="item.label" style="display: flex; align-items: center;">
+                { label: 'WAF-CC', value: getClusterNameById(scope.row.slots?.WAFCC), color: '#E6A23C', showWhen: scope.row.enableL7 },
+                { label: 'WAF', value: getClusterNameById(scope.row.slots?.WAF), color: '#F56C6C', showWhen: scope.row.enableL7 }
+              ].filter(i => i.value && (i.showWhen === undefined || i.showWhen))" :key="item.label" style="display: flex; align-items: center;">
                 <span :style="`background:${item.color};color:#fff;border-radius:3px;padding:2px 8px;font-size:12px;margin-right:8px;`">
                   {{ item.label }}
                 </span>
@@ -166,35 +171,20 @@
         <el-form-item label="显示名称" prop="displayName">
           <el-input v-model="form.displayName" placeholder="请输入显示名称，例如：华东-电信-高级版" />
         </el-form-item>
-        <el-form-item label="链路模板" prop="linkTemplate">
-          <el-radio-group v-model="form.linkTemplate" @change="handleTemplateChange">
-            <el-radio label="L4">四层防护链路 (L4 Protection)</el-radio>
-            <el-radio label="L7">七层防护链路 (L7 Protection)</el-radio>
-          </el-radio-group>
+        <el-form-item label="ADS" prop="slots.ADS">
+          <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
+            <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
+          </el-select>
         </el-form-item>
-        <template v-if="form.linkTemplate === 'L4'">
-          <el-form-item label="ADS" prop="slots.ADS">
-            <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="SLB" prop="slots.SLB">
-            <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
-            </el-select>
-          </el-form-item>
-        </template>
-        <template v-else>
-          <el-form-item label="ADS" prop="slots.ADS">
-            <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="SLB" prop="slots.SLB">
-            <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
-            </el-select>
-          </el-form-item>
+        <el-form-item label="SLB" prop="slots.SLB">
+          <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
+            <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="开启七层" prop="enableL7">
+          <el-switch v-model="form.enableL7" @change="handleL7SwitchChange" />
+        </el-form-item>
+        <template v-if="form.enableL7">
           <el-form-item label="WAF-CC" prop="slots.WAFCC">
             <el-select v-model="form.slots.WAFCC" placeholder="请选择WAF-CC集群" style="width: 100%">
               <el-option v-for="item in slotOptions.WAFCC" :key="item.id" :label="item.displayName" :value="item.id" />
@@ -318,11 +308,11 @@ const searchForm = ref({
 const form = ref({
   name: '',
   displayName: '',
-  linkTemplate: 'L4',
   slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
   ipPools: { vip: [], origin: [], snat: [] },
   status: 'active',
-  remark: ''
+  remark: '',
+  enableL7: false
 })
 
 // 表单验证规则
@@ -336,9 +326,6 @@ const rules = {
     { required: true, message: '请输入显示名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  linkTemplate: [
-    { required: true, message: '请选择链路模板', trigger: 'change' }
-  ],
   'slots.ADS': [
     { required: true, message: '请选择ADS集群', trigger: 'change' }
   ],
@@ -346,10 +333,10 @@ const rules = {
     { required: true, message: '请选择SLB集群', trigger: 'change' }
   ],
   'slots.WAFCC': [
-    { required: computed(() => form.value.linkTemplate === 'L7'), message: '请选择WAF-CC集群', trigger: 'change' }
+    { required: computed(() => form.value.enableL7), message: '请选择WAF-CC集群', trigger: 'change' }
   ],
   'slots.WAF': [
-    { required: computed(() => form.value.linkTemplate === 'L7'), message: '请选择WAF集群', trigger: 'change' }
+    { required: computed(() => form.value.enableL7), message: '请选择WAF集群', trigger: 'change' }
   ],
   remark: [
     { max: 200, message: '长度不能超过 200 个字符', trigger: 'blur' }
@@ -362,7 +349,7 @@ const tableData = ref([
     id: generateSnowflakeId(),
     name: 'huadong-telecom-premium',
     displayName: '华东-电信-高级版',
-    linkTemplate: 'L4',
+    enableL7: false,
     slots: { ADS: 'ads-1', SLB: 'slb-1', WAFCC: '', WAF: '' },
     ipPools: {
       vip: ['1.1.1.1/24', '2.2.2.2-2.2.2.10', '3.3.3.3'],
@@ -380,7 +367,7 @@ const tableData = ref([
     id: generateSnowflakeId(),
     name: 'huanan-unicom-basic',
     displayName: '华南-联通-基础版',
-    linkTemplate: 'L7',
+    enableL7: true,
     slots: { ADS: 'ads-2', SLB: 'slb-2', WAFCC: 'wafcc-1', WAF: 'waf-1' },
     ipPools: {
       vip: ['4.4.4.4'],
@@ -440,11 +427,11 @@ const handleAdd = () => {
   form.value = {
     name: '',
     displayName: '',
-    linkTemplate: 'L4',
     slots: { ADS: '', SLB: '', WAFCC: '', WAF: '' },
     ipPools: { vip: [], origin: [], snat: [] },
     status: 'active',
-    remark: ''
+    remark: '',
+    enableL7: false
   }
   dialogVisible.value = true
 }
@@ -455,7 +442,6 @@ const handleEdit = (row) => {
   form.value = {
     name: row.name,
     displayName: row.displayName,
-    linkTemplate: row.linkTemplate || 'L4',
     slots: {
       ADS: row.slots?.ADS || '',
       SLB: row.slots?.SLB || '',
@@ -468,7 +454,8 @@ const handleEdit = (row) => {
       snat: [...(row.ipPools?.snat || [])]
     },
     status: row.status,
-    remark: row.remark
+    remark: row.remark,
+    enableL7: row.enableL7 || false
   }
   dialogVisible.value = true
 }
@@ -593,9 +580,17 @@ const slotOptions = ref({
   ]
 })
 
-// 监听模板变化，动态加载可选集群
-function handleTemplateChange() {
-  form.value.slots = { ADS: '', SLB: '', WAFCC: '', WAF: '' }
+// 监听七层开关变化
+function handleL7SwitchChange() {
+  if (form.value.enableL7) {
+    // 开启七层时不清除已有的ADS和SLB选择
+    const { ADS, SLB } = form.value.slots;
+    form.value.slots = { ADS, SLB, WAFCC: '', WAF: '' }
+  } else {
+    // 关闭七层时清除WAF-CC和WAF选择
+    const { ADS, SLB } = form.value.slots;
+    form.value.slots = { ADS, SLB, WAFCC: '', WAF: '' }
+  }
 }
 
 // mock静态网元集群数据
