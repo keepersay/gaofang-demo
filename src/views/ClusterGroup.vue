@@ -41,7 +41,7 @@
         border
         stripe
         max-height="700"
-        style="width: 100%; min-height: 600px;"
+        style="width: 100%;"
         :header-cell-style="{ background: '#fff', zIndex: 2 }"
         row-class-name="dense-row"
       >
@@ -720,16 +720,10 @@ onMounted(() => {
 
 .box-card {
   margin-bottom: 16px;
-  height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
 }
 
 :deep(.el-card__body) {
   padding: 12px 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
 }
 
 .card-header {
