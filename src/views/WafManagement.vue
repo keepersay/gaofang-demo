@@ -67,13 +67,10 @@
                 </el-descriptions>
                 <hr class="section-divider" />
                 <div class="overview-stats">
-                  <el-row gutter="24" style="margin-top: 24px;">
-                    <el-col :span="6">
-                      <el-card>
-                        <div>集群健康状态</div>
-                        <el-tag :type="getClusterStatusType(selectedCluster)">{{ getClusterStatusText(selectedCluster) }}</el-tag>
-                      </el-card>
-                    </el-col>
+                  <div class="stats-header">
+                    <h3>集群健康状态 <el-tag :type="getClusterStatusType(selectedCluster)">{{ getClusterStatusText(selectedCluster) }}</el-tag></h3>
+                  </div>
+                  <el-row gutter="24" style="margin-top: 16px;">
                     <el-col :span="6">
                       <el-card>
                         <div>异常实例数量</div>
@@ -264,6 +261,7 @@ import { ref, onMounted, watch, computed, reactive } from 'vue'
 import RegionService from '@/services/RegionService'
 import DataCenterService from '@/services/DataCenterService'
 import { Search, Refresh, ArrowDown, EditPen } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const search = ref('')
 const activeTab = ref('overview') // 默认选中总览tab
@@ -395,7 +393,32 @@ function handleAddNode() {
     addClusterForm.remark = ''
     addClusterDialogVisible.value = true
   } else {
-    window.$message?.warning?.('请先选择一个机房节点再新增集群')
+    // 根据不同情况给出更明确的提示
+    if (!selectedCluster.value) {
+      ElMessage({
+        message: '请先从左侧树形菜单中选择一个机房节点',
+        type: 'warning',
+        duration: 3000
+      })
+    } else if (selectedCluster.value.nodeType === 'region') {
+      ElMessage({
+        message: '请选择具体的机房节点，而不是地域节点',
+        type: 'warning',
+        duration: 3000
+      })
+    } else if (selectedCluster.value.nodeType === 'cluster') {
+      ElMessage({
+        message: '不能在集群节点下创建新集群，请选择机房节点',
+        type: 'warning',
+        duration: 3000
+      })
+    } else {
+      ElMessage({
+        message: '请先选择一个机房节点再新增集群',
+        type: 'warning',
+        duration: 3000
+      })
+    }
   }
 }
 
@@ -564,9 +587,15 @@ function editClusterInfo() {
 }
 
 function saveClusterInfo() {
-  selectedCluster.value.label = editForm.label
-  selectedCluster.value.remark = editForm.remark
-  editDialogVisible.value = false
+  // 更新集群信息
+  selectedCluster.value.label = editForm.label;
+  selectedCluster.value.remark = editForm.remark;
+  
+  // 更新最后修改时间和账号
+  selectedCluster.value.updateTime = new Date().toLocaleString();
+  selectedCluster.value.updateUser = 'current_user'; // 这里可以替换为实际登录用户
+  
+  editDialogVisible.value = false;
 }
 
 const errorInstanceCount = computed(() => {
@@ -750,5 +779,18 @@ function initClustersMap() {
   border: none;
   border-top: 2px solid #e4e7ed;
   margin: 32px 0 24px 0;
+}
+.stats-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.stats-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+.stats-header .el-tag {
+  margin-left: 12px;
 }
 </style> 
