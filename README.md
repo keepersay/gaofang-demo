@@ -63,7 +63,7 @@ npm run dev
 │   │   │   └── OperationLog.vue
 │   │   └── Layout.vue      # 整体布局组件
 │   ├── router/
-│   │   └── index.ts        # 路由配置
+│   │   └── index.js        # 路由配置
 │   ├── views/              # 页面级组件
 │   │   ├── ClusterGroup.vue
 │   │   ├── Overview.vue
@@ -71,11 +71,10 @@ npm run dev
 │   │   ├── ResourceManagement.vue
 │   │   └── UserManagement.vue
 │   ├── App.vue             # 应用根组件
-│   └── main.ts             # 应用入口文件
+│   └── main.js             # 应用入口文件
 ├── index.html              # HTML 入口文件
 ├── package.json            # 项目依赖和脚本
 ├── vite.config.js          # Vite 配置
-├── tsconfig.json           # TypeScript 配置
 ├── shims-vue.d.ts          # Vue 声明文件
 └── README.md               # 项目说明 (当前文件)
 ```
