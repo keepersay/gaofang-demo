@@ -88,8 +88,91 @@
               </div>
             </el-tab-pane>
             <el-tab-pane label="实例管理" name="instance">
-              <div class="placeholder-content">
-                <el-empty :description="`${selectedCluster.label} 实例管理内容将在这里显示`" />
+              <div class="instance-content">
+                <div class="search-bar">
+                  <el-input
+                    v-model="instanceSearch"
+                    placeholder="搜索站点名称/域名/IP"
+                    style="width: 250px;"
+                    clearable
+                    @clear="handleInstanceSearchClear"
+                  >
+                    <template #prefix>
+                      <el-icon><Search /></el-icon>
+                    </template>
+                  </el-input>
+                  <el-button type="primary" @click="handleInstanceSearch">搜索</el-button>
+                  <el-button @click="handleRefreshInstances">
+                    <el-icon><Refresh /></el-icon>
+                  </el-button>
+                  <div class="right-actions">
+                    <el-button type="primary" @click="handleAddInstance">新增实例</el-button>
+                  </div>
+                </div>
+                
+                <el-table
+                  :data="filteredInstances"
+                  style="width: 100%"
+                  v-loading="instancesLoading"
+                  border
+                  stripe
+                >
+                  <el-table-column prop="siteName" label="站点名称" min-width="150" sortable>
+                    <template #default="scope">
+                      <el-tooltip :content="scope.row.siteName" placement="top" :show-after="500">
+                        <span>{{ scope.row.siteName }}</span>
+                      </el-tooltip>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="domain" label="防护域名/IP" min-width="180" sortable />
+                  <el-table-column prop="protectionLevel" label="防护等级" width="100">
+                    <template #default="scope">
+                      <el-tag :type="getProtectionLevelType(scope.row.protectionLevel)">
+                        {{ getProtectionLevelText(scope.row.protectionLevel) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="protectionMode" label="防护模式" width="100">
+                    <template #default="scope">
+                      <el-tag :type="getProtectionModeType(scope.row.protectionMode)">
+                        {{ getProtectionModeText(scope.row.protectionMode) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="status" label="状态" width="100">
+                    <template #default="scope">
+                      <el-tag :type="getInstanceStatusType(scope.row.status)">
+                        {{ getInstanceStatusText(scope.row.status) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" fixed="right" width="220">
+                    <template #default="scope">
+                      <el-button link type="primary" @click="handleEditInstance(scope.row)">编辑</el-button>
+                      <el-button link type="primary" @click="handleSecurityConfig(scope.row)">安全配置</el-button>
+                      <el-button 
+                        link 
+                        type="danger" 
+                        :disabled="scope.row.status !== 'disabled'"
+                        @click="handleDeleteInstance(scope.row)"
+                      >
+                        删除
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                
+                <div class="pagination-container">
+                  <el-pagination
+                    v-model:current-page="instanceCurrentPage"
+                    v-model:page-size="instancePageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="totalInstances"
+                    @size-change="handleInstanceSizeChange"
+                    @current-change="handleInstanceCurrentChange"
+                  />
+                </div>
               </div>
             </el-tab-pane>
             <el-tab-pane label="集群管理" name="cluster">
@@ -261,7 +344,7 @@ import { ref, onMounted, watch, computed, reactive } from 'vue'
 import RegionService from '@/services/RegionService'
 import DataCenterService from '@/services/DataCenterService'
 import { Search, Refresh, ArrowDown, EditPen } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const search = ref('')
 const activeTab = ref('overview') // 默认选中总览tab
@@ -302,6 +385,14 @@ const selectedRegion = ref(null)
 
 // 构建地域-机房-集群树形结构
 const clustersMap = ref({}) // { dataCenterId: [集群列表] }
+
+// WAF实例列表相关
+const instanceSearch = ref('')
+const instancesLoading = ref(false)
+const instanceCurrentPage = ref(1)
+const instancePageSize = ref(10)
+const totalInstances = ref(0)
+const instances = ref([])
 
 // 从RegionService获取树形结构地域数据
 const fetchRegions = async () => {
@@ -383,6 +474,7 @@ function handleNodeClick(data) {
   if (data.nodeType === 'cluster') {
     activeTab.value = 'overview'
     fetchServers(data.id)
+    fetchInstances(data.id) // 加载WAF实例列表
   }
 }
 
@@ -608,7 +700,7 @@ const healthyInstanceCount = computed(() => {
 
 function goToInstanceTabWithError() {
   activeTab.value = 'instance'
-  serverSearch.value = ''
+  instanceSearch.value = ''
   // 可以在这里加上只显示异常实例的逻辑
 }
 
@@ -675,6 +767,200 @@ function initClustersMap() {
     ]
   })
   clustersMap.value = map
+}
+
+// 模拟获取WAF实例列表数据
+const fetchInstances = async (clusterId) => {
+  if (!clusterId) return
+  
+  instancesLoading.value = true
+  try {
+    // 这里应该是从API获取数据，现在用模拟数据
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // 生成5-10个随机WAF实例
+    const count = Math.floor(Math.random() * 5) + 5
+    const mockInstances = []
+    
+    const protectionLevels = ['low', 'medium', 'high']
+    const protectionModes = ['warning', 'blocking']
+    const statuses = ['enabled', 'disabled']
+    const domains = [
+      'example.com', 'api.company.org', 'shop.example.net', 
+      'blog.example.com', 'admin.company.org', 'crm.example.net',
+      '192.168.1.100', '10.0.0.55', '172.16.0.10'
+    ]
+    
+    for (let i = 0; i < count; i++) {
+      const domain = domains[Math.floor(Math.random() * domains.length)]
+      mockInstances.push({
+        id: `waf-${Date.now()}-${i}`,
+        siteName: `站点${i + 1}`,
+        domain: domain,
+        protectionLevel: protectionLevels[Math.floor(Math.random() * protectionLevels.length)],
+        protectionMode: protectionModes[Math.floor(Math.random() * protectionModes.length)],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        createTime: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toLocaleString()
+      })
+    }
+    
+    instances.value = mockInstances
+    totalInstances.value = mockInstances.length
+    instancesLoading.value = false
+  } catch (error) {
+    console.error('获取WAF实例列表失败:', error)
+    instancesLoading.value = false
+  }
+}
+
+// 过滤后的WAF实例列表
+const filteredInstances = computed(() => {
+  let result = instances.value
+  
+  // 应用搜索过滤
+  if (instanceSearch.value) {
+    const searchLower = instanceSearch.value.toLowerCase()
+    result = result.filter(instance => 
+      instance.siteName.toLowerCase().includes(searchLower) ||
+      instance.domain.toLowerCase().includes(searchLower)
+    )
+  }
+  
+  return result
+})
+
+// 获取防护等级类型和文本
+function getProtectionLevelType(level) {
+  switch (level) {
+    case 'low': return 'info'
+    case 'medium': return 'warning'
+    case 'high': return 'danger'
+    default: return 'info'
+  }
+}
+
+function getProtectionLevelText(level) {
+  switch (level) {
+    case 'low': return '低'
+    case 'medium': return '中'
+    case 'high': return '高'
+    default: return '未知'
+  }
+}
+
+// 获取防护模式类型和文本
+function getProtectionModeType(mode) {
+  switch (mode) {
+    case 'warning': return 'warning'
+    case 'blocking': return 'danger'
+    default: return 'info'
+  }
+}
+
+function getProtectionModeText(mode) {
+  switch (mode) {
+    case 'warning': return '预警'
+    case 'blocking': return '阻断'
+    default: return '未知'
+  }
+}
+
+// 获取实例状态类型和文本
+function getInstanceStatusType(status) {
+  switch (status) {
+    case 'enabled': return 'success'
+    case 'disabled': return 'info'
+    default: return 'info'
+  }
+}
+
+function getInstanceStatusText(status) {
+  switch (status) {
+    case 'enabled': return '启用'
+    case 'disabled': return '禁用'
+    default: return '未知'
+  }
+}
+
+// 处理实例搜索
+function handleInstanceSearch() {
+  // 可以在这里添加额外的搜索逻辑
+}
+
+// 清除实例搜索
+function handleInstanceSearchClear() {
+  instanceSearch.value = ''
+}
+
+// 刷新实例列表
+function handleRefreshInstances() {
+  if (selectedCluster.value && selectedCluster.value.nodeType === 'cluster') {
+    fetchInstances(selectedCluster.value.id)
+  }
+}
+
+// 实例分页相关
+function handleInstanceSizeChange(size) {
+  instancePageSize.value = size
+  // 在实际应用中，这里应该重新获取数据
+}
+
+function handleInstanceCurrentChange(page) {
+  instanceCurrentPage.value = page
+  // 在实际应用中，这里应该重新获取数据
+}
+
+// 实例操作相关
+function handleAddInstance() {
+  ElMessage({
+    message: '新增实例功能将在后续实现',
+    type: 'info'
+  })
+}
+
+function handleEditInstance(instance) {
+  ElMessage({
+    message: '编辑实例功能将在后续实现',
+    type: 'info'
+  })
+}
+
+function handleSecurityConfig(instance) {
+  ElMessage({
+    message: '安全配置功能将在后续实现',
+    type: 'info'
+  })
+}
+
+function handleDeleteInstance(instance) {
+  if (instance.status !== 'disabled') {
+    ElMessage({
+      message: '只能删除已禁用的实例',
+      type: 'warning'
+    })
+    return
+  }
+  
+  ElMessageBox.confirm(
+    `确定要删除实例 ${instance.siteName} 吗？`,
+    '删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    // 模拟删除操作
+    instances.value = instances.value.filter(item => item.id !== instance.id)
+    totalInstances.value = instances.value.length
+    
+    ElMessage({
+      type: 'success',
+      message: '删除成功'
+    })
+  }).catch(() => {
+    // 用户取消删除
+  })
 }
 </script>
 
@@ -792,5 +1078,11 @@ function initClustersMap() {
 }
 .stats-header .el-tag {
   margin-left: 12px;
+}
+.instance-content {
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 4px;
+  min-height: 400px;
 }
 </style> 
