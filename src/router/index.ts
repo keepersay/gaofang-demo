@@ -5,6 +5,7 @@ import ClusterGroupManagement from '../views/ClusterGroupManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
 import CustomerManagement from '../views/CustomerManagement.vue'
 import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
+import Placeholder from '../views/Placeholder.vue'
 import WafManagement from '../views/WafManagement.vue'
 import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
@@ -34,8 +35,18 @@ const routes: Array<RouteRecordRaw> = [
     component: UserManagement
   },
   {
+    path: '/user',
+    name: 'User',
+    component: UserManagement
+  },
+  {
     path: '/role-management',
     name: 'RoleManagement',
+    component: () => import('../views/RoleManagement.vue')
+  },
+  {
+    path: '/role',
+    name: 'Role',
     component: () => import('../views/RoleManagement.vue')
   },
   {
@@ -84,6 +95,21 @@ const routes: Array<RouteRecordRaw> = [
     component: LoginLog
   },
   {
+    path: '/log',
+    children: [
+      {
+        path: 'login',
+        name: 'LogLogin',
+        component: LoginLog
+      },
+      {
+        path: 'operation',
+        name: 'LogOperation',
+        component: OperationLog
+      }
+    ]
+  },
+  {
     path: '/product-package',
     name: 'ProductPackage',
     component: ProductPackage
@@ -94,34 +120,39 @@ const routes: Array<RouteRecordRaw> = [
     component: CustomerManagement
   },
   {
+    path: '/customer',
+    name: 'Customer',
+    component: CustomerManagement
+  },
+  {
+    path: '/placeholder',
+    name: 'Placeholder',
+        component: Placeholder
+  },
+  {
+    path: '/ads',
+    name: 'ADS',
+    component: Placeholder
+  },
+  {
     path: '/waf',
     name: 'WAF',
     component: WafManagement
   },
   {
-    path: '/slb',
-    name: 'SLB',
-    component: SlbManagement
-  },
-  {
-    path: '/ads',
-    name: 'ADS',
-    component: () => import('@/views/Placeholder.vue')
-  },
-  {
     path: '/waf-cc',
     name: 'WAFCC',
-    component: () => import('@/views/Placeholder.vue')
+    component: Placeholder
   },
   {
     path: '/blackhole',
     name: 'Blackhole',
-    component: () => import('@/views/Placeholder.vue')
+    component: Placeholder
   },
   {
     path: '/traffic',
     name: 'TrafficAnalysis',
-    component: () => import('@/views/Placeholder.vue')
+    component: Placeholder
   },
   {
     path: '/dns',
@@ -132,17 +163,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/business-instance',
     name: 'BusinessInstance',
-    component: () => import('@/views/Placeholder.vue')
+    component: Placeholder
   },
   {
     path: '/order',
     name: 'Order',
-    component: () => import('@/views/Placeholder.vue')
+    component: Placeholder
   },
   {
     path: '/global-config',
     name: 'GlobalConfig',
-    component: () => import('@/views/Placeholder.vue'),
+    component: Placeholder,
     meta: { title: '全局配置' }
   }
 ]
