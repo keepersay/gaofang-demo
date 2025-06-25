@@ -6,7 +6,7 @@
           <el-icon :size="48" color="#909399"><Tools /></el-icon>
         </div>
         <h2>{{ title || '功能开发中' }}</h2>
-        <p>该功能正在开发中，敬请期待...</p>
+        <p>{{ getDescription() }}</p>
       </div>
     </el-card>
   </div>
@@ -31,10 +31,20 @@ const title = computed(() => {
     'TrafficAnalysis': '流量分析',
     'DNS': 'DNS管理',
     'BusinessInstance': '业务实例',
-    'Order': '订单管理'
+    'Order': '订单管理',
+    'Firewall': '防火墙管理'
   }
   return titleMap[routeName] || route.meta?.title || '功能开发中'
 })
+
+// 根据路由获取页面描述
+const getDescription = () => {
+  const routeName = route.name
+  const descriptionMap = {
+    'Firewall': '防火墙管理模块将支持配置和管理网络防火墙，包括安全策略、访问控制列表、流量过滤规则等功能。'
+  }
+  return descriptionMap[routeName] || '该功能正在开发中，敬请期待...'
+}
 </script>
 
 <style scoped>

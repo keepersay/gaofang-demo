@@ -10,6 +10,7 @@ import WafManagement from '../views/WafManagement.vue'
 import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
+import BusinessLog from '../views/BusinessLog.vue'
 
 declare global {
   interface ImportMeta {
@@ -169,6 +170,18 @@ const routes: Array<RouteRecordRaw> = [
     path: '/order',
     name: 'Order',
     component: Placeholder
+  },
+  {
+    path: '/firewall',
+    name: 'Firewall',
+    component: Placeholder,
+    meta: { title: '防火墙管理' }
+  },
+  {
+    path: '/business-log',
+    name: 'BusinessLog',
+    component: BusinessLog,
+    meta: { title: '业务日志' }
   },
   {
     path: '/global-config',

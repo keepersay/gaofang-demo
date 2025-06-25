@@ -58,6 +58,12 @@
             </el-icon>
             <span>黑洞</span>
           </el-menu-item>
+          <el-menu-item index="/firewall">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V7l8-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="8" y="9" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 12h8M12 9v8" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>防火墙</span>
+          </el-menu-item>
           <el-menu-item index="/dns">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M2 12h20M12 2a10 10 0 0 1 0 20M4.93 4.93a10 10 0 0 1 14.14 14.14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
@@ -151,6 +157,12 @@
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.5"/></svg>
             </el-icon>
             <span>订单</span>
+          </el-menu-item>
+          <el-menu-item index="/business-log">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 8h8M8 12h8M8 16h6" stroke="currentColor" stroke-width="1.5"/></svg>
+            </el-icon>
+            <span>业务日志</span>
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="log-management">
