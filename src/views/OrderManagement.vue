@@ -72,6 +72,28 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="isAnycast" label="是否Anycast" width="100">
+          <template #header>
+            <div class="filter-header">
+              是否Anycast
+              <el-dropdown trigger="click" @command="handleAnycastFilterChange">
+                <el-icon class="filter-icon"><Filter /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item :command="null">全部</el-dropdown-item>
+                    <el-dropdown-item :command="true">是</el-dropdown-item>
+                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </template>
+          <template #default="scope">
+            <el-tag :type="scope.row.isAnycast ? 'success' : 'info'" size="small">
+              {{ scope.row.isAnycast ? '是' : '否' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="regionId" label="地域ID" min-width="100" />
         <el-table-column prop="addressType" label="地址类型" width="100">
           <template #header>
@@ -234,6 +256,7 @@ const mockOrders = [
     customerId: 'CUST10001',
     customerName: '阿里云科技有限公司',
     status: 'pending',
+    isAnycast: false,
     regionId: 'cn-beijing',
     addressType: 'IPv4',
     hasAdsProtection: true,
@@ -256,6 +279,7 @@ const mockOrders = [
     customerId: 'CUST10002',
     customerName: '腾讯科技(深圳)有限公司',
     status: 'completed',
+    isAnycast: true,
     regionId: 'cn-shanghai',
     addressType: 'IPv6',
     hasAdsProtection: false,
@@ -278,6 +302,7 @@ const mockOrders = [
     customerId: 'CUST10003',
     customerName: '百度在线网络技术(北京)有限公司',
     status: 'cancelled',
+    isAnycast: false,
     regionId: 'cn-hangzhou',
     addressType: 'IPv4',
     hasAdsProtection: true,
@@ -300,6 +325,7 @@ const mockOrders = [
     customerId: 'CUST10001',
     customerName: '阿里云科技有限公司',
     status: 'pending',
+    isAnycast: true,
     regionId: 'cn-guangzhou',
     addressType: 'IPv4',
     hasAdsProtection: true,
@@ -322,6 +348,7 @@ const mockOrders = [
     customerId: 'CUST10004',
     customerName: '京东科技控股股份有限公司',
     status: 'completed',
+    isAnycast: false,
     regionId: 'cn-shenzhen',
     addressType: 'IPv6',
     hasAdsProtection: false,
@@ -344,6 +371,7 @@ const mockOrders = [
     customerId: 'CUST10005',
     customerName: '字节跳动有限公司',
     status: 'pending',
+    isAnycast: true,
     regionId: 'cn-hongkong',
     addressType: 'dual',
     hasAdsProtection: true,
@@ -381,6 +409,7 @@ const search = ref({
 const filters = ref({
   status: null,
   addressType: null,
+  isAnycast: null,
   hasAdsProtection: null,
   hasCcProtection: null,
   hasWafProtection: null
@@ -486,6 +515,10 @@ const filteredOrders = computed(() => {
     result = result.filter(order => order.addressType === filters.value.addressType);
   }
   
+  if (filters.value.isAnycast !== null) {
+    result = result.filter(order => order.isAnycast === filters.value.isAnycast);
+  }
+  
   if (filters.value.hasAdsProtection !== null) {
     result = result.filter(order => order.hasAdsProtection === filters.value.hasAdsProtection);
   }
@@ -547,6 +580,7 @@ const resetSearch = () => {
   filters.value = {
     status: null,
     addressType: null,
+    isAnycast: null,
     hasAdsProtection: null,
     hasCcProtection: null,
     hasWafProtection: null
@@ -608,6 +642,11 @@ const handleCcFilterChange = (value) => {
 // 处理WAF防护过滤
 const handleWafFilterChange = (value) => {
   filters.value.hasWafProtection = value;
+};
+
+// 处理Anycast过滤
+const handleAnycastFilterChange = (value) => {
+  filters.value.isAnycast = value;
 };
 
 // 处理审批通过
