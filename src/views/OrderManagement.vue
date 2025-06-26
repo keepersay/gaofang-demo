@@ -84,10 +84,16 @@
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
                     <el-dropdown-item command="IPv4">IPv4</el-dropdown-item>
                     <el-dropdown-item command="IPv6">IPv6</el-dropdown-item>
+                    <el-dropdown-item command="dual">双栈</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
             </div>
+          </template>
+          <template #default="scope">
+            <el-tag :type="getAddressTypeTagType(scope.row.addressType)" size="small">
+              {{ getAddressTypeText(scope.row.addressType) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="hasAdsProtection" label="ADS防护" width="100">
@@ -327,6 +333,27 @@ const mockOrders = [
     lastUpdateTime: '2024-05-06T09:45:00',
     lastUpdateUser: 'operator1',
     finalStatusTime: '2024-05-06T09:45:00'
+  },
+  {
+    id: 'ORD20240506006',
+    customerId: 'CUST10005',
+    status: 'pending',
+    regionId: 'cn-hongkong',
+    addressType: 'dual',
+    hasAdsProtection: true,
+    hasCcProtection: true,
+    hasWafProtection: true,
+    protectionBandwidth: 500,
+    businessBandwidth: 250,
+    businessQps: 5000,
+    protectionIpCount: 15,
+    protectionDomainCount: 10,
+    portCount: 25,
+    remark: '国际业务，双栈部署',
+    orderTime: '2024-05-06T11:20:00',
+    lastUpdateTime: '2024-05-06T11:20:00',
+    lastUpdateUser: 'admin',
+    finalStatusTime: null
   }
 ];
 
@@ -392,6 +419,26 @@ const getStatusType = (status) => {
     'cancelled': 'danger'
   };
   return typeMap[status] || 'info';
+};
+
+// 获取地址类型文本
+const getAddressTypeText = (addressType) => {
+  const typeMap = {
+    'IPv4': 'IPv4',
+    'IPv6': 'IPv6',
+    'dual': '双栈'
+  };
+  return typeMap[addressType] || addressType;
+};
+
+// 获取地址类型标签类型
+const getAddressTypeTagType = (addressType) => {
+  const typeMap = {
+    'IPv4': 'info',
+    'IPv6': 'info',
+    'dual': 'success'
+  };
+  return typeMap[addressType] || 'info';
 };
 
 // 过滤后的订单数据
