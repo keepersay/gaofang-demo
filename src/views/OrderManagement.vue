@@ -22,7 +22,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-select v-model="search.status" placeholder="订单状态" clearable style="width: 150px; margin-left: 10px;">
+        <el-select v-model="search.status" placeholder="订单状态" clearable style="width: 120px; margin-left: 10px;">
           <el-option label="已下单" value="pending" />
           <el-option label="已完成" value="completed" />
           <el-option label="已作废" value="cancelled" />
@@ -33,7 +33,7 @@
           range-separator="至"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
-          style="margin-left: 10px; width: 320px;"
+          style="margin-left: 10px; width: 280px;"
         />
         <el-button type="primary" @click="handleSearch" style="margin-left: 10px;">搜索</el-button>
         <el-button @click="resetSearch">重置</el-button>
@@ -41,15 +41,16 @@
       
       <el-table
         :data="filteredOrders"
-        style="width: 100%; margin-top: 20px;"
+        style="width: 100%; margin-top: 10px;"
         border
         stripe
+        size="small"
         v-loading="loading"
         @sort-change="handleSortChange"
       >
-        <el-table-column prop="id" label="订单ID" min-width="120" sortable="custom" />
+        <el-table-column prop="id" label="订单ID" width="120" sortable="custom" />
         <el-table-column prop="customerName" label="客户名" min-width="120" />
-        <el-table-column prop="status" label="订单状态" width="120">
+        <el-table-column prop="status" label="订单状态" width="90">
           <template #header>
             <div class="filter-header">
               订单状态
@@ -67,12 +68,12 @@
             </div>
           </template>
           <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)">
+            <el-tag :type="getStatusType(scope.row.status)" size="small">
               {{ getStatusText(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="isAnycast" label="是否Anycast" width="100">
+        <el-table-column prop="isAnycast" label="是否Anycast" width="90">
           <template #header>
             <div class="filter-header">
               是否Anycast
@@ -94,8 +95,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="regionId" label="地域ID" min-width="100" />
-        <el-table-column prop="addressType" label="地址类型" width="100">
+        <el-table-column prop="regionName" label="地域" width="80">
+          <template #default="scope">
+            <span v-if="!scope.row.isAnycast">{{ getRegionName(scope.row.regionId) }}</span>
+            <el-tag v-else type="info" size="small">不适用</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="addressType" label="地址类型" width="80">
           <template #header>
             <div class="filter-header">
               地址类型
@@ -118,7 +124,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="hasAdsProtection" label="ADS防护" width="100">
+        <el-table-column prop="hasAdsProtection" label="ADS防护" width="80">
           <template #header>
             <div class="filter-header">
               ADS防护
@@ -140,7 +146,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="hasCcProtection" label="CC防护" width="100">
+        <el-table-column prop="hasCcProtection" label="CC防护" width="80">
           <template #header>
             <div class="filter-header">
               CC防护
@@ -162,7 +168,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="hasWafProtection" label="WAF防护" width="100">
+        <el-table-column prop="hasWafProtection" label="WAF防护" width="80">
           <template #header>
             <div class="filter-header">
               WAF防护
@@ -184,36 +190,17 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="protectionBandwidth" label="防护带宽(Mbps)" min-width="120" sortable="custom" />
-        <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" min-width="120" sortable="custom" />
-        <el-table-column prop="businessQps" label="业务QPS" min-width="100" sortable="custom" />
-        <el-table-column prop="protectionIpCount" label="防护IP个数" min-width="120" sortable="custom" />
-        <el-table-column prop="protectionDomainCount" label="防护域名数" min-width="120" sortable="custom" />
-        <el-table-column prop="portCount" label="端口数量" min-width="100" sortable="custom" />
-        <el-table-column prop="orderTime" label="下单时间" min-width="180" sortable="custom">
-          <template #default="scope">
-            {{ formatDateTime(scope.row.orderTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastUpdateTime" label="最后变更时间" min-width="180" sortable="custom">
-          <template #default="scope">
-            {{ formatDateTime(scope.row.lastUpdateTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="lastUpdateUser" label="最后修改账号" min-width="120" />
-        <el-table-column prop="finalStatusTime" label="订单终态时间" min-width="180" sortable="custom">
-          <template #default="scope">
-            {{ scope.row.finalStatusTime ? formatDateTime(scope.row.finalStatusTime) : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
-        <el-table-column label="操作" fixed="right" width="200">
+        <el-table-column prop="protectionBandwidth" label="防护带宽(Mbps)" width="80" sortable="custom" align="center" />
+        <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" width="80" sortable="custom" align="center" />
+        <el-table-column prop="businessQps" label="业务QPS" width="80" sortable="custom" align="center" />
+        <el-table-column label="操作" fixed="right" width="170">
           <template #default="scope">
             <el-button 
               link 
               type="primary" 
               @click="handleApprove(scope.row)"
               :disabled="scope.row.status !== 'pending'"
+              size="small"
             >
               审批通过
             </el-button>
@@ -222,6 +209,7 @@
               type="danger" 
               @click="handleCancel(scope.row)"
               :disabled="scope.row.status !== 'pending'"
+              size="small"
             >
               审批作废
             </el-button>
@@ -238,6 +226,7 @@
           :total="totalOrders"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
+          small
         />
       </div>
     </el-card>
@@ -280,7 +269,7 @@ const mockOrders = [
     customerName: '腾讯科技(深圳)有限公司',
     status: 'completed',
     isAnycast: true,
-    regionId: 'cn-shanghai',
+    regionId: '',
     addressType: 'IPv6',
     hasAdsProtection: false,
     hasCcProtection: true,
@@ -291,7 +280,7 @@ const mockOrders = [
     protectionIpCount: 10,
     protectionDomainCount: 5,
     portCount: 15,
-    remark: '标准配置',
+    remark: '标准配置，Anycast部署',
     orderTime: '2024-05-02T09:15:00',
     lastUpdateTime: '2024-05-03T14:20:00',
     lastUpdateUser: 'operator1',
@@ -326,7 +315,7 @@ const mockOrders = [
     customerName: '阿里云科技有限公司',
     status: 'pending',
     isAnycast: true,
-    regionId: 'cn-guangzhou',
+    regionId: '',
     addressType: 'IPv4',
     hasAdsProtection: true,
     hasCcProtection: true,
@@ -337,7 +326,7 @@ const mockOrders = [
     protectionIpCount: 8,
     protectionDomainCount: 6,
     portCount: 20,
-    remark: '扩容订单',
+    remark: '扩容订单，Anycast部署',
     orderTime: '2024-05-04T08:20:00',
     lastUpdateTime: '2024-05-04T08:20:00',
     lastUpdateUser: 'admin',
@@ -372,7 +361,7 @@ const mockOrders = [
     customerName: '字节跳动有限公司',
     status: 'pending',
     isAnycast: true,
-    regionId: 'cn-hongkong',
+    regionId: '',
     addressType: 'dual',
     hasAdsProtection: true,
     hasCcProtection: true,
@@ -383,7 +372,7 @@ const mockOrders = [
     protectionIpCount: 15,
     protectionDomainCount: 10,
     portCount: 25,
-    remark: '国际业务，双栈部署',
+    remark: '国际业务，Anycast双栈部署',
     orderTime: '2024-05-06T11:20:00',
     lastUpdateTime: '2024-05-06T11:20:00',
     lastUpdateUser: 'admin',
@@ -474,6 +463,19 @@ const getAddressTypeTagType = (addressType) => {
     'dual': 'success'
   };
   return typeMap[addressType] || 'info';
+};
+
+// 获取地域名称
+const getRegionName = (regionId) => {
+  const regionMap = {
+    'cn-beijing': '北京',
+    'cn-shanghai': '上海',
+    'cn-hangzhou': '杭州',
+    'cn-guangzhou': '广州',
+    'cn-shenzhen': '深圳',
+    'cn-hongkong': '香港'
+  };
+  return regionMap[regionId] || regionId;
 };
 
 // 过滤后的订单数据
@@ -651,6 +653,11 @@ const handleAnycastFilterChange = (value) => {
 
 // 处理审批通过
 const handleApprove = (order) => {
+  // 验证业务规则
+  if (!validateOrderRules(order)) {
+    return;
+  }
+
   ElMessageBox.confirm(
     `确认将订单 ${order.id} 审批通过吗？`,
     '审批确认',
@@ -715,6 +722,22 @@ const handleCancel = (order) => {
   });
 };
 
+// 验证订单业务规则
+const validateOrderRules = (order) => {
+  // 验证Anycast和地域的关系
+  if (order.isAnycast && order.regionId) {
+    ElMessage.error('Anycast订单不应指定地域');
+    return false;
+  }
+  
+  if (!order.isAnycast && !order.regionId) {
+    ElMessage.error('非Anycast订单必须指定地域');
+    return false;
+  }
+  
+  return true;
+};
+
 // 初始化
 onMounted(() => {
   // 可以在这里加载初始数据
@@ -724,13 +747,13 @@ onMounted(() => {
 
 <style scoped>
 .order-page {
-  padding: 20px;
+  padding: 10px;
   background: #f5f6fa;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 100px);
 }
 
 .order-card {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
@@ -738,7 +761,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .page-header h3 {
@@ -749,26 +772,27 @@ onMounted(() => {
 
 .search-bar {
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px 0;
+  gap: 5px 0;
 }
 
 .filter-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-size: 13px;
 }
 
 .filter-icon {
   cursor: pointer;
-  margin-left: 4px;
-  font-size: 14px;
+  margin-left: 2px;
+  font-size: 12px;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 15px;
   display: flex;
   justify-content: flex-end;
 }
