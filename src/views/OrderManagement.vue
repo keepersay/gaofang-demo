@@ -47,7 +47,28 @@
         size="small"
         v-loading="loading"
         @sort-change="handleSortChange"
+        @row-click="handleRowClick"
       >
+        <el-table-column type="expand">
+          <template #default="props">
+            <div class="expanded-row">
+              <el-descriptions :column="3" border size="small">
+                <el-descriptions-item label="防护IP个数">{{ props.row.protectionIpCount }}</el-descriptions-item>
+                <el-descriptions-item label="防护域名数">{{ props.row.protectionDomainCount }}</el-descriptions-item>
+                <el-descriptions-item label="端口数量">{{ props.row.portCount }}</el-descriptions-item>
+                <el-descriptions-item label="下单时间">{{ formatDateTime(props.row.orderTime) }}</el-descriptions-item>
+                <el-descriptions-item label="最后变更时间">{{ formatDateTime(props.row.lastUpdateTime) }}</el-descriptions-item>
+                <el-descriptions-item label="最后修改账号">{{ props.row.lastUpdateUser }}</el-descriptions-item>
+                <el-descriptions-item label="订单终态时间" :span="1">
+                  {{ props.row.finalStatusTime ? formatDateTime(props.row.finalStatusTime) : '-' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="备注" :span="2">
+                  {{ props.row.remark || '-' }}
+                </el-descriptions-item>
+              </el-descriptions>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="id" label="订单ID" width="120" sortable="custom" />
         <el-table-column prop="customerName" label="客户名" min-width="120" />
         <el-table-column prop="status" label="订单状态" width="90">
@@ -738,6 +759,14 @@ const validateOrderRules = (order) => {
   return true;
 };
 
+// 处理行点击
+const handleRowClick = (row, column, event) => {
+  // 防止点击操作按钮时展开/折叠行
+  if (column.label === '操作') {
+    event.stopPropagation();
+  }
+};
+
 // 初始化
 onMounted(() => {
   // 可以在这里加载初始数据
@@ -795,5 +824,10 @@ onMounted(() => {
   margin-top: 15px;
   display: flex;
   justify-content: flex-end;
+}
+
+.expanded-row {
+  padding: 10px 20px;
+  background-color: #f9fafc;
 }
 </style> 
