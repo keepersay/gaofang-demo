@@ -49,26 +49,6 @@
         @sort-change="handleSortChange"
         @row-click="handleRowClick"
       >
-        <el-table-column type="expand">
-          <template #default="props">
-            <div class="expanded-row">
-              <el-descriptions :column="3" border size="small">
-                <el-descriptions-item label="防护IP个数">{{ props.row.protectionIpCount }}</el-descriptions-item>
-                <el-descriptions-item label="防护域名数">{{ props.row.protectionDomainCount }}</el-descriptions-item>
-                <el-descriptions-item label="端口数量">{{ props.row.portCount }}</el-descriptions-item>
-                <el-descriptions-item label="下单时间">{{ formatDateTime(props.row.orderTime) }}</el-descriptions-item>
-                <el-descriptions-item label="最后变更时间">{{ formatDateTime(props.row.lastUpdateTime) }}</el-descriptions-item>
-                <el-descriptions-item label="最后修改账号">{{ props.row.lastUpdateUser }}</el-descriptions-item>
-                <el-descriptions-item label="订单终态时间" :span="1">
-                  {{ props.row.finalStatusTime ? formatDateTime(props.row.finalStatusTime) : '-' }}
-                </el-descriptions-item>
-                <el-descriptions-item label="备注" :span="2">
-                  {{ props.row.remark || '-' }}
-                </el-descriptions-item>
-              </el-descriptions>
-            </div>
-          </template>
-        </el-table-column>
         <el-table-column prop="id" label="订单ID" width="120" sortable="custom" />
         <el-table-column prop="customerName" label="客户名" min-width="120" />
         <el-table-column prop="status" label="订单状态" width="90">
@@ -214,7 +194,7 @@
         <el-table-column prop="protectionBandwidth" label="防护带宽(Mbps)" width="80" sortable="custom" align="center" />
         <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" width="80" sortable="custom" align="center" />
         <el-table-column prop="businessQps" label="业务QPS" width="80" sortable="custom" align="center" />
-        <el-table-column label="操作" fixed="right" width="170">
+        <el-table-column label="操作" fixed="right" width="230">
           <template #default="scope">
             <el-button 
               link 
@@ -234,6 +214,14 @@
             >
               审批作废
             </el-button>
+            <el-button
+              link
+              type="info"
+              @click="showOrderDetail(scope.row)"
+              size="small"
+            >
+              详情
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -251,11 +239,83 @@
         />
       </div>
     </el-card>
+
+    <!-- 订单详情弹窗 -->
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="订单详情"
+      width="650px"
+      destroy-on-close
+    >
+      <el-descriptions
+        :column="2"
+        border
+        size="small"
+        class="order-detail-descriptions"
+      >
+        <el-descriptions-item label="订单ID" label-align="right">{{ currentOrder.id }}</el-descriptions-item>
+        <el-descriptions-item label="客户名称" label-align="right">{{ currentOrder.customerName }}</el-descriptions-item>
+        <el-descriptions-item label="订单状态" label-align="right">
+          <el-tag :type="getStatusType(currentOrder.status)" size="small">
+            {{ getStatusText(currentOrder.status) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="是否Anycast" label-align="right">
+          <el-tag :type="currentOrder.isAnycast ? 'success' : 'info'" size="small">
+            {{ currentOrder.isAnycast ? '是' : '否' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="地域" label-align="right">
+          <span v-if="!currentOrder.isAnycast">{{ getRegionName(currentOrder.regionId) }}</span>
+          <el-tag v-else type="info" size="small">不适用</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="地址类型" label-align="right">
+          <el-tag :type="getAddressTypeTagType(currentOrder.addressType)" size="small">
+            {{ getAddressTypeText(currentOrder.addressType) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="ADS防护" label-align="right">
+          <el-tag :type="currentOrder.hasAdsProtection ? 'success' : 'info'" size="small">
+            {{ currentOrder.hasAdsProtection ? '是' : '否' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="CC防护" label-align="right">
+          <el-tag :type="currentOrder.hasCcProtection ? 'success' : 'info'" size="small">
+            {{ currentOrder.hasCcProtection ? '是' : '否' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="WAF防护" label-align="right">
+          <el-tag :type="currentOrder.hasWafProtection ? 'success' : 'info'" size="small">
+            {{ currentOrder.hasWafProtection ? '是' : '否' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="防护带宽(Mbps)" label-align="right">{{ currentOrder.protectionBandwidth }}</el-descriptions-item>
+        <el-descriptions-item label="业务带宽(Mbps)" label-align="right">{{ currentOrder.businessBandwidth }}</el-descriptions-item>
+        <el-descriptions-item label="业务QPS" label-align="right">{{ currentOrder.businessQps }}</el-descriptions-item>
+        <el-descriptions-item label="防护IP个数" label-align="right">{{ currentOrder.protectionIpCount }}</el-descriptions-item>
+        <el-descriptions-item label="防护域名数" label-align="right">{{ currentOrder.protectionDomainCount }}</el-descriptions-item>
+        <el-descriptions-item label="端口数量" label-align="right">{{ currentOrder.portCount }}</el-descriptions-item>
+        <el-descriptions-item label="下单时间" label-align="right">{{ formatDateTime(currentOrder.orderTime) }}</el-descriptions-item>
+        <el-descriptions-item label="最后变更时间" label-align="right">{{ formatDateTime(currentOrder.lastUpdateTime) }}</el-descriptions-item>
+        <el-descriptions-item label="最后修改账号" label-align="right">{{ currentOrder.lastUpdateUser }}</el-descriptions-item>
+        <el-descriptions-item label="订单终态时间" label-align="right">
+          {{ currentOrder.finalStatusTime ? formatDateTime(currentOrder.finalStatusTime) : '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2" label-align="right">
+          {{ currentOrder.remark || '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="detailDialogVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Search, Refresh, Filter } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -429,6 +489,33 @@ const filters = ref({
 const sortParams = ref({
   prop: '',
   order: ''
+});
+
+// 详情弹窗相关
+const detailDialogVisible = ref(false);
+const currentOrder = reactive({
+  id: '',
+  customerId: 0,
+  customerName: '',
+  status: '',
+  isAnycast: false,
+  regionId: '',
+  regionName: '',
+  addressType: '',
+  hasAdsProtection: false,
+  hasCcProtection: false,
+  hasWafProtection: false,
+  protectionBandwidth: 0,
+  businessBandwidth: 0,
+  businessQps: 0,
+  protectionIpCount: 0,
+  protectionDomainCount: 0,
+  portCount: 0,
+  orderTime: '',
+  lastUpdateTime: '',
+  lastUpdateUser: '',
+  finalStatusTime: null,
+  remark: ''
 });
 
 // 格式化日期时间
@@ -767,6 +854,12 @@ const handleRowClick = (row, column, event) => {
   }
 };
 
+// 显示订单详情
+const showOrderDetail = (row) => {
+  Object.assign(currentOrder, row);
+  detailDialogVisible.value = true;
+};
+
 // 初始化
 onMounted(() => {
   // 可以在这里加载初始数据
@@ -826,8 +919,13 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.expanded-row {
-  padding: 10px 20px;
-  background-color: #f9fafc;
+.order-detail-descriptions {
+  width: 100%;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 }
 </style> 
