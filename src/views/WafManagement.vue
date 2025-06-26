@@ -2,7 +2,7 @@
   <div class="waf-page">
     <el-row class="waf-row" gutter="0">
       <!-- 左侧树形区域 -->
-      <el-col :span="5" class="tree-col">
+      <el-col :span="4" class="tree-col">
         <el-card class="tree-card">
           <div class="tree-header">
             <el-input v-model="search" placeholder="搜索节点" size="small" clearable style="width: 60%;" />
@@ -30,7 +30,7 @@
         </el-card>
       </el-col>
       <!-- 右侧Tabs区域 -->
-      <el-col :span="19" class="tabs-col">
+      <el-col :span="20" class="tabs-col">
         <el-card class="tabs-card">
           <div v-if="selectedCluster" class="cluster-header">
             <h3>{{ selectedCluster.label }}</h3>
