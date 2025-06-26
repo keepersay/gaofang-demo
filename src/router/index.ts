@@ -11,6 +11,7 @@ import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
 import BusinessLog from '../views/BusinessLog.vue'
+import OrderManagement from '../views/OrderManagement.vue'
 
 declare global {
   interface ImportMeta {
@@ -169,7 +170,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/order',
     name: 'Order',
-    component: Placeholder
+    component: OrderManagement
   },
   {
     path: '/firewall',
