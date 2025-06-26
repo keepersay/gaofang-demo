@@ -13,7 +13,7 @@
       <div class="search-bar">
         <el-input
           v-model="search.keyword"
-          placeholder="搜索订单ID/客户ID"
+          placeholder="搜索订单ID/客户名"
           style="width: 250px;"
           clearable
           @clear="handleSearchClear"
@@ -48,7 +48,7 @@
         @sort-change="handleSortChange"
       >
         <el-table-column prop="id" label="订单ID" min-width="120" sortable="custom" />
-        <el-table-column prop="customerId" label="客户ID" min-width="120" />
+        <el-table-column prop="customerName" label="客户名" min-width="120" />
         <el-table-column prop="status" label="订单状态" width="120">
           <template #header>
             <div class="filter-header">
@@ -232,6 +232,7 @@ const mockOrders = [
   {
     id: 'ORD20240501001',
     customerId: 'CUST10001',
+    customerName: '阿里云科技有限公司',
     status: 'pending',
     regionId: 'cn-beijing',
     addressType: 'IPv4',
@@ -253,6 +254,7 @@ const mockOrders = [
   {
     id: 'ORD20240502002',
     customerId: 'CUST10002',
+    customerName: '腾讯科技(深圳)有限公司',
     status: 'completed',
     regionId: 'cn-shanghai',
     addressType: 'IPv6',
@@ -274,6 +276,7 @@ const mockOrders = [
   {
     id: 'ORD20240503003',
     customerId: 'CUST10003',
+    customerName: '百度在线网络技术(北京)有限公司',
     status: 'cancelled',
     regionId: 'cn-hangzhou',
     addressType: 'IPv4',
@@ -295,6 +298,7 @@ const mockOrders = [
   {
     id: 'ORD20240504004',
     customerId: 'CUST10001',
+    customerName: '阿里云科技有限公司',
     status: 'pending',
     regionId: 'cn-guangzhou',
     addressType: 'IPv4',
@@ -316,6 +320,7 @@ const mockOrders = [
   {
     id: 'ORD20240505005',
     customerId: 'CUST10004',
+    customerName: '京东科技控股股份有限公司',
     status: 'completed',
     regionId: 'cn-shenzhen',
     addressType: 'IPv6',
@@ -337,6 +342,7 @@ const mockOrders = [
   {
     id: 'ORD20240506006',
     customerId: 'CUST10005',
+    customerName: '字节跳动有限公司',
     status: 'pending',
     regionId: 'cn-hongkong',
     addressType: 'dual',
@@ -450,7 +456,7 @@ const filteredOrders = computed(() => {
     const keyword = search.value.keyword.toLowerCase();
     result = result.filter(order => 
       order.id.toLowerCase().includes(keyword) || 
-      order.customerId.toLowerCase().includes(keyword)
+      order.customerName.toLowerCase().includes(keyword)
     );
   }
   
