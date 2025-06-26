@@ -194,6 +194,9 @@
         <el-table-column prop="protectionBandwidth" label="防护带宽(Mbps)" width="80" sortable="custom" align="center" />
         <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" width="80" sortable="custom" align="center" />
         <el-table-column prop="businessQps" label="业务QPS" width="80" sortable="custom" align="center" />
+        <el-table-column prop="protectionIpCount" label="防护IP数" width="80" sortable="custom" align="center" />
+        <el-table-column prop="protectionDomainCount" label="防护域名数" width="80" sortable="custom" align="center" />
+        <el-table-column prop="portCount" label="端口数量" width="80" sortable="custom" align="center" />
         <el-table-column label="操作" fixed="right" width="230">
           <template #default="scope">
             <el-button 
@@ -292,7 +295,7 @@
         <el-descriptions-item label="防护带宽(Mbps)" label-align="right">{{ currentOrder.protectionBandwidth }}</el-descriptions-item>
         <el-descriptions-item label="业务带宽(Mbps)" label-align="right">{{ currentOrder.businessBandwidth }}</el-descriptions-item>
         <el-descriptions-item label="业务QPS" label-align="right">{{ currentOrder.businessQps }}</el-descriptions-item>
-        <el-descriptions-item label="防护IP个数" label-align="right">{{ currentOrder.protectionIpCount }}</el-descriptions-item>
+        <el-descriptions-item label="防护IP数" label-align="right">{{ currentOrder.protectionIpCount }}</el-descriptions-item>
         <el-descriptions-item label="防护域名数" label-align="right">{{ currentOrder.protectionDomainCount }}</el-descriptions-item>
         <el-descriptions-item label="端口数量" label-align="right">{{ currentOrder.portCount }}</el-descriptions-item>
         <el-descriptions-item label="下单时间" label-align="right">{{ formatDateTime(currentOrder.orderTime) }}</el-descriptions-item>
