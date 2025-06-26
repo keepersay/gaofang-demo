@@ -306,7 +306,30 @@
       <!-- 备注单独一行显示 -->
       <div class="remark-section">
         <div class="remark-label">备注：</div>
-        <div class="remark-content">{{ currentOrder.remark || '-' }}</div>
+        <div class="remark-content" v-if="!isEditingRemark">
+          <span>{{ currentOrder.remark || '-' }}</span>
+          <el-button 
+            link 
+            type="primary" 
+            size="small" 
+            class="edit-remark-btn"
+            @click="startEditRemark"
+          >
+            <el-icon><Edit /></el-icon>
+          </el-button>
+        </div>
+        <div v-else class="remark-edit">
+          <el-input
+            v-model="editingRemark"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入备注信息"
+          />
+          <div class="remark-edit-actions">
+            <el-button type="primary" size="small" @click="saveRemark">保存</el-button>
+            <el-button size="small" @click="cancelEditRemark">取消</el-button>
+          </div>
+        </div>
       </div>
       
       <template #footer>
@@ -320,7 +343,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { Search, Refresh, Filter } from '@element-plus/icons-vue'
+import { Search, Refresh, Filter, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 模拟订单数据
@@ -521,6 +544,36 @@ const currentOrder = reactive({
   finalStatusTime: null,
   remark: ''
 });
+
+// 备注编辑相关
+const isEditingRemark = ref(false);
+const editingRemark = ref('');
+
+// 开始编辑备注
+const startEditRemark = () => {
+  editingRemark.value = currentOrder.remark || '';
+  isEditingRemark.value = true;
+};
+
+// 保存备注
+const saveRemark = () => {
+  const index = orders.value.findIndex(item => item.id === currentOrder.id);
+  if (index !== -1) {
+    orders.value[index].remark = editingRemark.value;
+    currentOrder.remark = editingRemark.value;
+    orders.value[index].lastUpdateTime = new Date().toISOString();
+    currentOrder.lastUpdateTime = orders.value[index].lastUpdateTime;
+    orders.value[index].lastUpdateUser = 'current_user';
+    currentOrder.lastUpdateUser = 'current_user';
+    ElMessage.success('备注已更新');
+  }
+  isEditingRemark.value = false;
+};
+
+// 取消编辑备注
+const cancelEditRemark = () => {
+  isEditingRemark.value = false;
+};
 
 // 格式化日期时间
 const formatDateTime = (dateTimeStr) => {
@@ -944,6 +997,29 @@ onMounted(() => {
   border-radius: 4px;
   min-height: 60px;
   white-space: pre-line;
+  position: relative;
+}
+
+.edit-remark-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  opacity: 0.6;
+}
+
+.edit-remark-btn:hover {
+  opacity: 1;
+}
+
+.remark-edit {
+  margin-top: 5px;
+}
+
+.remark-edit-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .dialog-footer {
