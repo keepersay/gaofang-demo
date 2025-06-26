@@ -301,10 +301,14 @@
         <el-descriptions-item label="订单终态时间" label-align="right">
           {{ currentOrder.finalStatusTime ? formatDateTime(currentOrder.finalStatusTime) : '-' }}
         </el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2" label-align="right">
-          {{ currentOrder.remark || '-' }}
-        </el-descriptions-item>
       </el-descriptions>
+      
+      <!-- 备注单独一行显示 -->
+      <div class="remark-section">
+        <div class="remark-label">备注：</div>
+        <div class="remark-content">{{ currentOrder.remark || '-' }}</div>
+      </div>
+      
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="detailDialogVisible = false">关闭</el-button>
@@ -921,6 +925,25 @@ onMounted(() => {
 
 .order-detail-descriptions {
   width: 100%;
+}
+
+.remark-section {
+  margin-top: 15px;
+  padding: 10px 0;
+  border-top: 1px solid #EBEEF5;
+}
+
+.remark-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.remark-content {
+  padding: 8px;
+  background-color: #f9fafc;
+  border-radius: 4px;
+  min-height: 60px;
+  white-space: pre-line;
 }
 
 .dialog-footer {
