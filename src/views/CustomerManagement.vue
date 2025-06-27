@@ -20,12 +20,6 @@
           <el-form-item label="邮箱">
             <el-input v-model="searchForm.email" placeholder="请输入邮箱" clearable />
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-              <el-option label="正常" value="active" />
-              <el-option label="禁用" value="disabled" />
-            </el-select>
-          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -41,7 +35,17 @@
         <el-table-column prop="customerName" label="客户名" width="150" fixed="left" />
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="email" label="邮箱" width="200" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column 
+          prop="status" 
+          label="状态" 
+          width="100" 
+          :filters="[
+            { text: '正常', value: 'active' },
+            { text: '禁用', value: 'disabled' }
+          ]"
+          :filter-method="filterStatus"
+          filter-placement="bottom-end"
+        >
           <template #default="scope">
             <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
               {{ scope.row.status === 'active' ? '正常' : '禁用' }}
@@ -287,8 +291,7 @@ const handleReset = () => {
   Object.assign(searchForm, {
     customerName: '',
     phone: '',
-    email: '',
-    status: ''
+    email: ''
   })
   handleSearch()
 }
@@ -408,6 +411,11 @@ const handleCurrentChange = (val) => {
 // 新增时也用雪花ID
 function generateId() {
   return generateSnowflakeId()
+}
+
+// 状态过滤方法
+const filterStatus = (value, row) => {
+  return row.status === value;
 }
 
 onMounted(() => {
