@@ -169,6 +169,7 @@
           </template>
           <el-menu-item index="/business-log/request">请求日志</el-menu-item>
           <el-menu-item index="/business-log/attack">攻击日志</el-menu-item>
+          <el-menu-item index="/business-log/ip-allocation">IP分配历史</el-menu-item>
         </el-sub-menu>
         
         <el-sub-menu index="log-management">

@@ -197,6 +197,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'AttackLog',
         component: AttackLog,
         meta: { title: '攻击日志' }
+      },
+      {
+        path: 'ip-allocation',
+        name: 'IpAllocationLog',
+        component: () => import('../views/BusinessLog/IpAllocationLog.vue'),
+        meta: { title: 'IP分配历史' }
       }
     ]
   },
