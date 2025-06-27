@@ -479,43 +479,54 @@ function handleNodeClick(data) {
 }
 
 function handleCollapseAll() {
-  // 检查是否存在树引用
-  if (treeRef.value) {
-    try {
-      // 获取当前所有展开的节点
-      const expandedNodes = treeRef.value.getExpandedKeys()
-      
-      if (expandedNodes && expandedNodes.length > 0) {
-        // 如果有展开的节点，则全部折叠
-        expandedNodes.forEach(key => {
-          treeRef.value.setExpandedKeys([])
-        })
-      } else {
-        // 如果没有展开的节点，则全部展开
-        // 获取所有节点ID
-        const allKeys = getAllNodeKeys(treeData.value)
-        treeRef.value.setExpandedKeys(allKeys)
-      }
-    } catch (error) {
-      console.error('展开/折叠树节点时出错:', error)
+  if (!treeRef.value) return;
+  
+  try {
+    // 检查是否有展开的节点
+    const isAnyNodeExpanded = document.querySelector('.waf-tree .el-tree-node.is-expanded') !== null;
+    
+    if (isAnyNodeExpanded) {
+      // 如果有展开的节点，则全部折叠
+      // 获取所有节点ID
+      const allKeys = getAllNodeKeys(treeData.value);
+      // 遍历所有节点，逐个折叠
+      allKeys.forEach(key => {
+        const node = treeRef.value.getNode(key);
+        if (node && node.expanded) {
+          node.collapse();
+        }
+      });
+    } else {
+      // 如果没有展开的节点，则全部展开
+      // 获取所有节点ID
+      const allKeys = getAllNodeKeys(treeData.value);
+      // 遍历所有节点，逐个展开
+      allKeys.forEach(key => {
+        const node = treeRef.value.getNode(key);
+        if (node) {
+          node.expand();
+        }
+      });
     }
+  } catch (error) {
+    console.error('展开/折叠树节点时出错:', error);
   }
 }
 
 // 递归获取所有节点的key
 function getAllNodeKeys(nodes) {
-  if (!nodes || !Array.isArray(nodes)) return []
+  if (!nodes || !Array.isArray(nodes)) return [];
   
-  let keys = []
+  let keys = [];
   nodes.forEach(node => {
     if (node.id) {
-      keys.push(node.id)
+      keys.push(node.id);
     }
     if (node.children && node.children.length > 0) {
-      keys = keys.concat(getAllNodeKeys(node.children))
+      keys = keys.concat(getAllNodeKeys(node.children));
     }
-  })
-  return keys
+  });
+  return keys;
 }
 
 function handleAddNode() {
