@@ -14,6 +14,9 @@
           <el-form-item label="客户名">
             <el-input v-model="searchForm.customerName" placeholder="请输入客户名" clearable />
           </el-form-item>
+          <el-form-item label="联系人">
+            <el-input v-model="searchForm.contactPerson" placeholder="请输入联系人" clearable />
+          </el-form-item>
           <el-form-item label="手机号">
             <el-input v-model="searchForm.phone" placeholder="请输入手机号" clearable />
           </el-form-item>
@@ -33,6 +36,7 @@
         :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }">
         <el-table-column prop="customerId" label="客户ID" width="120" fixed="left" />
         <el-table-column prop="customerName" label="客户名" width="150" fixed="left" />
+        <el-table-column prop="contactPerson" label="联系人" width="100" />
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="email" label="邮箱" width="200" />
         <el-table-column 
@@ -102,6 +106,9 @@
       <el-form :model="form" :rules="rules" ref="formRef" label-width="140px">
         <el-form-item label="客户名" prop="customerName">
           <el-input v-model="form.customerName" placeholder="请输入客户名" />
+        </el-form-item>
+        <el-form-item label="联系人" prop="contactPerson">
+          <el-input v-model="form.contactPerson" placeholder="请输入联系人" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
@@ -241,9 +248,9 @@ import { ElMessage } from 'element-plus'
 // 搜索表单
 const searchForm = reactive({
   customerName: '',
+  contactPerson: '',
   phone: '',
-  email: '',
-  status: ''
+  email: ''
 })
 
 // 表格数据
@@ -270,6 +277,7 @@ const statusRow = ref(null)
 const form = reactive({
   customerId: '',
   customerName: '',
+  contactPerson: '',
   phone: '',
   email: '',
   status: 'active',
@@ -320,6 +328,7 @@ const mockData = [
   {
     customerId: generateSnowflakeId(),
     customerName: '北京科技有限公司',
+    contactPerson: '张经理',
     phone: '13800138001',
     email: 'contact@beijingtech.com',
     status: 'active',
@@ -333,6 +342,7 @@ const mockData = [
   {
     customerId: generateSnowflakeId(),
     customerName: '上海网络科技有限公司',
+    contactPerson: '李总',
     phone: '13900139002',
     email: 'info@shanghainet.com',
     status: 'active',
@@ -346,6 +356,7 @@ const mockData = [
   {
     customerId: generateSnowflakeId(),
     customerName: '广州数据服务有限公司',
+    contactPerson: '王助理',
     phone: '13700137003',
     email: 'service@guangzhou.com',
     status: 'disabled',
@@ -378,6 +389,7 @@ const handleSearch = () => {
 const handleReset = () => {
   Object.assign(searchForm, {
     customerName: '',
+    contactPerson: '',
     phone: '',
     email: ''
   })
@@ -390,6 +402,7 @@ const handleAdd = () => {
   Object.assign(form, {
     customerId: '',
     customerName: '',
+    contactPerson: '',
     phone: '',
     email: '',
     status: 'active',
