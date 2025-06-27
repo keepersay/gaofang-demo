@@ -38,7 +38,6 @@
 
       <!-- 表格区域 -->
       <el-table :data="tableData" style="width: 100%" v-loading="loading">
-        <el-table-column prop="packageId" label="套餐ID" width="120" />
         <el-table-column prop="packageName" label="套餐名" width="150" />
         <el-table-column prop="region" label="地域" width="100" />
         <el-table-column prop="protectionBandwidth" label="防护带宽" width="120">
