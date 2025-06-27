@@ -11,6 +11,8 @@ import SlbManagement from '../views/SlbManagement.vue'
 import LoginLog from '../views/LogManagement/LoginLog.vue'
 import OperationLog from '../views/LogManagement/OperationLog.vue'
 import BusinessLog from '../views/BusinessLog.vue'
+import RequestLog from '../views/BusinessLog/RequestLog.vue'
+import AttackLog from '../views/BusinessLog/AttackLog.vue'
 import OrderManagement from '../views/OrderManagement.vue'
 
 declare global {
@@ -182,7 +184,21 @@ const routes: Array<RouteRecordRaw> = [
     path: '/business-log',
     name: 'BusinessLog',
     component: BusinessLog,
-    meta: { title: '业务日志' }
+    meta: { title: '业务日志' },
+    children: [
+      {
+        path: 'request',
+        name: 'RequestLog',
+        component: RequestLog,
+        meta: { title: '请求日志' }
+      },
+      {
+        path: 'attack',
+        name: 'AttackLog',
+        component: AttackLog,
+        meta: { title: '攻击日志' }
+      }
+    ]
   },
   {
     path: '/global-config',

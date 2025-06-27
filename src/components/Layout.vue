@@ -158,13 +158,19 @@
             </el-icon>
             <span>订单</span>
           </el-menu-item>
-          <el-menu-item index="/business-log">
+        </el-sub-menu>
+        
+        <el-sub-menu index="business-log">
+          <template #title>
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 8h8M8 12h8M8 16h6" stroke="currentColor" stroke-width="1.5"/></svg>
             </el-icon>
             <span>业务日志</span>
-          </el-menu-item>
+          </template>
+          <el-menu-item index="/business-log/request">请求日志</el-menu-item>
+          <el-menu-item index="/business-log/attack">攻击日志</el-menu-item>
         </el-sub-menu>
+        
         <el-sub-menu index="log-management">
           <template #title>
             <el-icon>
