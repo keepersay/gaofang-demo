@@ -19,6 +19,66 @@ class IpAllocationLogService {
     // 模拟API调用
     return new Promise((resolve) => {
       setTimeout(() => {
+        // 真实客户数据
+        const customers = [
+          { id: 'CUST0001', name: '阿里云科技有限公司' },
+          { id: 'CUST0002', name: '腾讯科技(深圳)有限公司' },
+          { id: 'CUST0003', name: '百度在线网络技术(北京)有限公司' },
+          { id: 'CUST0004', name: '京东科技控股股份有限公司' },
+          { id: 'CUST0005', name: '字节跳动有限公司' },
+          { id: 'CUST0006', name: '网易(杭州)网络有限公司' },
+          { id: 'CUST0007', name: '华为技术有限公司' },
+          { id: 'CUST0008', name: '小米科技有限责任公司' }
+        ];
+        
+        // 真实业务实例
+        const instances = [
+          { id: 'INST000001', name: '电商平台-主站' },
+          { id: 'INST000002', name: '视频服务-CDN' },
+          { id: 'INST000003', name: '支付系统-核心' },
+          { id: 'INST000004', name: '游戏平台-国际版' },
+          { id: 'INST000005', name: '企业邮箱-集群1' },
+          { id: 'INST000006', name: '云存储-北区' },
+          { id: 'INST000007', name: '数据库服务-主节点' },
+          { id: 'INST000008', name: '人工智能-推理集群' },
+          { id: 'INST000009', name: '直播平台-边缘节点' },
+          { id: 'INST000010', name: '物联网-数据中心' }
+        ];
+        
+        // 真实IP池
+        const ipPools = [
+          { id: 'POOL0001', name: '电信骨干网-BGP' },
+          { id: 'POOL0002', name: '联通骨干网-BGP' },
+          { id: 'POOL0003', name: '移动骨干网-BGP' },
+          { id: 'POOL0004', name: '国际线路-香港' },
+          { id: 'POOL0005', name: '国际线路-新加坡' },
+          { id: 'POOL0006', name: 'Anycast全球加速' }
+        ];
+        
+        // 真实IP段
+        const ipRanges = [
+          '103.24.178.0/24',
+          '103.24.179.0/24',
+          '103.215.32.0/22',
+          '116.128.128.0/17',
+          '118.26.96.0/21',
+          '118.26.104.0/21',
+          '118.26.112.0/21',
+          '118.26.120.0/21',
+          '118.26.128.0/21',
+          '119.28.0.0/16',
+          '119.29.0.0/16',
+          '120.88.56.0/23',
+          '121.51.0.0/16',
+          '122.152.192.0/18',
+          '123.206.0.0/16',
+          '129.204.0.0/16',
+          '129.211.0.0/16',
+          '129.226.0.0/16',
+          '2402:4e00::/32',
+          '2407:c080::/32'
+        ];
+        
         // 生成模拟数据
         const total = 100;
         const { pageNum = 1, pageSize = 10 } = params;
@@ -33,21 +93,31 @@ class IpAllocationLogService {
           const baseTime = new Date();
           baseTime.setDate(baseTime.getDate() - index);
           
+          // 随机选择客户、实例和IP池
+          const customer = customers[index % customers.length];
+          const instance = instances[index % instances.length];
+          const ipPool = ipPools[index % ipPools.length];
+          
+          // 从IP段中生成一个IP地址
+          const ipRange = ipRanges[index % ipRanges.length];
+          const ipBase = ipRange.split('/')[0];
+          const ipParts = ipBase.split('.');
+          const lastOctet = (parseInt(ipParts[3]) + index) % 255;
+          const ipAddress = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet}`;
+          
           records.push({
             id: `IPAL${String(index + 1).padStart(6, '0')}`,
-            ipAddress: `192.168.${Math.floor(index / 255) + 1}.${index % 255 + 1}`,
-            instanceId: `INST${String(Math.floor(index / 3) + 1).padStart(6, '0')}`,
-            instanceName: `业务实例-${Math.floor(index / 3) + 1}`,
-            customerId: `CUST${String(Math.floor(index / 10) + 1).padStart(4, '0')}`,
-            customerName: `客户-${Math.floor(index / 10) + 1}`,
+            ipAddress,
+            instanceId: instance.id,
+            instanceName: instance.name,
+            customerId: customer.id,
+            customerName: customer.name,
             operationType,
             operationTime: baseTime.toISOString(),
             operatorId: `USER${String(index % 5 + 1).padStart(4, '0')}`,
             operatorName: `操作员-${index % 5 + 1}`,
-            ipPoolId: `POOL${String(index % 3 + 1).padStart(4, '0')}`,
-            ipPoolName: `IP池-${index % 3 + 1}`,
-            regionId: `region-${index % 6 + 1}`,
-            regionName: `地域-${index % 6 + 1}`,
+            ipPoolId: ipPool.id,
+            ipPoolName: ipPool.name,
             remark: operationType === 'allocate' 
               ? `分配IP用于${['Web服务', 'API服务', '数据库服务', '缓存服务', '负载均衡'][index % 5]}`
               : `回收闲置IP资源`
@@ -89,12 +159,6 @@ class IpAllocationLogService {
           );
         }
         
-        if (params.regionId) {
-          filteredRecords = filteredRecords.filter(
-            record => record.regionId === params.regionId
-          );
-        }
-        
         if (params.dateRange && params.dateRange.length === 2) {
           const startDate = new Date(params.dateRange[0]);
           const endDate = new Date(params.dateRange[1]);
@@ -129,21 +193,77 @@ class IpAllocationLogService {
         const baseTime = new Date();
         baseTime.setDate(baseTime.getDate() - index);
         
+        // 真实客户数据
+        const customers = [
+          { id: 'CUST0001', name: '阿里云科技有限公司' },
+          { id: 'CUST0002', name: '腾讯科技(深圳)有限公司' },
+          { id: 'CUST0003', name: '百度在线网络技术(北京)有限公司' },
+          { id: 'CUST0004', name: '京东科技控股股份有限公司' },
+          { id: 'CUST0005', name: '字节跳动有限公司' },
+          { id: 'CUST0006', name: '网易(杭州)网络有限公司' },
+          { id: 'CUST0007', name: '华为技术有限公司' },
+          { id: 'CUST0008', name: '小米科技有限责任公司' }
+        ];
+        
+        // 真实业务实例
+        const instances = [
+          { id: 'INST000001', name: '电商平台-主站' },
+          { id: 'INST000002', name: '视频服务-CDN' },
+          { id: 'INST000003', name: '支付系统-核心' },
+          { id: 'INST000004', name: '游戏平台-国际版' },
+          { id: 'INST000005', name: '企业邮箱-集群1' },
+          { id: 'INST000006', name: '云存储-北区' },
+          { id: 'INST000007', name: '数据库服务-主节点' },
+          { id: 'INST000008', name: '人工智能-推理集群' },
+          { id: 'INST000009', name: '直播平台-边缘节点' },
+          { id: 'INST000010', name: '物联网-数据中心' }
+        ];
+        
+        // 真实IP池
+        const ipPools = [
+          { id: 'POOL0001', name: '电信骨干网-BGP' },
+          { id: 'POOL0002', name: '联通骨干网-BGP' },
+          { id: 'POOL0003', name: '移动骨干网-BGP' },
+          { id: 'POOL0004', name: '国际线路-香港' },
+          { id: 'POOL0005', name: '国际线路-新加坡' },
+          { id: 'POOL0006', name: 'Anycast全球加速' }
+        ];
+        
+        // 真实IP段
+        const ipRanges = [
+          '103.24.178.0/24',
+          '103.24.179.0/24',
+          '103.215.32.0/22',
+          '116.128.128.0/17',
+          '118.26.96.0/21',
+          '118.26.104.0/21'
+        ];
+        
+        // 随机选择客户、实例和IP池
+        const customer = customers[index % customers.length];
+        const instance = instances[index % instances.length];
+        const ipPool = ipPools[index % ipPools.length];
+        
+        // 从IP段中生成一个IP地址
+        const ipRange = ipRanges[index % ipRanges.length];
+        const ipBase = ipRange.split('/')[0];
+        const ipParts = ipBase.split('.');
+        const lastOctet = (parseInt(ipParts[3]) + index) % 255;
+        const ipAddress = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${lastOctet}`;
+        
         resolve({
           id,
-          ipAddress: `192.168.${Math.floor(index / 255) + 1}.${index % 255 + 1}`,
-          instanceId: `INST${String(Math.floor(index / 3) + 1).padStart(6, '0')}`,
-          instanceName: `业务实例-${Math.floor(index / 3) + 1}`,
-          customerId: `CUST${String(Math.floor(index / 10) + 1).padStart(4, '0')}`,
-          customerName: `客户-${Math.floor(index / 10) + 1}`,
+          ipAddress,
+          instanceId: instance.id,
+          instanceName: instance.name,
+          customerId: customer.id,
+          customerName: customer.name,
           operationType,
           operationTime: baseTime.toISOString(),
           operatorId: `USER${String(index % 5 + 1).padStart(4, '0')}`,
           operatorName: `操作员-${index % 5 + 1}`,
-          ipPoolId: `POOL${String(index % 3 + 1).padStart(4, '0')}`,
-          ipPoolName: `IP池-${index % 3 + 1}`,
-          regionId: `region-${index % 6 + 1}`,
-          regionName: `地域-${index % 6 + 1}`,
+          ipPoolId: ipPool.id,
+          ipPoolName: ipPool.name,
           remark: operationType === 'allocate' 
             ? `分配IP用于${['Web服务', 'API服务', '数据库服务', '缓存服务', '负载均衡'][index % 5]}`
             : `回收闲置IP资源`,
@@ -155,6 +275,7 @@ class IpAllocationLogService {
           networkType: ['公网', '内网', '混合'][index % 3],
           bandwidth: `${(index % 10 + 1) * 100}Mbps`,
           ipVersion: ['IPv4', 'IPv6', 'Dual Stack'][index % 3],
+          ipSegment: ipRange,
           createTime: new Date(baseTime.getTime() - 7200000).toISOString(),
           updateTime: baseTime.toISOString()
         });
@@ -189,28 +310,12 @@ class IpAllocationLogService {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve([
-          { id: 'POOL0001', name: 'IP池-1' },
-          { id: 'POOL0002', name: 'IP池-2' },
-          { id: 'POOL0003', name: 'IP池-3' }
-        ]);
-      }, 200);
-    });
-  }
-  
-  /**
-   * 获取地域列表（用于过滤）
-   * @returns {Promise<Array>} 地域列表
-   */
-  async getRegions() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: 'region-1', name: '地域-1' },
-          { id: 'region-2', name: '地域-2' },
-          { id: 'region-3', name: '地域-3' },
-          { id: 'region-4', name: '地域-4' },
-          { id: 'region-5', name: '地域-5' },
-          { id: 'region-6', name: '地域-6' }
+          { id: 'POOL0001', name: '电信骨干网-BGP' },
+          { id: 'POOL0002', name: '联通骨干网-BGP' },
+          { id: 'POOL0003', name: '移动骨干网-BGP' },
+          { id: 'POOL0004', name: '国际线路-香港' },
+          { id: 'POOL0005', name: '国际线路-新加坡' },
+          { id: 'POOL0006', name: 'Anycast全球加速' }
         ]);
       }, 200);
     });

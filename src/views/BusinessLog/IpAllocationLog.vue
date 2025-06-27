@@ -83,14 +83,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="operatorName" label="操作人" width="100" />
-        <el-table-column prop="ipPoolName" label="IP池" width="100"
+        <el-table-column prop="ipPoolName" label="IP池" width="120"
           :filters="ipPoolFilters"
           column-key="ipPoolId"
         />
-        <el-table-column prop="regionName" label="地域" width="100"
-          :filters="regionFilters"
-          column-key="regionId"
-        />
+        <el-table-column prop="ipSegment" label="IP段" min-width="120" show-overflow-tooltip />
         <el-table-column label="操作" fixed="right" width="80">
           <template #default="scope">
             <el-button 
@@ -134,6 +131,7 @@
         style="padding: 0 20px;"
       >
         <el-descriptions-item label="IP地址">{{ currentDetail.ipAddress }}</el-descriptions-item>
+        <el-descriptions-item label="IP段">{{ currentDetail.ipSegment }}</el-descriptions-item>
         <el-descriptions-item label="业务实例">
           {{ currentDetail.instanceId }} / {{ currentDetail.instanceName }}
         </el-descriptions-item>
@@ -153,9 +151,6 @@
         </el-descriptions-item>
         <el-descriptions-item label="IP池">
           {{ currentDetail.ipPoolName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="地域">
-          {{ currentDetail.regionName }}
         </el-descriptions-item>
         <el-descriptions-item label="请求ID">
           {{ currentDetail.requestId }}
@@ -207,7 +202,6 @@ const tableData = ref([])
 const detailDrawerVisible = ref(false)
 const currentDetail = ref(null)
 const ipPoolFilters = ref([])
-const regionFilters = ref([])
 
 // 搜索条件
 const search = reactive({
@@ -220,8 +214,7 @@ const search = reactive({
 // 过滤条件
 const filters = reactive({
   operationType: null,
-  ipPoolId: null,
-  regionId: null
+  ipPoolId: null
 })
 
 // 排序
@@ -241,7 +234,6 @@ const fetchData = async () => {
       dateRange: search.dateRange,
       operationType: filters.operationType,
       ipPoolId: filters.ipPoolId,
-      regionId: filters.regionId,
       pageNum: currentPage.value,
       pageSize: pageSize.value,
       sortField: sortInfo.prop,
@@ -268,13 +260,6 @@ const fetchFilterOptions = async () => {
       text: pool.name,
       value: pool.id
     }))
-    
-    // 获取地域列表
-    const regions = await IpAllocationLogService.getRegions()
-    regionFilters.value = regions.map(region => ({
-      text: region.name,
-      value: region.id
-    }))
   } catch (error) {
     console.error('获取过滤选项失败', error)
   }
@@ -296,7 +281,6 @@ const resetSearch = () => {
   // 重置过滤条件
   filters.operationType = null
   filters.ipPoolId = null
-  filters.regionId = null
   
   currentPage.value = 1
   fetchData()
@@ -322,8 +306,7 @@ const handleExport = async () => {
       customerId: search.customerId,
       dateRange: search.dateRange,
       operationType: filters.operationType,
-      ipPoolId: filters.ipPoolId,
-      regionId: filters.regionId
+      ipPoolId: filters.ipPoolId
     }
     
     const res = await IpAllocationLogService.exportIpAllocationLogs(params)
@@ -374,12 +357,6 @@ const handleFilterChange = (filters) => {
     this.filters.ipPoolId = filters.ipPoolId[0]
   } else {
     this.filters.ipPoolId = null
-  }
-  
-  if (filters.regionId) {
-    this.filters.regionId = filters.regionId[0]
-  } else {
-    this.filters.regionId = null
   }
   
   currentPage.value = 1
