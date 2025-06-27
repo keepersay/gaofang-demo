@@ -37,8 +37,7 @@
         row-class-name="dense-row"
         @sort-change="handleSortChange"
       >
-        <el-table-column prop="id" label="ID" width="220" fixed="left" />
-        <el-table-column prop="name" label="角色名称" width="140">
+        <el-table-column prop="name" label="角色名称" width="140" fixed="left">
           <template #default="scope">
             <el-tooltip effect="dark" :content="scope.row.name" placement="top">
               <span class="ellipsis-cell">{{ scope.row.name }}</span>
