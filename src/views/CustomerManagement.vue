@@ -34,7 +34,6 @@
       <el-table :data="tableData" style="width: 100%; min-height: 320px;" v-loading="loading" border stripe
         max-height="500" row-class-name="dense-row"
         :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }">
-        <el-table-column prop="customerId" label="客户ID" width="120" fixed="left" />
         <el-table-column prop="customerName" label="客户名" width="150" fixed="left" />
         <el-table-column prop="contactPerson" label="联系人" width="100" />
         <el-table-column prop="phone" label="手机号" width="130" />
