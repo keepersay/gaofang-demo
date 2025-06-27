@@ -285,6 +285,13 @@
             {{ currentOrder.orderType === 'new' ? '开通订单' : '变更订单' }}
           </el-tag>
         </el-descriptions-item>
+        <el-descriptions-item label="逻辑集群组" label-align="right">
+          <span v-if="currentOrder.clusterGroupId">{{ currentOrder.clusterGroupId }}</span>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="原订单ID" label-align="right" v-if="currentOrder.orderType === 'change'">
+          <span>{{ currentOrder.originalOrderId || '-' }}</span>
+        </el-descriptions-item>
         <el-descriptions-item label="订单状态" label-align="right">
           <el-tag :type="getStatusType(currentOrder.status)" size="small">
             {{ getStatusText(currentOrder.status) }}
@@ -368,6 +375,43 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 逻辑集群组选择对话框 -->
+    <el-dialog
+      v-model="clusterGroupDialogVisible"
+      title="选择逻辑集群组"
+      width="500px"
+      destroy-on-close
+    >
+      <div v-loading="loading">
+        <p>请为订单选择合适的逻辑集群组：</p>
+        
+        <el-radio-group v-model="selectedClusterGroupId" class="cluster-group-radio">
+          <el-radio 
+            v-for="group in availableClusterGroups" 
+            :key="group.id" 
+            :label="group.id"
+            border
+          >
+            {{ group.name }}
+            <el-tag size="small" type="info" class="ml-5">
+              {{ group.isDistributed ? '分布式' : group.regionId }}
+            </el-tag>
+          </el-radio>
+        </el-radio-group>
+        
+        <div v-if="availableClusterGroups.length === 0" class="empty-tip">
+          没有找到匹配的逻辑集群组
+        </div>
+      </div>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="cancelClusterGroupSelection">取消</el-button>
+          <el-button type="primary" @click="confirmClusterGroupSelection">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -400,7 +444,8 @@ const mockOrders = [
     orderTime: '2024-05-01T10:30:00',
     lastUpdateTime: '2024-05-01T10:30:00',
     lastUpdateUser: 'admin',
-    finalStatusTime: null
+    finalStatusTime: null,
+    clusterGroupId: null
   },
   {
     id: 'ORD20240502002',
@@ -424,7 +469,8 @@ const mockOrders = [
     orderTime: '2024-05-02T09:15:00',
     lastUpdateTime: '2024-05-03T14:20:00',
     lastUpdateUser: 'operator1',
-    finalStatusTime: '2024-05-03T14:20:00'
+    finalStatusTime: '2024-05-03T14:20:00',
+    clusterGroupId: 'CG20240502001'
   },
   {
     id: 'ORD20240503003',
@@ -448,7 +494,8 @@ const mockOrders = [
     orderTime: '2024-05-03T11:45:00',
     lastUpdateTime: '2024-05-04T16:30:00',
     lastUpdateUser: 'operator2',
-    finalStatusTime: '2024-05-04T16:30:00'
+    finalStatusTime: '2024-05-04T16:30:00',
+    clusterGroupId: null
   },
   {
     id: 'ORD20240504004',
@@ -472,7 +519,9 @@ const mockOrders = [
     orderTime: '2024-05-04T08:20:00',
     lastUpdateTime: '2024-05-04T08:20:00',
     lastUpdateUser: 'admin',
-    finalStatusTime: null
+    finalStatusTime: null,
+    clusterGroupId: 'CG20240502001',
+    originalOrderId: 'ORD20240502002'
   },
   {
     id: 'ORD20240505005',
@@ -496,7 +545,8 @@ const mockOrders = [
     orderTime: '2024-05-05T13:10:00',
     lastUpdateTime: '2024-05-06T09:45:00',
     lastUpdateUser: 'operator1',
-    finalStatusTime: '2024-05-06T09:45:00'
+    finalStatusTime: '2024-05-06T09:45:00',
+    clusterGroupId: 'CG20240505001'
   },
   {
     id: 'ORD20240506006',
@@ -520,7 +570,9 @@ const mockOrders = [
     orderTime: '2024-05-06T11:20:00',
     lastUpdateTime: '2024-05-06T11:20:00',
     lastUpdateUser: 'admin',
-    finalStatusTime: null
+    finalStatusTime: null,
+    clusterGroupId: 'CG20240505002',
+    originalOrderId: 'ORD20240505006'
   }
 ];
 
@@ -580,7 +632,9 @@ const currentOrder = reactive({
   lastUpdateTime: '',
   lastUpdateUser: '',
   finalStatusTime: null,
-  remark: ''
+  remark: '',
+  clusterGroupId: null,
+  originalOrderId: null
 });
 
 // 备注编辑相关
@@ -871,6 +925,12 @@ const handleApprove = (order) => {
     return;
   }
 
+  // 对于开通订单，需要选择逻辑集群组
+  if (order.orderType === 'new' && !order.clusterGroupId) {
+    selectClusterGroup(order);
+    return;
+  }
+
   ElMessageBox.confirm(
     `确认将订单 ${order.id} 审批通过吗？`,
     '审批确认',
@@ -963,6 +1023,81 @@ const handleRowClick = (row, column, event) => {
 const showOrderDetail = (row) => {
   Object.assign(currentOrder, row);
   detailDialogVisible.value = true;
+};
+
+// 添加逻辑集群组选择相关变量
+// 逻辑集群组选择相关
+const clusterGroupDialogVisible = ref(false);
+const currentProcessingOrder = ref(null);
+const availableClusterGroups = ref([]);
+const selectedClusterGroupId = ref('');
+const isDistributed = ref(false);
+
+// 选择逻辑集群组
+const selectClusterGroup = async (order) => {
+  currentProcessingOrder.value = order;
+  selectedClusterGroupId.value = '';
+  isDistributed.value = order.isAnycast; // Anycast默认为分布式部署
+  
+  // 加载可用的逻辑集群组
+  await loadAvailableClusterGroups(order.regionId, order.isAnycast);
+  
+  clusterGroupDialogVisible.value = true;
+};
+
+// 加载可用的逻辑集群组
+const loadAvailableClusterGroups = async (regionId, isAnycast) => {
+  loading.value = true;
+  try {
+    // 这里应该调用API获取可用的逻辑集群组
+    // 根据是否分布式和地域进行过滤
+    // 模拟数据
+    setTimeout(() => {
+      availableClusterGroups.value = [
+        { id: 'CG20240501001', name: '华北电信集群组', isDistributed: false, regionId: 'cn-beijing' },
+        { id: 'CG20240502001', name: 'Anycast全球加速集群组', isDistributed: true, regionId: '' },
+        { id: 'CG20240503001', name: '华东联通集群组', isDistributed: false, regionId: 'cn-hangzhou' },
+        { id: 'CG20240504001', name: '华南电信集群组', isDistributed: false, regionId: 'cn-shenzhen' },
+        { id: 'CG20240505001', name: '华南联通集群组', isDistributed: false, regionId: 'cn-shenzhen' },
+        { id: 'CG20240505002', name: '国际集群组', isDistributed: true, regionId: '' }
+      ].filter(group => {
+        if (isAnycast) {
+          return group.isDistributed;
+        } else {
+          return !group.isDistributed && group.regionId === regionId;
+        }
+      });
+      loading.value = false;
+    }, 300);
+  } catch (error) {
+    console.error('获取逻辑集群组失败', error);
+    ElMessage.error('获取逻辑集群组失败');
+    loading.value = false;
+  }
+};
+
+// 确认选择逻辑集群组
+const confirmClusterGroupSelection = () => {
+  if (!selectedClusterGroupId.value) {
+    ElMessage.warning('请选择逻辑集群组');
+    return;
+  }
+  
+  const order = currentProcessingOrder.value;
+  const index = orders.value.findIndex(o => o.id === order.id);
+  if (index !== -1) {
+    orders.value[index].clusterGroupId = selectedClusterGroupId.value;
+    
+    // 继续审批流程
+    handleApprove(orders.value[index]);
+  }
+  
+  clusterGroupDialogVisible.value = false;
+};
+
+// 取消选择逻辑集群组
+const cancelClusterGroupSelection = () => {
+  clusterGroupDialogVisible.value = false;
 };
 
 // 初始化
@@ -1074,5 +1209,22 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   width: 100%;
+}
+
+.cluster-group-radio {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.ml-5 {
+  margin-left: 5px;
+}
+
+.empty-tip {
+  text-align: center;
+  color: #909399;
+  padding: 20px 0;
 }
 </style> 
