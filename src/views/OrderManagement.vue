@@ -51,6 +51,28 @@
       >
         <el-table-column prop="id" label="订单ID" width="120" sortable="custom" />
         <el-table-column prop="customerName" label="客户名" min-width="120" />
+        <el-table-column prop="orderType" label="订单类型" width="90">
+          <template #header>
+            <div class="filter-header">
+              订单类型
+              <el-dropdown trigger="click" @command="handleOrderTypeFilterChange">
+                <el-icon class="filter-icon"><Filter /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item :command="null">全部</el-dropdown-item>
+                    <el-dropdown-item command="new">开通订单</el-dropdown-item>
+                    <el-dropdown-item command="change">变更订单</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </template>
+          <template #default="scope">
+            <el-tag :type="scope.row.orderType === 'new' ? 'primary' : 'success'" size="small">
+              {{ scope.row.orderType === 'new' ? '开通' : '变更' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="订单状态" width="90">
           <template #header>
             <div class="filter-header">
@@ -258,6 +280,11 @@
       >
         <el-descriptions-item label="订单ID" label-align="right">{{ currentOrder.id }}</el-descriptions-item>
         <el-descriptions-item label="客户名称" label-align="right">{{ currentOrder.customerName }}</el-descriptions-item>
+        <el-descriptions-item label="订单类型" label-align="right">
+          <el-tag :type="currentOrder.orderType === 'new' ? 'primary' : 'success'" size="small">
+            {{ currentOrder.orderType === 'new' ? '开通订单' : '变更订单' }}
+          </el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="订单状态" label-align="right">
           <el-tag :type="getStatusType(currentOrder.status)" size="small">
             {{ getStatusText(currentOrder.status) }}
@@ -356,6 +383,7 @@ const mockOrders = [
     customerId: 'CUST10001',
     customerName: '阿里云科技有限公司',
     status: 'pending',
+    orderType: 'new',
     isAnycast: false,
     regionId: 'cn-beijing',
     addressType: 'IPv4',
@@ -379,6 +407,7 @@ const mockOrders = [
     customerId: 'CUST10002',
     customerName: '腾讯科技(深圳)有限公司',
     status: 'completed',
+    orderType: 'new',
     isAnycast: true,
     regionId: '',
     addressType: 'IPv6',
@@ -402,6 +431,7 @@ const mockOrders = [
     customerId: 'CUST10003',
     customerName: '百度在线网络技术(北京)有限公司',
     status: 'cancelled',
+    orderType: 'new',
     isAnycast: false,
     regionId: 'cn-hangzhou',
     addressType: 'IPv4',
@@ -425,6 +455,7 @@ const mockOrders = [
     customerId: 'CUST10001',
     customerName: '阿里云科技有限公司',
     status: 'pending',
+    orderType: 'change',
     isAnycast: true,
     regionId: '',
     addressType: 'IPv4',
@@ -448,6 +479,7 @@ const mockOrders = [
     customerId: 'CUST10004',
     customerName: '京东科技控股股份有限公司',
     status: 'completed',
+    orderType: 'new',
     isAnycast: false,
     regionId: 'cn-shenzhen',
     addressType: 'IPv6',
@@ -471,6 +503,7 @@ const mockOrders = [
     customerId: 'CUST10005',
     customerName: '字节跳动有限公司',
     status: 'pending',
+    orderType: 'change',
     isAnycast: true,
     regionId: '',
     addressType: 'dual',
@@ -512,7 +545,8 @@ const filters = ref({
   isAnycast: null,
   hasAdsProtection: null,
   hasCcProtection: null,
-  hasWafProtection: null
+  hasWafProtection: null,
+  orderType: null
 });
 
 // 排序
@@ -528,6 +562,7 @@ const currentOrder = reactive({
   customerId: 0,
   customerName: '',
   status: '',
+  orderType: '',
   isAnycast: false,
   regionId: '',
   regionName: '',
@@ -681,6 +716,10 @@ const filteredOrders = computed(() => {
     result = result.filter(order => order.status === filters.value.status);
   }
   
+  if (filters.value.orderType) {
+    result = result.filter(order => order.orderType === filters.value.orderType);
+  }
+  
   if (filters.value.addressType) {
     result = result.filter(order => order.addressType === filters.value.addressType);
   }
@@ -753,7 +792,8 @@ const resetSearch = () => {
     isAnycast: null,
     hasAdsProtection: null,
     hasCcProtection: null,
-    hasWafProtection: null
+    hasWafProtection: null,
+    orderType: null
   };
   sortParams.value = {
     prop: '',
@@ -817,6 +857,11 @@ const handleWafFilterChange = (value) => {
 // 处理Anycast过滤
 const handleAnycastFilterChange = (value) => {
   filters.value.isAnycast = value;
+};
+
+// 处理订单类型过滤
+const handleOrderTypeFilterChange = (value) => {
+  filters.value.orderType = value;
 };
 
 // 处理审批通过
