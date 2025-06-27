@@ -61,6 +61,7 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button type="primary" link size="small" @click="handleLicense(scope.row)">营业执照</el-button>
             <el-button 
               :type="scope.row.status === 'active' ? 'danger' : 'success'" 
               link size="small" 
@@ -153,6 +154,83 @@
         <el-button type="primary" @click="confirmStatusChange">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- 营业执照管理对话框 -->
+    <el-dialog v-model="licenseVisible" title="营业执照管理" width="700px">
+      <div v-if="currentCustomer">
+        <div class="license-info">
+          <p class="license-customer-name">{{ currentCustomer.customerName }}</p>
+          <p class="license-customer-id">客户ID: {{ currentCustomer.customerId }}</p>
+        </div>
+        
+        <el-tabs v-model="licenseActiveTab">
+          <el-tab-pane label="查看营业执照" name="view">
+            <div class="license-view">
+              <div v-if="currentCustomer.license" class="license-image-container">
+                <img :src="currentCustomer.license" class="license-image" alt="营业执照" />
+                <div class="license-actions">
+                  <el-button type="primary" @click="previewLicense">预览</el-button>
+                  <el-button type="danger" @click="confirmDeleteLicense">删除</el-button>
+                </div>
+                <p class="license-upload-time" v-if="currentCustomer.licenseUploadTime">
+                  上传时间: {{ currentCustomer.licenseUploadTime }}
+                </p>
+              </div>
+              <div v-else class="license-empty">
+                <el-empty description="暂无营业执照">
+                  <el-button type="primary" @click="licenseActiveTab = 'upload'">上传营业执照</el-button>
+                </el-empty>
+              </div>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="上传营业执照" name="upload">
+            <div class="license-upload">
+              <el-upload
+                class="license-uploader"
+                action="#"
+                :auto-upload="false"
+                :on-change="handleLicenseChange"
+                :on-remove="handleLicenseRemove"
+                :limit="1"
+                :file-list="licenseFileList"
+              >
+                <el-button type="primary">选择文件</el-button>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    请上传JPG/PNG格式的营业执照图片，文件大小不超过5MB
+                  </div>
+                </template>
+              </el-upload>
+              
+              <div class="license-preview" v-if="licensePreview">
+                <img :src="licensePreview" class="license-preview-image" alt="预览" />
+              </div>
+              
+              <div class="license-upload-actions">
+                <el-button type="primary" @click="uploadLicense" :disabled="!licenseFile">上传</el-button>
+                <el-button @click="cancelUpload">取消</el-button>
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+    </el-dialog>
+    
+    <!-- 营业执照预览 -->
+    <el-dialog v-model="licensePreviewVisible" title="营业执照预览" width="800px" center>
+      <div class="license-preview-container">
+        <img :src="currentCustomer?.license" class="license-preview-full" alt="营业执照预览" />
+      </div>
+    </el-dialog>
+    
+    <!-- 删除营业执照确认 -->
+    <el-dialog v-model="licenseDeleteVisible" title="删除营业执照" width="400px">
+      <div>确定要删除 <b>{{ currentCustomer?.customerName }}</b> 的营业执照吗？</div>
+      <template #footer>
+        <el-button @click="licenseDeleteVisible = false">取消</el-button>
+        <el-button type="danger" @click="deleteLicense">确认删除</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -218,6 +296,16 @@ const rules = {
     { pattern: /^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$/, message: '请输入正确的统一社会信用代码', trigger: 'blur' }
   ]
 }
+
+// 营业执照相关
+const licenseVisible = ref(false)
+const licenseActiveTab = ref('view')
+const currentCustomer = ref(null)
+const licenseFile = ref(null)
+const licenseFileList = ref([])
+const licensePreview = ref('')
+const licensePreviewVisible = ref(false)
+const licenseDeleteVisible = ref(false)
 
 // 雪花算法ID生成（简单模拟）
 function generateSnowflakeId() {
@@ -418,6 +506,100 @@ const filterStatus = (value, row) => {
   return row.status === value;
 }
 
+// 处理营业执照按钮点击
+const handleLicense = (row) => {
+  currentCustomer.value = row
+  licenseVisible.value = true
+  licenseActiveTab.value = 'view'
+  licenseFileList.value = []
+  licensePreview.value = ''
+}
+
+// 处理营业执照文件选择
+const handleLicenseChange = (file) => {
+  const isImage = file.raw.type === 'image/jpeg' || file.raw.type === 'image/png'
+  const isLt5M = file.size / 1024 / 1024 < 5
+  
+  if (!isImage) {
+    ElMessage.error('营业执照必须是JPG或PNG格式!')
+    licenseFileList.value = []
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('营业执照大小不能超过5MB!')
+    licenseFileList.value = []
+    return false
+  }
+  
+  licenseFile.value = file.raw
+  
+  // 生成预览
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    licensePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+// 处理营业执照文件移除
+const handleLicenseRemove = () => {
+  licenseFile.value = null
+  licensePreview.value = ''
+}
+
+// 上传营业执照
+const uploadLicense = () => {
+  if (!licenseFile.value) {
+    ElMessage.warning('请先选择营业执照文件')
+    return
+  }
+  
+  // 模拟上传
+  setTimeout(() => {
+    // 在实际应用中，这里应该是调用API上传文件
+    // 这里我们直接使用预览的base64作为模拟
+    if (currentCustomer.value) {
+      currentCustomer.value.license = licensePreview.value
+      currentCustomer.value.licenseUploadTime = new Date().toLocaleString()
+      ElMessage.success('营业执照上传成功')
+      licenseActiveTab.value = 'view'
+      licenseFile.value = null
+      licenseFileList.value = []
+      licensePreview.value = ''
+    }
+  }, 500)
+}
+
+// 取消上传
+const cancelUpload = () => {
+  licenseFile.value = null
+  licenseFileList.value = []
+  licensePreview.value = ''
+  licenseActiveTab.value = 'view'
+}
+
+// 预览营业执照
+const previewLicense = () => {
+  if (currentCustomer.value && currentCustomer.value.license) {
+    licensePreviewVisible.value = true
+  }
+}
+
+// 确认删除营业执照
+const confirmDeleteLicense = () => {
+  licenseDeleteVisible.value = true
+}
+
+// 删除营业执照
+const deleteLicense = () => {
+  if (currentCustomer.value) {
+    currentCustomer.value.license = null
+    currentCustomer.value.licenseUploadTime = null
+    ElMessage.success('营业执照已删除')
+    licenseDeleteVisible.value = false
+  }
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -495,5 +677,100 @@ onMounted(() => {
 .dense-row td {
   padding-top: 6px !important;
   padding-bottom: 6px !important;
+}
+
+/* 营业执照相关样式 */
+.license-info {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.license-customer-name {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 5px 0;
+}
+
+.license-customer-id {
+  font-size: 14px;
+  color: #909399;
+  margin: 0;
+}
+
+.license-view {
+  min-height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.license-image-container {
+  text-align: center;
+}
+
+.license-image {
+  max-width: 100%;
+  max-height: 300px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.license-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.license-upload-time {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.license-empty {
+  width: 100%;
+  padding: 30px 0;
+}
+
+.license-upload {
+  padding: 20px 0;
+}
+
+.license-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.license-preview {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.license-preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.license-upload-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.license-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.license-preview-full {
+  max-width: 100%;
+  max-height: 70vh;
 }
 </style> 
