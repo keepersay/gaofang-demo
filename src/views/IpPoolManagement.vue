@@ -148,6 +148,24 @@
           <template #default="scope">{{ scope.row.usedCount }}/{{ scope.row.availableCount }}</template>
         </el-table-column>
         <el-table-column prop="isAnycast" label="Anycast" width="80">
+          <template #header>
+            <span>Anycast</span>
+            <el-popover
+              placement="bottom"
+              width="160"
+              trigger="click"
+              v-model:visible="anycastPopoverVisible"
+            >
+              <el-radio-group v-model="anycastFilterValue" @change="onAnycastFilterChange">
+                <el-radio label="">全部</el-radio>
+                <el-radio :label="true">是</el-radio>
+                <el-radio :label="false">否</el-radio>
+              </el-radio-group>
+              <template #reference>
+                <el-icon :color="anycastFilterValue !== '' ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
+              </template>
+            </el-popover>
+          </template>
           <template #default="scope">
             <el-tag :type="scope.row.isAnycast ? 'success' : 'info'">{{ scope.row.isAnycast ? '是' : '否' }}</el-tag>
           </template>
@@ -234,7 +252,8 @@ const filters = reactive({
   protocol: '',
   dataCenterId: '',
   status: '',
-  name: ''
+  name: '',
+  isAnycast: ''
 });
 const list = ref<IpPool[]>([]);
 const dataCenters = ref<DataCenter[]>([]);
@@ -255,6 +274,8 @@ const dataCenterPopoverVisible = ref(false);
 const dataCenterFilterValue = ref<string[]>([]);
 const statusPopoverVisible = ref(false);
 const statusFilterValue = ref<string[]>([]);
+const anycastPopoverVisible = ref(false);
+const anycastFilterValue = ref('');
 
 function getDataCenterName(id: string) {
   const dc = dataCenters.value.find(dc => dc.id === id);
@@ -293,6 +314,11 @@ function resetStatusFilter() {
   fetchList();
   statusPopoverVisible.value = false;
 }
+function onAnycastFilterChange() {
+  filters.isAnycast = anycastFilterValue.value !== '' ? String(anycastFilterValue.value) : '';
+  fetchList();
+  anycastPopoverVisible.value = false;
+}
 
 async function fetchList() {
   // 多选过滤参数处理
@@ -313,9 +339,11 @@ function resetFilters() {
   protocolFilterValue.value = '';
   dataCenterFilterValue.value = [];
   statusFilterValue.value = [];
+  anycastFilterValue.value = '';
   filters.protocol = '';
   filters.dataCenterId = '';
   filters.status = '';
+  filters.isAnycast = '';
   fetchList();
 }
 function openModal(row: IpPool | null = null) {
@@ -374,7 +402,8 @@ onMounted(() => {
 }
 .pagination-container {
   margin-top: 16px;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
 }
 .text-gray-400 {
   color: #bfbfbf;
