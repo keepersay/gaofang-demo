@@ -478,6 +478,40 @@ function handleNodeClick(data) {
   }
 }
 
+function handleCollapseAll() {
+  // 检查是否存在树引用
+  if (treeRef.value) {
+    // 获取所有展开的节点
+    const expandedKeys = treeRef.value.store.expandedKeys
+    
+    // 如果有展开的节点，则全部折叠
+    if (expandedKeys.size > 0) {
+      treeRef.value.store.expandedKeys.clear()
+      treeRef.value.updateKeyChildren()
+    } else {
+      // 如果没有展开的节点，则全部展开
+      regionTree.value.forEach(region => {
+        expandRegionAndChildren(region, treeRef.value)
+      })
+    }
+  }
+}
+
+// 递归展开节点及其子节点
+function expandRegionAndChildren(node, tree) {
+  if (!node) return
+  
+  // 展开当前节点
+  tree.store.expandedKeys.add(node.id)
+  
+  // 如果有子节点，递归展开
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      expandRegionAndChildren(child, tree)
+    })
+  }
+}
+
 function handleAddNode() {
   if (selectedCluster.value && selectedCluster.value.nodeType === 'dataCenter') {
     selectedRegion.value = selectedCluster.value
