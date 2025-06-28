@@ -25,14 +25,14 @@
         </div>
         <div class="info-item">
           <span class="label">已分配数量:</span>
-          <span>{{ instanceData.protectionIps?.length || 0 }}</span>
+          <span>{{ tempProtectionIps.length }}</span>
         </div>
       </div>
 
       <el-divider content-position="left">当前已分配IP</el-divider>
       
-      <div v-if="instanceData.protectionIps && instanceData.protectionIps.length > 0">
-        <el-table :data="formattedProtectionIps" style="width: 100%" border>
+      <div v-if="tempProtectionIps.length > 0">
+        <el-table :data="tempProtectionIps" style="width: 100%" border>
           <el-table-column label="IP地址" prop="ip" />
           <el-table-column label="操作" width="100">
             <template #default="{ row, $index }">
@@ -203,25 +203,6 @@ const availableIps = ref([])
 const regionOptions = ref([])
 const tempProtectionIps = ref([])
 
-// 计算属性：格式化后的保护IP列表
-const formattedProtectionIps = computed(() => {
-  if (!props.instanceData || !props.instanceData.protectionIps) return [];
-  
-  // 如果protectionIps是字符串数组，转换为对象数组
-  if (Array.isArray(props.instanceData.protectionIps)) {
-    return props.instanceData.protectionIps.map(ip => {
-      // 如果已经是对象，直接返回
-      if (typeof ip === 'object' && ip !== null) {
-        return ip;
-      }
-      // 如果是字符串，转换为对象
-      return { ip };
-    });
-  }
-  
-  return [];
-});
-
 // 表单数据
 const autoForm = ref({ count: 1 })
 const poolForm = ref({ ipType: 'IPv4', regionId: '' })
@@ -240,7 +221,7 @@ watch(() => props.instanceData, (val) => {
   if (val && val.protectionIps) {
     // 转换IP列表格式
     tempProtectionIps.value = Array.isArray(val.protectionIps) 
-      ? val.protectionIps.map(ip => typeof ip === 'object' ? ip : { ip }) 
+      ? val.protectionIps.map(ip => typeof ip === 'object' && ip !== null ? ip : { ip: ip }) 
       : [];
   } else {
     tempProtectionIps.value = []
@@ -297,6 +278,9 @@ const handleFetchAvailableIps = async () => {
         
         // 地域匹配（非Anycast时）
         if (!props.instanceData.isAnycast && poolForm.value.regionId && ip.region !== poolForm.value.regionId) return false
+        
+        // 排除已经添加的IP
+        if (tempProtectionIps.value.some(item => item.ip === ip.ip)) return false
         
         return true
       })
@@ -368,6 +352,9 @@ const handleAutoAllocate = async () => {
         // 地域匹配（非Anycast时）
         if (!props.instanceData.isAnycast && props.instanceData.regionId && ip.region !== props.instanceData.regionId) return false
         
+        // 排除已经添加的IP
+        if (tempProtectionIps.value.some(item => item.ip === ip.ip)) return false
+        
         return true
       })
       
@@ -377,8 +364,12 @@ const handleAutoAllocate = async () => {
         .slice(0, autoForm.value.count)
         .map(item => ({ ip: item.ip }))
       
-      tempProtectionIps.value = [...tempProtectionIps.value, ...randomIps]
-      ElMessage.success(`已自动分配${randomIps.length}个IP`)
+      if (randomIps.length > 0) {
+        tempProtectionIps.value = [...tempProtectionIps.value, ...randomIps]
+        ElMessage.success(`已自动分配${randomIps.length}个IP`)
+      } else {
+        ElMessage.warning('没有可用的IP可分配')
+      }
     } else {
       ElMessage.error(result.message || '自动分配IP失败')
     }
