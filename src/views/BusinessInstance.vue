@@ -202,6 +202,34 @@
       @success="handleIpAllocationSuccess"
     />
 
+    <!-- 启用确认对话框 -->
+    <el-dialog
+      v-model="enableDialogVisible"
+      title="确认启用"
+      width="400px"
+    >
+      <div>确定要启用业务实例 <b>{{ currentInstance?.instanceName }}</b> 吗？</div>
+      <div class="text-xs text-gray-500 mt-2">ID: {{ currentInstance?.instanceId }}</div>
+      <template #footer>
+        <el-button @click="enableDialogVisible = false">取消</el-button>
+        <el-button type="success" @click="confirmEnable">确认启用</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 禁用确认对话框 -->
+    <el-dialog
+      v-model="disableDialogVisible"
+      title="确认禁用"
+      width="400px"
+    >
+      <div>确定要禁用业务实例 <b>{{ currentInstance?.instanceName }}</b> 吗？</div>
+      <div class="text-xs text-gray-500 mt-2">ID: {{ currentInstance?.instanceId }}</div>
+      <template #footer>
+        <el-button @click="disableDialogVisible = false">取消</el-button>
+        <el-button type="warning" @click="confirmDisable">确认禁用</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -218,6 +246,8 @@ const loading = ref(false)
 const tableData = ref([])
 const instanceModalVisible = ref(false)
 const ipModalVisible = ref(false)
+const enableDialogVisible = ref(false)
+const disableDialogVisible = ref(false)
 const isEdit = ref(false)
 const currentInstance = ref(null)
 
@@ -305,12 +335,19 @@ const handleEdit = (row) => {
 }
 
 // 启用业务实例
-const handleEnable = async (row) => {
+const handleEnable = (row) => {
+  currentInstance.value = { ...row }
+  enableDialogVisible.value = true
+}
+
+// 确认启用
+const confirmEnable = async () => {
   try {
-    const result = await BusinessInstanceService.enableBusinessInstance(row.instanceId)
+    const result = await BusinessInstanceService.enableBusinessInstance(currentInstance.value.instanceId)
     
     if (result.code === 200) {
       ElMessage.success('启用成功')
+      enableDialogVisible.value = false
       fetchData()
     } else {
       ElMessage.error(result.message || '启用失败')
@@ -322,12 +359,19 @@ const handleEnable = async (row) => {
 }
 
 // 禁用业务实例
-const handleDisable = async (row) => {
+const handleDisable = (row) => {
+  currentInstance.value = { ...row }
+  disableDialogVisible.value = true
+}
+
+// 确认禁用
+const confirmDisable = async () => {
   try {
-    const result = await BusinessInstanceService.disableBusinessInstance(row.instanceId)
+    const result = await BusinessInstanceService.disableBusinessInstance(currentInstance.value.instanceId)
     
     if (result.code === 200) {
       ElMessage.success('禁用成功')
+      disableDialogVisible.value = false
       fetchData()
     } else {
       ElMessage.error(result.message || '禁用失败')
