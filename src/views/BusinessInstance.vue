@@ -384,7 +384,8 @@ const confirmDisable = async () => {
 
 // 分配防护IP
 const handleAllocateIp = (row) => {
-  currentInstance.value = { ...row }
+  // 创建一个深拷贝，避免引用问题
+  currentInstance.value = JSON.parse(JSON.stringify(row))
   ipModalVisible.value = true
 }
 
@@ -423,6 +424,9 @@ const handleModalSuccess = () => {
 // IP分配成功回调
 const handleIpAllocationSuccess = () => {
   fetchData()
+  // 重置当前实例，避免引用问题
+  currentInstance.value = null
+  ipModalVisible.value = false
 }
 
 // 表格过滤方法

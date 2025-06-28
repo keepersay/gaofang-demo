@@ -35,11 +35,11 @@
         <el-table :data="tempProtectionIps" style="width: 100%" border>
           <el-table-column label="IP地址" prop="ip" />
           <el-table-column label="操作" width="100">
-            <template #default="{ row, $index }">
+            <template #default="scope">
               <el-button 
                 type="danger" 
                 size="small" 
-                @click="handleRemoveIp($index)"
+                @click="handleRemoveIp(scope.$index)"
               >
                 移除
               </el-button>
@@ -119,8 +119,8 @@
           <el-table-column label="IP地址" prop="ip" />
           <el-table-column label="类型" prop="type" width="100" />
           <el-table-column label="Anycast" width="100">
-            <template #default="{ row }">
-              {{ row.isAnycast ? '是' : '否' }}
+            <template #default="scope">
+              {{ scope.row.isAnycast ? '是' : '否' }}
             </template>
           </el-table-column>
           <el-table-column label="地域" prop="region" width="150" />
@@ -164,7 +164,7 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="handleClose">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确认</el-button>
       </div>
     </template>
@@ -172,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import BusinessInstanceService from '../../services/BusinessInstanceService'
 
@@ -216,24 +216,51 @@ const remainingQuota = computed(() => {
   return Math.max(0, total - used)
 })
 
-// 监听实例数据变化
-watch(() => props.instanceData, (val) => {
-  if (val && val.protectionIps) {
+// 初始化数据
+const initData = () => {
+  if (props.instanceData && props.instanceData.protectionIps) {
     // 转换IP列表格式
-    tempProtectionIps.value = Array.isArray(val.protectionIps) 
-      ? val.protectionIps.map(ip => typeof ip === 'object' && ip !== null ? ip : { ip: ip }) 
+    tempProtectionIps.value = Array.isArray(props.instanceData.protectionIps) 
+      ? props.instanceData.protectionIps.map(ip => typeof ip === 'object' && ip !== null ? ip : { ip: ip }) 
       : [];
   } else {
     tempProtectionIps.value = []
   }
-}, { immediate: true, deep: true })
+  
+  // 重置其他状态
+  allocationType.value = 'auto'
+  selectedIps.value = []
+  availableIps.value = []
+  autoForm.value = { count: 1 }
+  poolForm.value = { ipType: 'IPv4', regionId: '' }
+  manualForm.value = { ip: '' }
+}
+
+// 监听实例数据变化
+watch(() => props.instanceData, (val) => {
+  if (val) {
+    nextTick(() => {
+      initData()
+    })
+  }
+}, { immediate: true })
 
 // 监听对话框可见性
 watch(() => dialogVisible.value, (val) => {
   if (val) {
-    fetchRegionOptions()
+    nextTick(() => {
+      initData()
+      fetchRegionOptions()
+    })
   }
 })
+
+// 关闭对话框
+const handleClose = () => {
+  dialogVisible.value = false
+  // 重置数据
+  tempProtectionIps.value = []
+}
 
 // 获取地域选项
 const fetchRegionOptions = async () => {
