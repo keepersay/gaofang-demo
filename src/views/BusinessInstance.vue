@@ -114,8 +114,7 @@
           width="100"
           :filters="[
             { text: '已启用', value: 'active' },
-            { text: '已禁用', value: 'inactive' },
-            { text: '配置中', value: 'configuring' }
+            { text: '已禁用', value: 'inactive' }
           ]"
           :filter-method="filterStatus"
           filter-placement="bottom-end"
@@ -403,8 +402,7 @@ const filterProtection = (value, row) => {
 const getStatusType = (status) => {
   const map = {
     active: 'success',
-    inactive: 'info',
-    configuring: 'warning'
+    inactive: 'info'
   }
   return map[status] || 'info'
 }
@@ -412,8 +410,7 @@ const getStatusType = (status) => {
 const getStatusLabel = (status) => {
   const map = {
     active: '已启用',
-    inactive: '已禁用',
-    configuring: '配置中'
+    inactive: '已禁用'
   }
   return map[status] || status
 }
