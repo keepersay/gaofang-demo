@@ -9,7 +9,7 @@
     <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
       <el-form-item label="名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入集群组名称" />
-      </el-form-item>
+        </el-form-item>
 
       <el-form-item label="分布式" prop="distributed">
         <el-switch v-model="form.distributed" @change="handleDistributedChange" />
@@ -17,7 +17,7 @@
         <div class="form-tip">
           {{ form.distributed ? '分布式集群组不需要选择地域和机房' : '非分布式集群组需要选择机房' }}
         </div>
-      </el-form-item>
+        </el-form-item>
       
       <el-form-item v-if="!form.distributed" label="机房" prop="dataCenterId">
         <el-select 
@@ -39,8 +39,8 @@
               <el-tag size="small" effect="plain">{{ getRegionName(dc.regionId) }}</el-tag>
             </div>
           </el-option>
-        </el-select>
-      </el-form-item>
+          </el-select>
+        </el-form-item>
       
       <el-form-item 
         label="主集群" 
@@ -73,10 +73,10 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-              </div>
-            </div>
+      </div>
+    </div>
           </el-option>
-        </el-select>
+          </el-select>
         <div class="form-tip">
           {{ '请选择主集群' }}
         </div>
@@ -111,8 +111,8 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-              </div>
-            </div>
+      </div>
+    </div>
           </el-option>
         </el-select>
         <div class="form-tip">备集群用于故障切换，最多选择1个</div>
@@ -120,6 +120,14 @@
       
       <el-form-item label="备注" prop="remark">
         <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注信息" />
+      </el-form-item>
+      
+      <el-form-item label="地址类型" prop="addressType">
+        <el-radio-group v-model="form.addressType">
+          <el-radio label="ipv4">IPv4</el-radio>
+          <el-radio label="ipv6">IPv6</el-radio>
+          <el-radio label="dual">双栈</el-radio>
+        </el-radio-group>
       </el-form-item>
       
       <el-form-item label="状态" prop="status">
@@ -181,7 +189,8 @@ const form = ref({
   primaryClusters: [],
   standbyClusters: [],
   status: 'active',
-  remark: ''
+  remark: '',
+  addressType: 'ipv4'
 })
 
 // 激活状态的机房列表
@@ -326,28 +335,17 @@ const validateStandbyClusters = (rule, value, callback) => {
   }
 }
 
-// 根据是否为分布式，动态设置规则
+// 表单验证规则
 const rules = {
   name: [
     { required: true, message: '请输入集群组名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
   dataCenterId: [
-    { 
-      required: true, 
-      message: '请选择机房', 
-      trigger: 'change',
-      validator: (rule, value, callback) => {
-        if (!form.value.distributed && !value) {
-          callback(new Error('非分布式集群组必须选择机房'))
-        } else {
-          callback()
-        }
-      }
-    }
+    { required: computed(() => !form.value.distributed), message: '请选择机房', trigger: 'change' }
   ],
-  status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
+  addressType: [
+    { required: true, message: '请选择地址类型', trigger: 'change' }
   ]
 }
 
@@ -371,32 +369,34 @@ const handleDataCenterChange = (value) => {
   }
 }
 
-// 监听visible变化
+// 监听props.visible变化
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
-  if (val) {
-    // 初始化数据
-    if (props.isEdit && props.editData) {
-      Object.keys(form.value).forEach(key => {
-        if (props.editData[key] !== undefined) {
-          if (Array.isArray(props.editData[key])) {
-            form.value[key] = [...props.editData[key]]
-          } else {
-            form.value[key] = props.editData[key]
-          }
-        }
-      })
-    } else {
-      // 新建重置表单
-      form.value = {
-        name: '',
-        distributed: false,
-        dataCenterId: '',
-        primaryClusters: [],
-        standbyClusters: [],
-        status: 'active',
-        remark: ''
-      }
+  if (val && props.isEdit && props.editData) {
+    // 编辑模式，初始化表单数据
+    form.value = {
+      id: props.editData.id,
+      name: props.editData.name,
+      distributed: props.editData.distributed,
+      dataCenterId: props.editData.dataCenterId,
+      primaryClusters: [...props.editData.primaryClusters],
+      standbyClusters: [...(props.editData.standbyClusters || [])],
+      status: props.editData.status,
+      remark: props.editData.remark,
+      addressType: props.editData.addressType || 'ipv4'
+    }
+  } else if (val) {
+    // 新增模式，重置表单
+    form.value = {
+      id: '',
+      name: '',
+      distributed: false,
+      dataCenterId: '',
+      primaryClusters: [],
+      standbyClusters: [],
+      status: 'active',
+      remark: '',
+      addressType: 'ipv4'
     }
   }
 })

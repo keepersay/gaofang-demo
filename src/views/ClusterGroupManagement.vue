@@ -166,6 +166,7 @@ import ClusterGroupModal from '@/components/ClusterGroupModal.vue'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
 import DataCenterService from '@/services/DataCenterService'
+import { Filter } from '@element-plus/icons-vue'
 
 // 生成雪花算法ID
 function generateSnowflakeId() {
@@ -185,6 +186,26 @@ const regionTree = ref([])
 const regions = ref([]) // 保留扁平化的地域数据用于查询
 const clusters = ref([])
 const dataCenters = ref([]) // 添加机房数据
+
+// 地址类型过滤器
+const addressTypePopoverVisible = ref(false)
+const addressTypeFilterValue = ref([])
+const addressTypeFilters = [
+  { text: 'IPv4', value: 'ipv4' },
+  { text: 'IPv6', value: 'ipv6' },
+  { text: '双栈', value: 'dual' }
+]
+
+// 重置地址类型过滤器
+const resetAddressTypeFilter = () => {
+  addressTypeFilterValue.value = []
+  addressTypePopoverVisible.value = false
+}
+
+// 确认地址类型过滤
+const confirmAddressTypeFilter = () => {
+  addressTypePopoverVisible.value = false
+}
 
 // 搜索表单
 const searchForm = ref({
@@ -214,7 +235,8 @@ const tableData = ref([
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-10 11:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4'
   },
   {
     id: 'LCG7503281108201961886',
@@ -228,7 +250,8 @@ const tableData = ref([
     createTime: '2024-01-02 11:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-11 12:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4'
   },
   {
     id: 'LCG7503281108201961887',
@@ -242,7 +265,8 @@ const tableData = ref([
     createTime: '2024-05-15 09:30:00',
     createAccount: 'admin',
     updateTime: '2024-05-15 09:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'dual'
   },
   {
     id: 'LCG7503281108201961888',
@@ -256,7 +280,8 @@ const tableData = ref([
     createTime: '2024-03-05 14:20:00',
     createAccount: 'admin',
     updateTime: '2024-03-05 14:20:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'dual'
   },
   {
     id: 'LCG7503281108201961889',
@@ -270,7 +295,8 @@ const tableData = ref([
     createTime: '2024-02-28 16:30:00',
     createAccount: 'admin',
     updateTime: '2024-04-10 09:15:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4'
   },
   {
     id: 'LCG7503281108201961890',
@@ -284,7 +310,8 @@ const tableData = ref([
     createTime: '2024-03-10 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-03-15 11:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4'
   },
   {
     id: 'LCG7503281108201961891',
@@ -298,7 +325,8 @@ const tableData = ref([
     createTime: '2024-06-01 09:00:00',
     createAccount: 'admin',
     updateTime: '2024-06-01 09:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'dual'
   },
   {
     id: 'LCG7503281108201961892',
@@ -312,7 +340,8 @@ const tableData = ref([
     createTime: '2024-04-12 14:00:00',
     createAccount: 'admin',
     updateTime: '2024-04-12 14:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4'
   },
   {
     id: 'LCG7503281108201961893',
@@ -326,7 +355,8 @@ const tableData = ref([
     createTime: '2024-03-25 08:45:00',
     createAccount: 'admin',
     updateTime: '2024-03-25 08:45:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv6'
   },
   {
     id: 'LCG7503281108201961894',
@@ -340,7 +370,8 @@ const tableData = ref([
     createTime: '2024-05-20 10:30:00',
     createAccount: 'admin',
     updateTime: '2024-05-20 10:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv6'
   }
 ])
 
@@ -398,10 +429,19 @@ const getDataCenterName = (dataCenterId) => {
 const paginatedData = computed(() => {
   // 先过滤
   let filteredData = tableData.value;
+  
+  // 名称过滤
   if (searchForm.value.name) {
     const searchText = searchForm.value.name.toLowerCase();
     filteredData = filteredData.filter(item => 
       item.name.toLowerCase().includes(searchText)
+    );
+  }
+  
+  // 地址类型过滤
+  if (addressTypeFilterValue.value.length > 0) {
+    filteredData = filteredData.filter(item => 
+      addressTypeFilterValue.value.includes(item.addressType || 'ipv4')
     );
   }
   
