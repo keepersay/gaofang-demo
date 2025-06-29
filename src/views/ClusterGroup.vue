@@ -41,7 +41,7 @@
           <template #header>
             <span>状态</span>
             <el-popover placement="bottom" width="160" trigger="click" v-model:visible="statusPopoverVisible">
-              <div>
+  <div>
                 <el-checkbox-group v-model="statusFilterValue">
                   <el-checkbox v-for="item in statusFilters" :key="item.value" :value="item.value">{{ item.text }}</el-checkbox>
                 </el-checkbox-group>
