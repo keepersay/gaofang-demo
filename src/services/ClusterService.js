@@ -25,7 +25,8 @@ const mockClusters = [
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-01 10:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 1000
   },
   {
     id: 'LC202407250002',
@@ -44,7 +45,8 @@ const mockClusters = [
     createTime: '2024-01-02 14:30:00',
     createAccount: 'admin',
     updateTime: '2024-01-02 14:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 500
   },
   {
     id: 'LC202407250003',
@@ -63,7 +65,8 @@ const mockClusters = [
     createTime: '2024-02-15 09:30:00',
     createAccount: 'admin',
     updateTime: '2024-02-15 09:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 800
   },
   {
     id: 'LC202407250004',
@@ -82,7 +85,8 @@ const mockClusters = [
     createTime: '2024-03-05 11:15:00',
     createAccount: 'admin',
     updateTime: '2024-03-05 11:15:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 1200
   },
   {
     id: 'LC202407250005',
@@ -101,7 +105,8 @@ const mockClusters = [
     createTime: '2024-05-12 08:45:00',
     createAccount: 'admin',
     updateTime: '2024-05-12 08:45:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 2000
   },
   {
     id: 'LC202407250006',
@@ -120,7 +125,8 @@ const mockClusters = [
     createTime: '2024-04-18 14:20:00',
     createAccount: 'admin',
     updateTime: '2024-04-18 14:20:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 1500
   },
   {
     id: 'LC202407250007',
@@ -139,7 +145,8 @@ const mockClusters = [
     createTime: '2024-03-22 12:30:00',
     createAccount: 'admin',
     updateTime: '2024-03-22 12:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 3000
   },
   {
     id: 'LC202407250008',
@@ -158,7 +165,8 @@ const mockClusters = [
     createTime: '2024-02-28 15:45:00',
     createAccount: 'admin',
     updateTime: '2024-02-28 15:45:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    bandwidth: 2500
   }
 ]
 
