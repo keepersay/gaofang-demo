@@ -93,7 +93,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'OperationLog',
     component: OperationLog
   },
-  {
+      {
     path: '/login-log',
     name: 'LoginLog',
     component: LoginLog
@@ -167,7 +167,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/business-instance',
     name: 'BusinessInstance',
-    component: Placeholder
+    component: () => import('../views/BusinessInstance.vue')
   },
   {
     path: '/order',

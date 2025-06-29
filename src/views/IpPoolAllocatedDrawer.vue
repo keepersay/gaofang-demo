@@ -1,20 +1,5 @@
 <template>
-  <el-drawer :model-value="visible" title="已分配IP列表" size="60%" @close="$emit('close')">
-    <div class="pool-info" v-if="pool">
-      <h3>网池信息</h3>
-      <div class="info-row">
-        <span class="info-label">ID:</span> {{ pool.id }}
-        <span class="info-label ml-4">名称:</span> {{ pool.name }}
-        <span class="info-label ml-4">协议族:</span> {{ pool.protocol === 'IPV4' ? 'IPv4' : 'IPv6' }}
-      </div>
-      <div class="info-row">
-        <span class="info-label">网段列表:</span>
-      </div>
-      <div class="ranges-list">
-        <el-tag v-for="(range, index) in pool.ranges" :key="index" class="range-tag" size="small">{{ range }}</el-tag>
-        <span v-if="pool.ranges.length === 0" class="text-gray-400">无网段</span>
-      </div>
-    </div>
+  <el-drawer :model-value="visible" :title="`已分配IP列表 - ${pool?.name || ''}`" size="60%" @close="$emit('close')">
     <el-divider />
     <el-form :inline="true" :model="filters" style="margin-bottom: 12px;">
       <el-form-item label="IP地址">
@@ -32,12 +17,23 @@
       </el-form-item>
     </el-form>
     <el-table :data="list" style="width: 100%" row-key="ip">
-      <el-table-column prop="segmentId" label="网段ID" min-width="120" />
       <el-table-column prop="ip" label="IP地址" min-width="120" />
-      <el-table-column prop="ipInt" label="IP地址int" min-width="120" />
-      <el-table-column prop="clusterName" label="所属逻辑集群" min-width="120" />
-      <el-table-column prop="instanceId" label="业务实例ID" min-width="120" />
-      <el-table-column prop="customerId" label="所属客户ID" min-width="120" />
+      <el-table-column prop="segment" label="所属网段" min-width="150">
+        <template #default="scope">
+          {{ scope.row.segment || scope.row.segmentId || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="clusterName" label="逻辑集群" min-width="120" />
+      <el-table-column prop="instanceName" label="业务实例" min-width="150">
+        <template #default="scope">
+          {{ scope.row.instanceName || scope.row.instanceId || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="customerName" label="所属客户" min-width="150">
+        <template #default="scope">
+          {{ scope.row.customerName || scope.row.customerId || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="120" />
     </el-table>
     <el-pagination

@@ -212,6 +212,7 @@ export function fetchIpPools(filters, pagination) {
     if (filters.dataCenterId && pool.dataCenterId !== filters.dataCenterId) return false;
     if (filters.status && pool.status !== filters.status) return false;
     if (filters.name && !pool.name.includes(filters.name)) return false;
+    if (filters.isAnycast !== undefined && filters.isAnycast !== '' && pool.isAnycast !== (filters.isAnycast === 'true')) return false;
     return true;
   });
   const total = data.length;

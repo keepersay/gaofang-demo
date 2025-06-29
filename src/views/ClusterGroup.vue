@@ -37,12 +37,11 @@
       >
         <el-table-column prop="id" label="ID" width="220" fixed="left" />
         <el-table-column prop="name" label="名称" width="180" />
-        <el-table-column prop="displayName" label="显示名称" width="180" />
         <el-table-column prop="status" label="状态" width="100">
           <template #header>
             <span>状态</span>
             <el-popover placement="bottom" width="160" trigger="click" v-model:visible="statusPopoverVisible">
-  <div>
+              <div>
                 <el-checkbox-group v-model="statusFilterValue">
                   <el-checkbox v-for="item in statusFilters" :key="item.value" :value="item.value">{{ item.text }}</el-checkbox>
                 </el-checkbox-group>
@@ -62,6 +61,26 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="集群类型" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.enableL7 ? 'warning' : 'info'">
+              {{ scope.row.enableL7 ? 'L7' : 'L4' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="addressType" label="地址类型" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.addressType === 'ipv4'" type="info">IPv4</el-tag>
+            <el-tag v-else-if="scope.row.addressType === 'ipv6'" type="success">IPv6</el-tag>
+            <el-tag v-else type="warning">双栈</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="bandwidth" label="承载带宽(Mbps)" width="120">
+          <template #default="scope">
+            <span>{{ scope.row.bandwidth }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="displayName" label="显示名称" width="180" />
         <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
         <el-table-column label="所属机房" width="180">
           <template #header>
@@ -103,11 +122,6 @@
         <el-table-column label="网元链路" min-width="220">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="margin-bottom: 2px;">
-                <el-tag type="info" size="small" style="margin-right: 8px;">
-                  {{ scope.row.enableL7 ? '七层防护已开启' : '仅四层防护' }}
-                </el-tag>
-              </div>
               <div v-for="item in [
                 { label: 'ADS', value: getClusterNameById(scope.row.slots?.ADS), color: '#409EFF' },
                 { label: 'SLB', value: getClusterNameById(scope.row.slots?.SLB), color: '#67C23A' },
@@ -240,7 +254,7 @@
               :key="item.id"
               :label="`${item.name} (${getRegionName(item.regionId)})`"
               :value="item.id"
-            />
+    />
           </el-select>
         </el-form-item>
         <el-form-item label="VIP池">
@@ -290,6 +304,19 @@
             @keyup.enter="addSnatIp"
             style="width: 220px; margin-top: 4px;"
           />
+        </el-form-item>
+        <el-form-item label="集群类型">
+          <el-tag :type="form.enableL7 ? 'warning' : 'info'">{{ form.enableL7 ? 'L7' : 'L4' }}</el-tag>
+        </el-form-item>
+        <el-form-item label="地址类型" prop="addressType">
+          <el-radio-group v-model="form.addressType">
+            <el-radio label="ipv4">IPv4</el-radio>
+            <el-radio label="ipv6">IPv6</el-radio>
+            <el-radio label="dual">双栈</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="承载带宽(Mbps)" prop="bandwidth">
+          <el-input-number v-model="form.bandwidth" :min="1" :max="100000" :step="1" style="width: 180px;" />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input 
@@ -363,7 +390,9 @@ const form = ref({
   status: 'active',
   remark: '',
   enableL7: false,
-  dataCenterId: ''
+  dataCenterId: '',
+  addressType: 'ipv4',
+  bandwidth: 100
 })
 
 // 表单验证规则
@@ -394,6 +423,13 @@ const rules = {
   ],
   remark: [
     { max: 200, message: '长度不能超过 200 个字符', trigger: 'blur' }
+  ],
+  addressType: [
+    { required: true, message: '请选择地址类型', trigger: 'change' }
+  ],
+  bandwidth: [
+    { required: true, message: '请输入承载带宽', trigger: 'blur' },
+    { type: 'number', min: 1, max: 100000, message: '带宽范围1-100000', trigger: 'blur' }
   ]
 }
 
@@ -416,7 +452,9 @@ const tableData = ref([
     createTime: '2024-01-01 10:00:00',
     createAccount: 'admin',
     updateTime: '2024-01-01 10:00:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'ipv4',
+    bandwidth: 100
   },
   {
     id: generateSnowflakeId(),
@@ -435,7 +473,9 @@ const tableData = ref([
     createTime: '2024-01-02 14:30:00',
     createAccount: 'admin',
     updateTime: '2024-01-02 14:30:00',
-    updateAccount: 'admin'
+    updateAccount: 'admin',
+    addressType: 'dual',
+    bandwidth: 200
   }
 ])
 
@@ -520,7 +560,9 @@ const handleAdd = () => {
     status: 'active',
     remark: '',
     enableL7: false,
-    dataCenterId: ''
+    dataCenterId: '',
+    addressType: 'ipv4',
+    bandwidth: 100
   }
   dialogVisible.value = true
 }
@@ -546,7 +588,9 @@ const handleEdit = (row) => {
     status: row.status,
     remark: row.remark,
     enableL7: row.enableL7 || false,
-    dataCenterId: row.dataCenterId || ''
+    dataCenterId: row.dataCenterId || '',
+    addressType: row.addressType || 'ipv4',
+    bandwidth: row.bandwidth || 100
   }
   dialogVisible.value = true
 }
@@ -592,8 +636,8 @@ const handleSubmit = async () => {
         if (isEdit.value) {
           // 编辑
           await ClusterService.updateCluster(form.value.id, form.value)
-          ElMessage.success('编辑成功')
-        } else {
+      ElMessage.success('编辑成功')
+    } else {
           // 新增
           await ClusterService.addCluster(form.value)
           ElMessage.success('新增成功')
@@ -603,7 +647,7 @@ const handleSubmit = async () => {
       } catch (error) {
         console.error('保存失败:', error)
         ElMessage.error('保存失败')
-      }
+    }
     }
   })
 }
@@ -684,6 +728,13 @@ function handleL7SwitchChange() {
     // 关闭七层时清除WAF-CC和WAF选择
     const { ADS, SLB } = form.value.slots;
     form.value.slots = { ADS, SLB, WAFCC: '', WAF: '' }
+  }
+  // 新增：编辑状态下同步表格数据，实时回显集群类型
+  if (isEdit.value && form.value.id) {
+    const idx = tableData.value.findIndex(item => item.id === form.value.id)
+    if (idx !== -1) {
+      tableData.value[idx].enableL7 = form.value.enableL7
+    }
   }
 }
 

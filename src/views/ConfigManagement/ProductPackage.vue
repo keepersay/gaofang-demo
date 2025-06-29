@@ -189,15 +189,15 @@
               <el-select v-model="form.regionId" placeholder="请选择地域" style="width: 100%">
                 <el-option v-for="region in regionOptions" :key="region.value" :label="region.label" :value="region.value" />
               </el-select>
-            </el-form-item>
+        </el-form-item>
             
             <el-form-item label="地址类型" prop="addressType">
               <el-select v-model="form.addressType" placeholder="请选择地址类型" style="width: 100%">
                 <el-option label="IPv4" value="IPv4" />
                 <el-option label="IPv6" value="IPv6" />
                 <el-option label="双栈" value="dual" />
-              </el-select>
-            </el-form-item>
+          </el-select>
+        </el-form-item>
           </el-tab-pane>
           
           <el-tab-pane label="防护配置" name="protection">
@@ -215,34 +215,34 @@
           </el-tab-pane>
           
           <el-tab-pane label="资源配置" name="resource">
-            <el-form-item label="防护带宽" prop="protectionBandwidth">
+        <el-form-item label="防护带宽" prop="protectionBandwidth">
               <el-input-number v-model="form.protectionBandwidth" :min="1" :max="10000" style="width: 100%" />
               <span class="unit-label">Mbps</span>
-            </el-form-item>
+        </el-form-item>
             
-            <el-form-item label="业务带宽" prop="businessBandwidth">
-              <el-input-number v-model="form.businessBandwidth" :min="1" :max="10000" style="width: 100%" />
+        <el-form-item label="业务带宽" prop="businessBandwidth">
+          <el-input-number v-model="form.businessBandwidth" :min="1" :max="10000" style="width: 100%" />
               <span class="unit-label">Mbps</span>
-            </el-form-item>
+        </el-form-item>
             
             <el-form-item label="业务QPS" prop="businessQps">
               <el-input-number v-model="form.businessQps" :min="1" :max="100000" style="width: 100%" />
-            </el-form-item>
+        </el-form-item>
             
             <el-form-item label="防护IP数" prop="protectionIpCount">
               <el-input-number v-model="form.protectionIpCount" :min="1" :max="1000" style="width: 100%" />
               <span class="unit-label">个</span>
-            </el-form-item>
+        </el-form-item>
             
             <el-form-item label="防护域名数" prop="protectionDomainCount">
               <el-input-number v-model="form.protectionDomainCount" :min="1" :max="1000" style="width: 100%" />
               <span class="unit-label">个</span>
-            </el-form-item>
+        </el-form-item>
             
             <el-form-item label="端口数量" prop="portCount">
               <el-input-number v-model="form.portCount" :min="1" :max="1000" style="width: 100%" />
               <span class="unit-label">个</span>
-            </el-form-item>
+        </el-form-item>
           </el-tab-pane>
         </el-tabs>
       </el-form>
