@@ -10,5 +10,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src')
     }
   },
-  base: process.env.NODE_ENV === 'production' ? '/gaofang-demo/' : '/'
+  base: process.env.NODE_ENV === 'production' ? '/gaofang-demo/' : '/',
+  optimizeDeps: {
+    force: true // 强制重新构建优化的依赖
+  },
+  server: {
+    hmr: true // 确保热更新正常工作
+  }
 }) 

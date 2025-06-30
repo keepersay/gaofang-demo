@@ -91,14 +91,26 @@
 
       <!-- 步骤3：防护选项 -->
       <div v-show="active === 2">
-        <el-form-item label="ADS防护" prop="adsProtection">
-          <el-switch v-model="form.adsProtection" />
+        <el-alert
+          title="防护配置与套餐对应关系"
+          type="info"
+          description="ADS防护 -> DDOS防护；ADS防护+CC防护 -> WAF标准防护；ADS防护+CC防护+WAF防护 -> WAF增强防护"
+          :closable="false"
+          style="margin-bottom: 20px;"
+        />
+
+        <el-form-item label="套餐选择" prop="packageType">
+          <el-radio-group v-model="form.packageType" @change="handlePackageTypeChange">
+            <el-radio :label="1">DDOS防护（仅ADS防护）</el-radio>
+            <el-radio :label="2">WAF标准防护（ADS+CC防护）</el-radio>
+            <el-radio :label="3">WAF增强防护（ADS+CC+WAF防护）</el-radio>
+          </el-radio-group>
         </el-form-item>
-        <el-form-item label="CC防护" prop="ccProtection">
-          <el-switch v-model="form.ccProtection" />
-        </el-form-item>
-        <el-form-item label="WAF防护" prop="wafProtection">
-          <el-switch v-model="form.wafProtection" />
+
+        <el-form-item label="防护内容">
+          <el-tag v-if="form.adsProtection" type="success" style="margin-right: 5px">ADS防护</el-tag>
+          <el-tag v-if="form.ccProtection" type="warning" style="margin-right: 5px">CC防护</el-tag>
+          <el-tag v-if="form.wafProtection" type="danger">WAF防护</el-tag>
         </el-form-item>
       </div>
 
@@ -195,10 +207,11 @@ const form = reactive({
   orderId: '',
   packageId: '',
   packageName: '',
+  packageType: 1, // 1: DDOS防护, 2: WAF标准防护, 3: WAF增强防护
   isAnycast: false,
   addressType: 'IPv4',
   regionId: '',
-  adsProtection: false,
+  adsProtection: true, // 默认开启ADS防护
   ccProtection: false,
   wafProtection: false,
   bandwidth: 100,
@@ -246,10 +259,11 @@ const resetForm = () => {
   form.orderId = ''
   form.packageId = ''
   form.packageName = ''
+  form.packageType = 1
   form.isAnycast = false
   form.addressType = 'IPv4'
   form.regionId = ''
-  form.adsProtection = false
+  form.adsProtection = true
   form.ccProtection = false
   form.wafProtection = false
   form.bandwidth = 100
@@ -270,11 +284,24 @@ watch(() => props.instanceData, (val) => {
       }
     })
     
-    // 提取防护选项
+    // 根据套餐名称设置防护选项
     if (val.packageName) {
-      form.adsProtection = val.packageName.includes('ADS')
-      form.ccProtection = val.packageName.includes('CC')
-      form.wafProtection = val.packageName.includes('WAF')
+      if (val.packageName === 'DDOS防护') {
+        form.adsProtection = true;
+        form.ccProtection = false;
+        form.wafProtection = false;
+        form.packageType = 1;
+      } else if (val.packageName === 'WAF标准防护') {
+        form.adsProtection = true;
+        form.ccProtection = true;
+        form.wafProtection = false;
+        form.packageType = 2;
+      } else if (val.packageName === 'WAF增强防护') {
+        form.adsProtection = true;
+        form.ccProtection = true;
+        form.wafProtection = true;
+        form.packageType = 3;
+      }
     }
     
     // 加载关联数据
@@ -362,6 +389,24 @@ const handleOrderChange = (val) => {
   const order = orderOptions.value.find(item => item.orderId === val)
   if (order) {
     form.packageName = order.packageName
+    
+    // 根据套餐名称设置对应的防护选项和套餐类型
+    if (order.packageName === 'DDOS防护') {
+      form.packageType = 1;
+      form.adsProtection = true;
+      form.ccProtection = false;
+      form.wafProtection = false;
+    } else if (order.packageName === 'WAF标准防护') {
+      form.packageType = 2;
+      form.adsProtection = true;
+      form.ccProtection = true;
+      form.wafProtection = false;
+    } else if (order.packageName === 'WAF增强防护') {
+      form.packageType = 3;
+      form.adsProtection = true;
+      form.ccProtection = true;
+      form.wafProtection = true;
+    }
   }
 }
 
@@ -411,13 +456,16 @@ const handleSubmit = async () => {
     
     // 构建提交数据
     const submitData = {
-      ...form,
-      // 根据防护选项构建套餐名称
-      packageName: [
-        form.adsProtection ? 'ADS' : '',
-        form.ccProtection ? 'CC' : '',
-        form.wafProtection ? 'WAF' : ''
-      ].filter(Boolean).join('-')
+      ...form
+    }
+    
+    // 根据防护选项选择套餐名称
+    if (form.wafProtection && form.ccProtection && form.adsProtection) {
+      submitData.packageName = 'WAF增强防护';
+    } else if (form.ccProtection && form.adsProtection) {
+      submitData.packageName = 'WAF标准防护';
+    } else {
+      submitData.packageName = 'DDOS防护';  // 默认或只有ADS防护时
     }
     
     // 如果是Anycast，清空地域ID
@@ -442,6 +490,26 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('表单验证失败:', error)
+  }
+}
+
+// 处理套餐类型变更
+const handlePackageTypeChange = (val) => {
+  if (val === 1) {
+    // DDOS防护
+    form.adsProtection = true;
+    form.ccProtection = false;
+    form.wafProtection = false;
+  } else if (val === 2) {
+    // WAF标准防护
+    form.adsProtection = true;
+    form.ccProtection = true;
+    form.wafProtection = false;
+  } else if (val === 3) {
+    // WAF增强防护
+    form.adsProtection = true;
+    form.ccProtection = true;
+    form.wafProtection = true;
   }
 }
 </script>

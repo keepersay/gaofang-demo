@@ -41,6 +41,9 @@ for (let i = 0; i < 30; i++) {
     }
   }
   
+  // 套餐名称列表
+  const packageNames = ['DDOS防护', 'WAF标准防护', 'WAF增强防护']
+  
   // 生成业务实例
   businessInstances.push({
     instanceId: 'BI' + Random.natural(10000, 99999),
@@ -49,7 +52,7 @@ for (let i = 0; i < 30; i++) {
     customerName: Random.pick(customerNames),
     orderId: Random.pick(orderIds),
     packageId: 'PKG' + Random.natural(100, 999),
-    packageName: `套餐-${Random.natural(1, 5)}`,
+    packageName: Random.pick(packageNames),
     isAnycast,
     addressType,
     regionId,
@@ -191,10 +194,12 @@ export default {
   // 获取可用订单列表
   getAvailableOrders(params) {
     const { keyword } = params || {}
+    const packageNames = ['DDOS防护', 'WAF标准防护', 'WAF增强防护']
+    
     let results = orderIds.map(orderId => ({
       orderId,
       customerName: Random.pick(customerNames),
-      packageName: `套餐-${Random.natural(1, 5)}`,
+      packageName: Random.pick(packageNames),
       createTime: Random.datetime('yyyy-MM-dd HH:mm:ss')
     }))
     
