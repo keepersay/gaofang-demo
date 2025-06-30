@@ -73,12 +73,45 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-      </div>
-    </div>
+              </div>
+            </div>
           </el-option>
-          </el-select>
+        </el-select>
         <div class="form-tip">
           {{ '请选择主集群' }}
+        </div>
+      </el-form-item>
+      
+      <!-- 默认集群选择，仅在分布式模式下显示 -->
+      <el-form-item 
+        v-if="form.distributed" 
+        label="默认集群" 
+        prop="defaultClusterId"
+        :rules="[
+          { required: true, message: '请选择默认集群', trigger: 'change' }
+        ]"
+      >
+        <el-select 
+          v-model="form.defaultClusterId" 
+          placeholder="请选择默认集群" 
+          style="width: 100%"
+          :loading="loading.clusters"
+          :disabled="form.primaryClusters.length === 0"
+        >
+          <el-option
+            v-for="clusterId in form.primaryClusters"
+            :key="clusterId"
+            :label="getClusterName(clusterId)"
+            :value="clusterId"
+          >
+            <div class="cluster-option">
+              <span>{{ getClusterName(clusterId) }}</span>
+              <el-tag size="small" type="success">默认</el-tag>
+            </div>
+          </el-option>
+        </el-select>
+        <div class="form-tip">
+          默认集群将作为分布式集群组的首选集群
         </div>
       </el-form-item>
       
@@ -190,7 +223,8 @@ const form = ref({
   standbyClusters: [],
   status: 'active',
   remark: '',
-  addressType: 'ipv4'
+  addressType: 'ipv4',
+  defaultClusterId: ''
 })
 
 // 激活状态的机房列表
@@ -276,6 +310,12 @@ const getRegionName = (regionId) => {
   return region ? region.name : regionId
 }
 
+// 获取集群名称
+const getClusterName = (clusterId) => {
+  const cluster = clusters.value.find(c => c.id === clusterId)
+  return cluster ? cluster.displayName : clusterId
+}
+
 // 获取地域数据
 const fetchRegions = async () => {
   loading.value.regions = true
@@ -320,6 +360,8 @@ const fetchClusters = async () => {
 const validatePrimaryClusters = (rule, value, callback) => {
   if (!value || value.length === 0) {
     callback(new Error('请选择至少一个主集群'))
+  } else if (form.value.distributed && !form.value.defaultClusterId) {
+    callback(new Error('分布式集群组必须选择一个默认集群'))
   } else {
     callback()
   }
@@ -354,6 +396,7 @@ const handleDistributedChange = (value) => {
   // 清空相关字段
   form.value.primaryClusters = []
   form.value.standbyClusters = []
+  form.value.defaultClusterId = ''
   if (!value) {
     // 如果改为非分布式，需要选择机房
     form.value.dataCenterId = ''
@@ -369,6 +412,16 @@ const handleDataCenterChange = (value) => {
   }
 }
 
+// 监听主集群变化，如果默认集群不在主集群列表中，则清空默认集群
+watch(() => form.value.primaryClusters, (newVal) => {
+  if (form.value.defaultClusterId && !newVal.includes(form.value.defaultClusterId)) {
+    form.value.defaultClusterId = newVal.length > 0 ? newVal[0] : ''
+  } else if (form.value.distributed && newVal.length > 0 && !form.value.defaultClusterId) {
+    // 如果是分布式集群，且有主集群但没有默认集群，则设置第一个主集群为默认集群
+    form.value.defaultClusterId = newVal[0]
+  }
+}, { deep: true })
+
 // 监听props.visible变化
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
@@ -383,7 +436,8 @@ watch(() => props.visible, (val) => {
       standbyClusters: [...(props.editData.standbyClusters || [])],
       status: props.editData.status,
       remark: props.editData.remark,
-      addressType: props.editData.addressType || 'ipv4'
+      addressType: props.editData.addressType || 'ipv4',
+      defaultClusterId: props.editData.defaultClusterId || (props.editData.primaryClusters.length > 0 ? props.editData.primaryClusters[0] : '')
     }
   } else if (val) {
     // 新增模式，重置表单
@@ -396,7 +450,8 @@ watch(() => props.visible, (val) => {
       standbyClusters: [],
       status: 'active',
       remark: '',
-      addressType: 'ipv4'
+      addressType: 'ipv4',
+      defaultClusterId: ''
     }
   }
 })
