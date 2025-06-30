@@ -167,9 +167,6 @@
         <el-descriptions-item label="网络类型">
           {{ currentDetail.networkType }}
         </el-descriptions-item>
-        <el-descriptions-item label="带宽">
-          {{ currentDetail.bandwidth }}
-        </el-descriptions-item>
         <el-descriptions-item label="IP版本">
           {{ currentDetail.ipVersion }}
         </el-descriptions-item>
