@@ -51,6 +51,29 @@
       >
         <el-table-column prop="id" label="订单ID" width="120" sortable="custom" />
         <el-table-column prop="customerName" label="客户名" min-width="120" />
+        <el-table-column prop="packageType" label="套餐" width="120">
+          <template #header>
+            <div class="filter-header">
+              套餐
+              <el-dropdown trigger="click" @command="handlePackageTypeFilterChange">
+                <el-icon class="filter-icon"><Filter /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item :command="null">全部</el-dropdown-item>
+                    <el-dropdown-item command="ddos">DDOS防护</el-dropdown-item>
+                    <el-dropdown-item command="waf-standard">WAF标准防护</el-dropdown-item>
+                    <el-dropdown-item command="waf-enhanced">WAF增强防护</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </template>
+          <template #default="scope">
+            <el-tag :type="getPackageTypeTagType(scope.row.packageType)" size="small">
+              {{ getPackageTypeText(scope.row.packageType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="orderType" label="订单类型" width="90">
           <template #header>
             <div class="filter-header">
@@ -280,6 +303,11 @@
       >
         <el-descriptions-item label="订单ID" label-align="right">{{ currentOrder.id }}</el-descriptions-item>
         <el-descriptions-item label="客户名称" label-align="right">{{ currentOrder.customerName }}</el-descriptions-item>
+        <el-descriptions-item label="套餐" label-align="right">
+          <el-tag :type="getPackageTypeTagType(currentOrder.packageType)" size="small">
+            {{ getPackageTypeText(currentOrder.packageType) }}
+          </el-tag>
+        </el-descriptions-item>
         <el-descriptions-item label="订单类型" label-align="right">
           <el-tag :type="currentOrder.orderType === 'new' ? 'primary' : 'success'" size="small">
             {{ currentOrder.orderType === 'new' ? '开通订单' : '变更订单' }}
@@ -428,6 +456,7 @@ const mockOrders = [
     customerName: '阿里云科技有限公司',
     status: 'pending',
     orderType: 'new',
+    packageType: 'ddos',
     isAnycast: false,
     regionId: 'cn-beijing',
     addressType: 'IPv4',
@@ -453,6 +482,7 @@ const mockOrders = [
     customerName: '腾讯科技(深圳)有限公司',
     status: 'completed',
     orderType: 'new',
+    packageType: 'waf-standard',
     isAnycast: true,
     regionId: '',
     addressType: 'IPv6',
@@ -478,6 +508,7 @@ const mockOrders = [
     customerName: '百度在线网络技术(北京)有限公司',
     status: 'cancelled',
     orderType: 'new',
+    packageType: 'waf-enhanced',
     isAnycast: false,
     regionId: 'cn-hangzhou',
     addressType: 'IPv4',
@@ -503,6 +534,7 @@ const mockOrders = [
     customerName: '阿里云科技有限公司',
     status: 'pending',
     orderType: 'change',
+    packageType: 'ddos',
     isAnycast: true,
     regionId: '',
     addressType: 'IPv4',
@@ -529,6 +561,7 @@ const mockOrders = [
     customerName: '京东科技控股股份有限公司',
     status: 'completed',
     orderType: 'new',
+    packageType: 'waf-standard',
     isAnycast: false,
     regionId: 'cn-shenzhen',
     addressType: 'IPv6',
@@ -554,6 +587,7 @@ const mockOrders = [
     customerName: '字节跳动有限公司',
     status: 'pending',
     orderType: 'change',
+    packageType: 'waf-enhanced',
     isAnycast: true,
     regionId: '',
     addressType: 'dual',
@@ -591,14 +625,15 @@ const search = ref({
 });
 
 // 表格过滤条件
-const filters = ref({
+const filters = reactive({
+  orderType: null,
   status: null,
-  addressType: null,
   isAnycast: null,
   hasAdsProtection: null,
   hasCcProtection: null,
   hasWafProtection: null,
-  orderType: null
+  addressType: null,
+  packageType: null
 });
 
 // 排序
@@ -737,89 +772,90 @@ const getRegionName = (regionId) => {
 
 // 过滤后的订单数据
 const filteredOrders = computed(() => {
-  let result = [...orders.value];
+  let result = [...mockOrders]
   
   // 关键字搜索
   if (search.value.keyword) {
-    const keyword = search.value.keyword.toLowerCase();
+    const keyword = search.value.keyword.toLowerCase()
     result = result.filter(order => 
       order.id.toLowerCase().includes(keyword) || 
       order.customerName.toLowerCase().includes(keyword)
-    );
+    )
   }
   
   // 状态过滤
   if (search.value.status) {
-    result = result.filter(order => order.status === search.value.status);
+    result = result.filter(order => order.status === search.value.status)
   }
   
   // 日期范围过滤
   if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
-    const startDate = new Date(dateRange.value[0]);
-    const endDate = new Date(dateRange.value[1]);
-    endDate.setHours(23, 59, 59, 999); // 设置为当天结束时间
+    const startDate = new Date(dateRange.value[0])
+    const endDate = new Date(dateRange.value[1])
+    endDate.setHours(23, 59, 59, 999) // 设置为当天结束时间
     
     result = result.filter(order => {
-      const orderDate = new Date(order.orderTime);
-      return orderDate >= startDate && orderDate <= endDate;
-    });
+      const orderDate = new Date(order.orderTime)
+      return orderDate >= startDate && orderDate <= endDate
+    })
   }
   
   // 表头过滤
-  if (filters.value.status) {
-    result = result.filter(order => order.status === filters.value.status);
+  if (filters.status) {
+    result = result.filter(order => order.status === filters.status)
   }
   
-  if (filters.value.orderType) {
-    result = result.filter(order => order.orderType === filters.value.orderType);
+  if (filters.orderType) {
+    result = result.filter(order => order.orderType === filters.orderType)
   }
   
-  if (filters.value.addressType) {
-    result = result.filter(order => order.addressType === filters.value.addressType);
+  if (filters.addressType) {
+    result = result.filter(order => order.addressType === filters.addressType)
   }
   
-  if (filters.value.isAnycast !== null) {
-    result = result.filter(order => order.isAnycast === filters.value.isAnycast);
+  if (filters.isAnycast !== null) {
+    result = result.filter(order => order.isAnycast === filters.isAnycast)
   }
   
-  if (filters.value.hasAdsProtection !== null) {
-    result = result.filter(order => order.hasAdsProtection === filters.value.hasAdsProtection);
+  if (filters.hasAdsProtection !== null) {
+    result = result.filter(order => order.hasAdsProtection === filters.hasAdsProtection)
   }
   
-  if (filters.value.hasCcProtection !== null) {
-    result = result.filter(order => order.hasCcProtection === filters.value.hasCcProtection);
+  if (filters.hasCcProtection !== null) {
+    result = result.filter(order => order.hasCcProtection === filters.hasCcProtection)
   }
   
-  if (filters.value.hasWafProtection !== null) {
-    result = result.filter(order => order.hasWafProtection === filters.value.hasWafProtection);
+  if (filters.hasWafProtection !== null) {
+    result = result.filter(order => order.hasWafProtection === filters.hasWafProtection)
+  }
+  
+  if (filters.packageType) {
+    result = result.filter(order => order.packageType === filters.packageType)
   }
   
   // 排序
-  if (sortParams.value.prop && sortParams.value.order) {
-    const prop = sortParams.value.prop;
-    const isAsc = sortParams.value.order === 'ascending';
+  if (sortParams.value.prop) {
+    const prop = sortParams.value.prop
+    const isAsc = sortParams.value.order === 'ascending'
     
     result.sort((a, b) => {
-      if (typeof a[prop] === 'string') {
-        return isAsc 
-          ? a[prop].localeCompare(b[prop]) 
-          : b[prop].localeCompare(a[prop]);
+      if (isAsc) {
+        return a[prop] > b[prop] ? 1 : -1
       } else {
-        return isAsc 
-          ? a[prop] - b[prop] 
-          : b[prop] - a[prop];
+        return a[prop] < b[prop] ? 1 : -1
       }
-    });
+    })
   }
   
   // 更新总数
-  totalOrders.value = result.length;
+  totalOrders.value = result.length
   
   // 分页
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return result.slice(start, end);
-});
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  
+  return result.slice(start, end)
+})
 
 // 处理搜索
 const handleSearch = () => {
@@ -840,15 +876,14 @@ const resetSearch = () => {
     status: null
   };
   dateRange.value = null;
-  filters.value = {
-    status: null,
-    addressType: null,
-    isAnycast: null,
-    hasAdsProtection: null,
-    hasCcProtection: null,
-    hasWafProtection: null,
-    orderType: null
-  };
+  filters.status = null;
+  filters.orderType = null;
+  filters.addressType = null;
+  filters.isAnycast = null;
+  filters.hasAdsProtection = null;
+  filters.hasCcProtection = null;
+  filters.hasWafProtection = null;
+  filters.packageType = null;
   sortParams.value = {
     prop: '',
     order: ''
@@ -885,37 +920,70 @@ const handleSortChange = ({ prop, order }) => {
 
 // 处理状态过滤
 const handleStatusFilterChange = (value) => {
-  filters.value.status = value;
+  filters.status = value;
 };
 
 // 处理地址类型过滤
 const handleAddressTypeFilterChange = (value) => {
-  filters.value.addressType = value;
+  filters.addressType = value;
 };
 
 // 处理ADS防护过滤
 const handleAdsFilterChange = (value) => {
-  filters.value.hasAdsProtection = value;
+  filters.hasAdsProtection = value;
 };
 
 // 处理CC防护过滤
 const handleCcFilterChange = (value) => {
-  filters.value.hasCcProtection = value;
+  filters.hasCcProtection = value;
 };
 
 // 处理WAF防护过滤
 const handleWafFilterChange = (value) => {
-  filters.value.hasWafProtection = value;
+  filters.hasWafProtection = value;
 };
 
 // 处理Anycast过滤
 const handleAnycastFilterChange = (value) => {
-  filters.value.isAnycast = value;
+  filters.isAnycast = value;
 };
 
 // 处理订单类型过滤
 const handleOrderTypeFilterChange = (value) => {
-  filters.value.orderType = value;
+  filters.orderType = value;
+};
+
+// 处理套餐类型过滤
+const handlePackageTypeFilterChange = (value) => {
+  filters.packageType = value;
+};
+
+// 获取套餐类型文本
+const getPackageTypeText = (packageType) => {
+  switch (packageType) {
+    case 'ddos':
+      return 'DDOS防护'
+    case 'waf-standard':
+      return 'WAF标准防护'
+    case 'waf-enhanced':
+      return 'WAF增强防护'
+    default:
+      return '未知套餐'
+  }
+};
+
+// 获取套餐类型标签样式
+const getPackageTypeTagType = (packageType) => {
+  switch (packageType) {
+    case 'ddos':
+      return 'danger'
+    case 'waf-standard':
+      return 'primary'
+    case 'waf-enhanced':
+      return 'success'
+    default:
+      return 'info'
+  }
 };
 
 // 处理审批通过
