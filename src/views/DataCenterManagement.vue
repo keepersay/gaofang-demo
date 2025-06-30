@@ -85,16 +85,33 @@
         <el-table-column prop="contactPerson" label="联系人" width="120" />
         <el-table-column prop="contactPhone" label="联系电话" width="140" />
         <el-table-column prop="contactEmail" label="联系邮箱" width="180" />
-        <el-table-column label="DNS线路" width="100">
+        <el-table-column label="DNS线路" width="180">
           <template #default="scope">
-            <el-button 
-              type="primary" 
-              link 
-              size="small" 
-              @click="handleDnsLineBinding(scope.row)"
+            <el-popover
+              placement="top"
+              :width="300"
+              trigger="hover"
+              :disabled="!scope.row.dnsLines || scope.row.dnsLines.length === 0"
             >
-              绑定线路
-            </el-button>
+              <template #default>
+                <div>
+                  <div v-if="scope.row.dnsLines && scope.row.dnsLines.length > 0">
+                    <div v-for="line in scope.row.dnsLines" :key="line" class="mb-1">
+                      {{ getLineName(line) }}
+                    </div>
+                  </div>
+                  <div v-else>暂无绑定线路</div>
+                </div>
+              </template>
+              <template #reference>
+                <div>
+                  <el-tag v-if="scope.row.dnsLines && scope.row.dnsLines.length > 0" type="success">
+                    已绑定 {{ scope.row.dnsLines.length }} 条线路
+                  </el-tag>
+                  <span v-else class="text-gray-400">未绑定线路</span>
+                </div>
+              </template>
+            </el-popover>
           </template>
         </el-table-column>
         <el-table-column label="关联集群" width="100">
@@ -115,9 +132,17 @@
         <el-table-column prop="createAccount" label="创建人" width="120" />
         <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
         <el-table-column prop="updateAccount" label="修改人" width="120" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button 
+              type="primary" 
+              link 
+              size="small" 
+              @click="handleDnsLineBinding(scope.row)"
+            >
+              绑定线路
+            </el-button>
             <el-button
               :type="scope.row.status === 'active' ? 'danger' : 'success'"
               link size="small"
@@ -230,6 +255,7 @@ import DataCenterDnsLineModal from '@/components/DataCenterDnsLineModal.vue'
 import DataCenterService from '@/services/DataCenterService'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
+import DnsLineService from '@/services/DnsLineService'
 
 // 搜索表单
 const searchForm = reactive({
@@ -330,10 +356,34 @@ const getRegionName = (regionId) => {
 const fetchData = async () => {
   loading.value = true
   try {
-    tableData.value = await DataCenterService.getDataCenters()
-    loading.value = false
+    const data = await DataCenterService.getDataCenters()
+    
+    // 处理数据
+    for (const item of data) {
+      // 获取地域名称
+      if (item.regionId && regions.value.length > 0) {
+        const region = regions.value.find(r => r.id === item.regionId)
+        if (region) {
+          item.regionName = region.name
+        }
+      }
+      
+      // 获取DNS线路数据
+      try {
+        const dnsLineData = await DnsLineService.getDataCenterDnsLines(item.id)
+        item.dnsLines = dnsLineData.map(line => line.dnsLineCode)
+      } catch (error) {
+        console.error(`获取机房 ${item.id} 的DNS线路数据失败:`, error)
+        item.dnsLines = []
+      }
+    }
+    
+    tableData.value = data
   } catch (error) {
     console.error('获取机房数据失败:', error)
+    ElMessage.error('获取机房数据失败')
+    tableData.value = []
+  } finally {
     loading.value = false
   }
 }
@@ -575,8 +625,12 @@ const handleDnsLineBinding = (row) => {
 // 处理DNS线路提交
 const handleDnsLineSubmit = (data) => {
   ElMessage.success(`机房 ${data.dataCenterId} 成功绑定 ${data.dnsLineCodes.length} 条DNS线路`)
-  // 可以在这里刷新表格数据
-  // fetchTableData()
+  fetchData()
+}
+
+// 获取DNS线路名称
+const getLineName = (code) => {
+  return DnsLineService.getLineName(code)
 }
 
 // 初始化

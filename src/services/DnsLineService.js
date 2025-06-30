@@ -64,19 +64,32 @@ const DnsLineService = {
     return line ? line.name : code;
   },
   
+  // 存储机房DNS线路绑定数据的本地缓存
+  _dataCenterDnsLinesMap: {
+    'DC202401010001': ['cn_region_huadong', 'cn_region_huanan'],
+    'DC202401010002': ['cn_region_huazhong', 'cn_region_huabei'],
+    'DC202401010003': ['cn_region_huanan', 'cn_region_xinan'],
+    'DC202401010004': ['cn_region_huabei', 'cn_region_dongbei']
+  },
+  
   // 根据机房ID获取绑定的DNS线路
   async getDataCenterDnsLines(dataCenterId) {
-    // 这里应该是API调用，这里使用模拟数据
-    return Promise.resolve([
-      { dataCenterId, dnsLineCode: 'cn_region_huadong' },
-      { dataCenterId, dnsLineCode: 'cn_region_huanan' }
-    ]);
+    // 从本地缓存获取数据
+    const dnsLineCodes = this._dataCenterDnsLinesMap[dataCenterId] || [];
+    
+    // 转换为对象数组返回
+    return Promise.resolve(
+      dnsLineCodes.map(dnsLineCode => ({ dataCenterId, dnsLineCode }))
+    );
   },
   
   // 保存机房DNS线路绑定
   async saveDataCenterDnsLines(dataCenterId, dnsLineCodes) {
-    // 这里应该是API调用，这里只是模拟
     console.log('保存机房DNS线路绑定:', dataCenterId, dnsLineCodes);
+    
+    // 保存到本地缓存
+    this._dataCenterDnsLinesMap[dataCenterId] = [...dnsLineCodes];
+    
     return Promise.resolve({ success: true });
   }
 };
