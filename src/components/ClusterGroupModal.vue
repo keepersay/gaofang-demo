@@ -73,10 +73,10 @@
                 <el-tag size="small" :type="getTypeTagType(cluster.type)">
                   {{ getTypeLabel(cluster.type) }}
                 </el-tag>
-              </div>
-            </div>
+      </div>
+    </div>
           </el-option>
-        </el-select>
+          </el-select>
         <div class="form-tip">
           {{ '请选择主集群' }}
         </div>
@@ -441,14 +441,14 @@ watch(() => props.visible, (val) => {
     }
   } else if (val) {
     // 新增模式，重置表单
-    form.value = {
+      form.value = {
       id: '',
-      name: '',
-      distributed: false,
-      dataCenterId: '',
-      primaryClusters: [],
-      standbyClusters: [],
-      status: 'active',
+        name: '',
+        distributed: false,
+        dataCenterId: '',
+        primaryClusters: [],
+        standbyClusters: [],
+        status: 'active',
       remark: '',
       addressType: 'ipv4',
       defaultClusterId: ''
