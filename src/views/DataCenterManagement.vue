@@ -85,6 +85,18 @@
         <el-table-column prop="contactPerson" label="联系人" width="120" />
         <el-table-column prop="contactPhone" label="联系电话" width="140" />
         <el-table-column prop="contactEmail" label="联系邮箱" width="180" />
+        <el-table-column label="DNS线路" width="100">
+          <template #default="scope">
+            <el-button 
+              type="primary" 
+              link 
+              size="small" 
+              @click="handleDnsLineBinding(scope.row)"
+            >
+              绑定线路
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="关联集群" width="100">
           <template #default="scope">
             <el-button 
@@ -191,6 +203,13 @@
       </template>
     </el-dialog>
     
+    <!-- DNS线路绑定对话框 -->
+    <DataCenterDnsLineModal
+      v-model:visible="dnsLineModalVisible"
+      :dataCenterId="currentDataCenterId"
+      @submit="handleDnsLineSubmit"
+    />
+    
     <!-- 删除确认对话框 -->
     <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
       <div>确定要删除机房 <b>{{ deleteRow?.name }}</b> 吗？</div>
@@ -207,6 +226,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Filter } from '@element-plus/icons-vue'
+import DataCenterDnsLineModal from '@/components/DataCenterDnsLineModal.vue'
 import DataCenterService from '@/services/DataCenterService'
 import RegionService from '@/services/RegionService'
 import ClusterService from '@/services/ClusterService'
@@ -540,6 +560,23 @@ const handleSizeChange = (val) => {
 
 const handleCurrentChange = (val) => {
   pagination.value.currentPage = val
+}
+
+// DNS线路绑定相关
+const dnsLineModalVisible = ref(false)
+const currentDataCenterId = ref('')
+
+// 处理DNS线路绑定
+const handleDnsLineBinding = (row) => {
+  currentDataCenterId.value = row.id
+  dnsLineModalVisible.value = true
+}
+
+// 处理DNS线路提交
+const handleDnsLineSubmit = (data) => {
+  ElMessage.success(`机房 ${data.dataCenterId} 成功绑定 ${data.dnsLineCodes.length} 条DNS线路`)
+  // 可以在这里刷新表格数据
+  // fetchTableData()
 }
 
 // 初始化
