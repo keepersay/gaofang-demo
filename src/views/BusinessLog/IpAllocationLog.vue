@@ -155,9 +155,6 @@
         <el-descriptions-item label="请求ID">
           {{ currentDetail.requestId }}
         </el-descriptions-item>
-        <el-descriptions-item label="审批状态">
-          <el-tag type="success">已审批</el-tag>
-        </el-descriptions-item>
         <el-descriptions-item label="审批时间">
           {{ formatDateTime(currentDetail.approvalTime) }}
         </el-descriptions-item>
@@ -166,9 +163,6 @@
         </el-descriptions-item>
         <el-descriptions-item label="网络类型">
           {{ currentDetail.networkType }}
-        </el-descriptions-item>
-        <el-descriptions-item label="IP版本">
-          {{ currentDetail.ipVersion }}
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">
           {{ formatDateTime(currentDetail.createTime) }}
