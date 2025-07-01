@@ -91,6 +91,12 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="bandwidth" label="防护带宽(Mbps)" width="140" sortable />
+        <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" width="140" sortable />
+        <el-table-column prop="qps" label="业务QPS" width="120" sortable />
+        <el-table-column prop="protectionIpCount" label="防护IP数" width="120" sortable />
+        <el-table-column prop="domainCount" label="防护域名数" width="120" sortable />
+        <el-table-column prop="portCount" label="端口数量" width="120" sortable />
         <el-table-column 
           prop="status" 
           label="状态" 

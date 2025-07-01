@@ -56,8 +56,14 @@ for (let i = 0; i < 30; i++) {
     isAnycast,
     addressType,
     regionId,
+    // 资源配置
+    bandwidth: Random.natural(100, 10000), // 防护带宽
+    businessBandwidth: Random.natural(50, 5000), // 业务带宽
+    qps: Random.natural(1000, 100000), // 业务QPS
     protectionIpCount,
     protectionIps,
+    domainCount: Random.natural(5, 50), // 防护域名数
+    portCount: Random.natural(5, 50), // 端口数量
     status: Random.pick(statuses),
     createTime: Random.datetime('yyyy-MM-dd HH:mm:ss'),
     updateTime: Random.datetime('yyyy-MM-dd HH:mm:ss'),

@@ -116,16 +116,19 @@
 
       <!-- 步骤4：资源配置 -->
       <div v-show="active === 3">
-        <el-form-item label="带宽(Mbps)" prop="bandwidth">
+        <el-form-item label="防护带宽(Mbps)" prop="bandwidth">
           <el-input-number v-model="form.bandwidth" :min="1" :max="10000" />
         </el-form-item>
-        <el-form-item label="QPS" prop="qps">
+        <el-form-item label="业务带宽(Mbps)" prop="businessBandwidth">
+          <el-input-number v-model="form.businessBandwidth" :min="1" :max="5000" />
+        </el-form-item>
+        <el-form-item label="业务QPS" prop="qps">
           <el-input-number v-model="form.qps" :min="1" :max="100000" />
         </el-form-item>
-        <el-form-item label="IP数量" prop="protectionIpCount">
+        <el-form-item label="防护IP数" prop="protectionIpCount">
           <el-input-number v-model="form.protectionIpCount" :min="1" :max="100" />
         </el-form-item>
-        <el-form-item label="域名数量" prop="domainCount">
+        <el-form-item label="防护域名数" prop="domainCount">
           <el-input-number v-model="form.domainCount" :min="1" :max="1000" />
         </el-form-item>
         <el-form-item label="端口数量" prop="portCount">
@@ -215,6 +218,7 @@ const form = reactive({
   ccProtection: false,
   wafProtection: false,
   bandwidth: 100,
+  businessBandwidth: 50, // 默认业务带宽
   qps: 1000,
   protectionIpCount: 1,
   domainCount: 10,
@@ -267,6 +271,7 @@ const resetForm = () => {
   form.ccProtection = false
   form.wafProtection = false
   form.bandwidth = 100
+  form.businessBandwidth = 50
   form.qps = 1000
   form.protectionIpCount = 1
   form.domainCount = 10
