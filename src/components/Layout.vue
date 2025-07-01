@@ -128,7 +128,7 @@
             <span>逻辑集群组</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="business-management">
+        <el-sub-menu index="/business">
           <template #title>
             <el-icon>
               <!-- 商业/业务风格图标 -->
@@ -136,23 +136,23 @@
             </el-icon>
             <span>业务管理</span>
           </template>
-          <el-menu-item index="/product-package">
+          <el-menu-item index="/business/package">
             <el-icon><Box /></el-icon>
             <span>商品套餐</span>
           </el-menu-item>
-          <el-menu-item index="/customer">
+          <el-menu-item index="/business/customer">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
             </el-icon>
             <span>客户管理</span>
           </el-menu-item>
-          <el-menu-item index="/business-instance">
+          <el-menu-item index="/business/instance">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="8" y="10" width="8" height="4" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
             </el-icon>
             <span>业务实例</span>
           </el-menu-item>
-          <el-menu-item index="/order">
+          <el-menu-item index="/business/order">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.5"/></svg>
             </el-icon>

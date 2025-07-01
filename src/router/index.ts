@@ -14,6 +14,7 @@ import BusinessLog from '../views/BusinessLog.vue'
 import RequestLog from '../views/BusinessLog/RequestLog.vue'
 import AttackLog from '../views/BusinessLog/AttackLog.vue'
 import OrderManagement from '../views/OrderManagement.vue'
+import BusinessManagement from '../views/BusinessManagement.vue'
 
 declare global {
   interface ImportMeta {
@@ -110,6 +111,39 @@ const routes: Array<RouteRecordRaw> = [
         path: 'operation',
         name: 'LogOperation',
         component: OperationLog
+      }
+    ]
+  },
+  {
+    path: '/business',
+    name: 'BusinessManagement',
+    component: BusinessManagement,
+    meta: { title: '业务管理' },
+    redirect: '/business/instance',
+    children: [
+      {
+        path: 'package',
+        name: 'BusinessPackage',
+        component: ProductPackage,
+        meta: { title: '商品套餐' }
+      },
+      {
+        path: 'customer',
+        name: 'BusinessCustomer',
+        component: CustomerManagement,
+        meta: { title: '客户管理' }
+      },
+      {
+        path: 'instance',
+        name: 'BusinessInstance',
+        component: () => import('../views/BusinessInstance.vue'),
+        meta: { title: '业务实例' }
+      },
+      {
+        path: 'order',
+        name: 'BusinessOrder',
+        component: OrderManagement,
+        meta: { title: '订单管理' }
       }
     ]
   },
