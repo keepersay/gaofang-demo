@@ -118,6 +118,13 @@
       :edit-data="currentEditData"
       @success="handleModalSuccess"
     />
+
+    <!-- IP防护对象配置抽屉 -->
+    <ip-protection-config-drawer
+      v-model:visible="configDrawerVisible"
+      :protection-id="currentConfigId"
+      @success="handleConfigSuccess"
+    />
   </div>
 </template>
 
@@ -128,6 +135,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getIpProtectionList, deleteIpProtection, batchDeleteIpProtection } from '@/services/ProtectionObjectService'
 import { getBusinessInstanceOptions } from '@/services/BusinessInstanceService'
 import IpProtectionModal from '@/components/BusinessInstance/IpProtectionModal.vue'
+import IpProtectionConfigDrawer from '@/components/BusinessInstance/IpProtectionConfigDrawer.vue'
 
 // 状态
 const loading = ref(false)
@@ -149,6 +157,10 @@ const pagination = reactive({
   pageSize: 10,
   total: 0
 })
+
+// 配置IP防护对象
+const configDrawerVisible = ref(false)
+const currentConfigId = ref(null)
 
 // 获取业务实例选项
 const fetchInstanceOptions = async () => {
@@ -223,7 +235,8 @@ const handleAdd = () => {
 
 // 配置IP防护对象
 const handleConfig = (row) => {
-  ElMessage.info(`配置IP防护对象: ${row.publicIp}，功能待实现`)
+  currentConfigId.value = row.id
+  configDrawerVisible.value = true
 }
 
 // 安全防护配置
@@ -291,6 +304,11 @@ const handleBatchDelete = () => {
 
 // 处理模态框成功
 const handleModalSuccess = () => {
+  fetchIpProtectionList()
+}
+
+// 处理配置成功
+const handleConfigSuccess = () => {
   fetchIpProtectionList()
 }
 

@@ -326,4 +326,106 @@ Mock.mock(/\/api\/protection\/domain\/enable\/\d+/, 'put', () => {
 // 禁用域名防护对象
 Mock.mock(/\/api\/protection\/domain\/disable\/\d+/, 'put', () => {
   return successResponse
+})
+
+// 获取IP防护对象详情
+Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/ip\/detail\/(\d+)/)[1])
+  const item = ipProtectionData.find(item => item.id === id)
+  
+  if (item) {
+    // 添加负载均衡配置信息
+    const slbConfig = item.slbConfig || {
+      scheduler: 'wrr',
+      sessionTimeout: 300,
+      healthCheck: 'TCP',
+      insertToa: false,
+      sessionResetEnabled: false,
+      syslogIp: '',
+      syslogPort: 514,
+      members: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
+        ip: `192.168.1.${10 + i}`,
+        port: 80 + i * 100,
+        weight: 10 + i * 5
+      }))
+    }
+    
+    // 添加业务实例信息
+    const instanceId = parseInt(item.instanceId.toString().replace(/\D/g, ''))
+    const instanceInfo = {
+      id: item.instanceId,
+      customerName: item.customerName,
+      addressType: item.addressType,
+      protectionBandwidth: 500,
+      businessBandwidth: 200,
+      businessQps: 5000,
+      allocatedProtectionBandwidth: Math.floor(Math.random() * 300), // 模拟已分配的防护带宽
+      allocatedBusinessBandwidth: Math.floor(Math.random() * 100),   // 模拟已分配的业务带宽
+      allocatedBusinessQps: Math.floor(Math.random() * 3000),        // 模拟已分配的业务QPS
+      publicIpList: Array.from({ length: 5 }, (_, i) => {
+        if (i % 2 === 0) {
+          // IPv4
+          return `203.0.113.${(instanceId * 10 + i) % 255 + 1}`
+        } else {
+          // IPv6
+          const segments = []
+          for (let j = 0; j < 8; j++) {
+            segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
+          }
+          return segments.join(':')
+        }
+      })
+    }
+    
+    return {
+      code: 200,
+      message: 'success',
+      data: {
+        ...item,
+        slbConfig,
+        instanceInfo
+      }
+    }
+  } else {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在',
+      data: null
+    }
+  }
+})
+
+// 更新IP防护对象配置
+Mock.mock('/api/protection/ip/config', 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = body.id
+  const index = ipProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 更新基本配置
+    ipProtectionData[index].publicIp = body.publicIp
+    ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
+    ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
+    ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
+    ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
+    ipProtectionData[index].businessQpsType = body.businessQpsType
+    ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
+    ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
+    ipProtectionData[index].layer7Protection = body.layer7Protection
+    
+    // 更新负载均衡配置
+    ipProtectionData[index].slbConfig = body.slbConfig
+    
+    return {
+      code: 200,
+      message: 'success',
+      data: null
+    }
+  } else {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在',
+      data: null
+    }
+  }
 }) 

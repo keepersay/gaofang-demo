@@ -40,6 +40,23 @@ export function batchDeleteIpProtection(ids) {
   })
 }
 
+// 获取IP防护对象详情
+export function getIpProtectionDetail(id) {
+  return request({
+    url: `/api/protection/ip/detail/${id}`,
+    method: 'get'
+  })
+}
+
+// 更新IP防护对象配置
+export function updateIpProtectionConfig(data) {
+  return request({
+    url: '/api/protection/ip/config',
+    method: 'put',
+    data
+  })
+}
+
 // 域名防护对象相关接口
 export function getDomainProtectionList(params) {
   return request({
