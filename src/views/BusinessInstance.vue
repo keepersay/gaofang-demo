@@ -92,23 +92,6 @@
           </template>
         </el-table-column>
         <el-table-column 
-          label="防护配置" 
-          width="200"
-          :filters="[
-            { text: 'ADS', value: 'ADS' },
-            { text: 'CC', value: 'CC' },
-            { text: 'WAF', value: 'WAF' }
-          ]"
-          :filter-method="filterProtection"
-          filter-placement="bottom-end"
-        >
-          <template #default="{ row }">
-            <el-tag v-if="row.packageName.includes('ADS')" type="danger" class="mr-5">ADS</el-tag>
-            <el-tag v-if="row.packageName.includes('CC')" type="warning" class="mr-5">CC</el-tag>
-            <el-tag v-if="row.packageName.includes('WAF')" type="success">WAF</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column 
           prop="status" 
           label="状态" 
           width="100"
@@ -440,10 +423,6 @@ const filterAnycast = (value, row) => {
 
 const filterAddressType = (value, row) => {
   return row.addressType === value
-}
-
-const filterProtection = (value, row) => {
-  return row.packageName.includes(value)
 }
 
 // 工具函数
