@@ -1,4 +1,5 @@
 import businessInstanceData from '../mock/data/businessInstance'
+import request from '@/utils/request'
 
 // 业务实例服务
 export default {
@@ -168,4 +169,20 @@ export default {
       message: 'success'
     }
   }
+}
+
+// 获取业务实例选项
+export function getBusinessInstanceOptions() {
+  return request({
+    url: '/api/business-instance/options',
+    method: 'get'
+  })
+}
+
+// 获取业务实例详情
+export function getBusinessInstanceDetail(id) {
+  return request({
+    url: `/api/business-instance/detail/${id}`,
+    method: 'get'
+  })
 } 

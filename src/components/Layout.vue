@@ -158,6 +158,12 @@
             </el-icon>
             <span>订单</span>
           </el-menu-item>
+          <el-menu-item index="/business/protection">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><path d="M12 3l8 4v5c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V7l8-4z" stroke="currentColor" stroke-width="2" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </el-icon>
+            <span>防护对象</span>
+          </el-menu-item>
         </el-sub-menu>
         
         <el-sub-menu index="business-log">

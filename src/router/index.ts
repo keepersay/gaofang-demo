@@ -15,6 +15,9 @@ import RequestLog from '../views/BusinessLog/RequestLog.vue'
 import AttackLog from '../views/BusinessLog/AttackLog.vue'
 import OrderManagement from '../views/OrderManagement.vue'
 import BusinessManagement from '../views/BusinessManagement.vue'
+import BusinessProtection from '../views/BusinessProtection.vue'
+import IpProtection from '../views/BusinessProtection/IpProtection.vue'
+import DomainProtection from '../views/BusinessProtection/DomainProtection.vue'
 
 declare global {
   interface ImportMeta {
@@ -144,6 +147,27 @@ const routes: Array<RouteRecordRaw> = [
         name: 'BusinessOrder',
         component: OrderManagement,
         meta: { title: '订单管理' }
+      },
+      {
+        path: 'protection',
+        name: 'BusinessProtection',
+        component: BusinessProtection,
+        meta: { title: '防护对象' },
+        redirect: '/business/protection/ip',
+        children: [
+          {
+            path: 'ip',
+            name: 'IpProtection',
+            component: IpProtection,
+            meta: { title: 'IP防护对象' }
+          },
+          {
+            path: 'domain',
+            name: 'DomainProtection',
+            component: DomainProtection,
+            meta: { title: '域名防护对象' }
+          }
+        ]
       }
     ]
   },

@@ -1,0 +1,103 @@
+import request from '@/utils/request'
+
+// IP防护对象相关接口
+export function getIpProtectionList(params) {
+  return request({
+    url: '/api/protection/ip/list',
+    method: 'get',
+    params
+  })
+}
+
+export function addIpProtection(data) {
+  return request({
+    url: '/api/protection/ip/add',
+    method: 'post',
+    data
+  })
+}
+
+export function updateIpProtection(data) {
+  return request({
+    url: '/api/protection/ip/update',
+    method: 'put',
+    data
+  })
+}
+
+export function deleteIpProtection(id) {
+  return request({
+    url: `/api/protection/ip/delete/${id}`,
+    method: 'delete'
+  })
+}
+
+export function batchDeleteIpProtection(ids) {
+  return request({
+    url: '/api/protection/ip/batch-delete',
+    method: 'delete',
+    data: { ids }
+  })
+}
+
+// 域名防护对象相关接口
+export function getDomainProtectionList(params) {
+  return request({
+    url: '/api/protection/domain/list',
+    method: 'get',
+    params
+  })
+}
+
+export function addDomainProtection(data) {
+  return request({
+    url: '/api/protection/domain/add',
+    method: 'post',
+    data
+  })
+}
+
+export function updateDomainProtection(data) {
+  return request({
+    url: '/api/protection/domain/update',
+    method: 'put',
+    data
+  })
+}
+
+export function deleteDomainProtection(id) {
+  return request({
+    url: `/api/protection/domain/delete/${id}`,
+    method: 'delete'
+  })
+}
+
+export function batchDeleteDomainProtection(ids) {
+  return request({
+    url: '/api/protection/domain/batch-delete',
+    method: 'delete',
+    data: { ids }
+  })
+}
+
+export function enableDomainProtection(id) {
+  return request({
+    url: `/api/protection/domain/enable/${id}`,
+    method: 'put'
+  })
+}
+
+export function disableDomainProtection(id) {
+  return request({
+    url: `/api/protection/domain/disable/${id}`,
+    method: 'put'
+  })
+}
+
+// 获取业务实例下拉选项
+export function getBusinessInstanceOptions() {
+  return request({
+    url: '/api/business-instance/options',
+    method: 'get'
+  })
+} 

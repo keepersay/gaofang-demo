@@ -220,3 +220,57 @@ Mock.mock(/\/api\/protection-ips\/available(\?.+)?$/, 'get', () => {
     message: 'success'
   }
 })
+
+// 获取业务实例详情
+Mock.mock(/\/api\/business-instance\/detail\/\d+/, 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/business-instance\/detail\/(\d+)/)[1])
+  
+  // 模拟业务实例详情数据
+  const data = {
+    id: id,
+    customerName: `客户${id % 10 + 1}科技有限公司`,
+    instanceName: `业务实例-${id % 10 + 1}`,
+    addressType: id % 2 === 0 ? 'IPv4' : 'IPv6',
+    status: 'active',
+    protectionBandwidth: 500,
+    businessBandwidth: 200,
+    businessQps: 5000,
+    allocatedProtectionBandwidth: Math.floor(Math.random() * 300),
+    allocatedBusinessBandwidth: Math.floor(Math.random() * 100),
+    allocatedBusinessQps: Math.floor(Math.random() * 3000),
+    publicIpList: Array.from({ length: 5 }, (_, i) => {
+      if (id % 2 === 0) {
+        // IPv4
+        return `203.0.113.${(id * 10 + i) % 255 + 1}`
+      } else {
+        // IPv6
+        const segments = []
+        for (let j = 0; j < 8; j++) {
+          segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
+        }
+        return segments.join(':')
+      }
+    }),
+    createTime: Mock.Random.datetime('yyyy-MM-dd HH:mm:ss')
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data
+  }
+})
+
+// 业务实例选项接口
+Mock.mock(/\/api\/business-instance\/options/, 'get', () => {
+  const options = Array.from({ length: 8 }, (_, i) => ({
+    value: 10001 + i,
+    label: `业务实例-${i + 1}`
+  }))
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: options
+  }
+})
