@@ -135,7 +135,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       {
         path: 'instance',
-        name: 'BusinessInstance',
+        name: 'BusinessInstanceNew',
         component: () => import('../views/BusinessInstance.vue'),
         meta: { title: '业务实例' }
       },
@@ -200,8 +200,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/business-instance',
-    name: 'BusinessInstance',
-    component: () => import('../views/BusinessInstance.vue')
+    name: 'BusinessInstanceOld',
+    redirect: '/business/instance'
   },
   {
     path: '/order',
