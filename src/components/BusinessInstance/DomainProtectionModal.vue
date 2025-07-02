@@ -419,10 +419,50 @@ const handleInstanceChange = async (instanceId) => {
       }
     } else {
       ElMessage.error(res.message || '获取业务实例详情失败')
+      
+      // 如果是编辑模式且获取详情失败，则使用编辑数据填充一些基本信息
+      if (isEdit.value && props.editData) {
+        instanceInfo.customerName = props.editData.customerName || '未知客户';
+        
+        // 为公网IP选项添加当前IP
+        if (props.editData.publicIp) {
+          publicIpOptions.value = [{
+            label: props.editData.publicIp,
+            value: props.editData.publicIp
+          }];
+          form.publicIp = props.editData.publicIp;
+          form.addressType = props.editData.addressType || (props.editData.publicIp.includes(':') ? 'IPv6' : 'IPv4');
+        }
+        
+        // 设置一些默认值
+        instanceInfo.protectionBandwidth = props.editData.instanceProtectionBandwidth || 500;
+        instanceInfo.businessBandwidth = props.editData.instanceBusinessBandwidth || 200;
+        instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
+      }
     }
   } catch (error) {
     console.error('获取业务实例详情失败:', error)
     ElMessage.error('获取业务实例详情失败')
+    
+    // 如果是编辑模式且发生异常，则使用编辑数据填充一些基本信息
+    if (isEdit.value && props.editData) {
+      instanceInfo.customerName = props.editData.customerName || '未知客户';
+      
+      // 为公网IP选项添加当前IP
+      if (props.editData.publicIp) {
+        publicIpOptions.value = [{
+          label: props.editData.publicIp,
+          value: props.editData.publicIp
+        }];
+        form.publicIp = props.editData.publicIp;
+        form.addressType = props.editData.addressType || (props.editData.publicIp.includes(':') ? 'IPv6' : 'IPv4');
+      }
+      
+      // 设置一些默认值
+      instanceInfo.protectionBandwidth = props.editData.instanceProtectionBandwidth || 500;
+      instanceInfo.businessBandwidth = props.editData.instanceBusinessBandwidth || 200;
+      instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
+    }
   }
 }
 
