@@ -1,13 +1,13 @@
 <template>
-  <el-drawer
-    v-model="drawerVisible"
-    title="安全防护配置"
-    size="50%"
-    :destroy-on-close="false"
-    :before-close="handleClose"
-    custom-class="security-config-drawer"
-  >
-    <template #default>
+  <div>
+    <el-drawer
+      v-model="drawerVisible"
+      title="安全防护配置"
+      size="50%"
+      :destroy-on-close="false"
+      :before-close="handleClose"
+      custom-class="security-config-drawer"
+    >
       <div class="security-drawer-content" v-loading="loading">
         <div class="security-tabs-container">
           <el-tabs tab-position="left" v-model="activeTab" class="security-tabs">
@@ -214,7 +214,7 @@
           <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
         </div>
       </div>
-    </template>
+    </el-drawer>
     
     <!-- 黑名单超时时间设置对话框 -->
     <el-dialog
@@ -287,7 +287,7 @@
         </span>
       </template>
     </el-dialog>
-  </el-drawer>
+  </div>
 </template>
 
 <script setup>
