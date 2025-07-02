@@ -49,10 +49,8 @@
                   :min="1" 
                   :max="remainingProtectionBandwidth" 
                   :step="1" 
-                  style="width: 100%"
-                >
-                  <template #suffix>Mbps</template>
-                </el-input-number>
+                  style="width: 120px"
+                />
                 <div class="form-tip">
                   可分配的最大独享防护带宽为 {{ remainingProtectionBandwidth }} Mbps
                 </div>
@@ -75,10 +73,8 @@
                   :min="1" 
                   :max="remainingBusinessBandwidth" 
                   :step="1" 
-                  style="width: 100%"
-                >
-                  <template #suffix>Mbps</template>
-                </el-input-number>
+                  style="width: 120px"
+                />
                 <div class="form-tip">
                   可分配的最大独享业务带宽为 {{ remainingBusinessBandwidth }} Mbps
                 </div>
@@ -101,7 +97,7 @@
                   :min="1" 
                   :max="remainingBusinessQps" 
                   :step="1" 
-                  style="width: 100%"
+                  style="width: 120px"
                 />
                 <div class="form-tip">
                   可分配的最大独享业务QPS为 {{ remainingBusinessQps }}
@@ -166,7 +162,7 @@
               </el-form-item>
               
               <el-form-item label="会话超时时间(秒)" prop="sessionTimeout">
-                <el-input-number v-model="slbForm.sessionTimeout" :min="1" :max="3600" style="width: 100%" />
+                <el-input-number v-model="slbForm.sessionTimeout" :min="1" :max="3600" style="width: 120px" />
               </el-form-item>
               
               <el-form-item label="健康检查" prop="healthCheck">
@@ -196,7 +192,7 @@
                   </div>
                   <div class="syslog-item">
                     <span class="syslog-label">Syslog Port:</span>
-                    <el-input-number v-model="slbForm.syslogPort" :min="1" :max="65535" />
+                    <el-input-number v-model="slbForm.syslogPort" :min="1" :max="65535" style="width: 120px" />
                   </div>
                 </div>
               </el-form-item>
@@ -248,11 +244,11 @@
       </el-form-item>
       
       <el-form-item label="端口" prop="port">
-        <el-input-number v-model="memberForm.port" :min="1" :max="65535" style="width: 100%" />
+        <el-input-number v-model="memberForm.port" :min="1" :max="65535" style="width: 120px" />
       </el-form-item>
       
       <el-form-item label="权重" prop="weight">
-        <el-input-number v-model="memberForm.weight" :min="1" :max="100" style="width: 100%" />
+        <el-input-number v-model="memberForm.weight" :min="1" :max="100" style="width: 120px" />
       </el-form-item>
     </el-form>
     
