@@ -555,8 +555,15 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
       icmp: {
         enabled: id % 2 === 0 // 随机设置ICMP禁用状态
       },
-      blacklist: [],
-      whitelist: [],
+      blacklist: Array.from({ length: id % 5 }, (_, i) => ({
+        ip: `192.168.${id}.${i + 1}`,
+        addTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
+      })),
+      whitelist: Array.from({ length: id % 3 }, (_, i) => ({
+        ip: `10.0.${id}.${i + 1}`,
+        addTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
+      })),
+      blacklistExpireTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
       regionBlock: [],
       rateLimit: {},
       reflection: {},
