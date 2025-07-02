@@ -469,7 +469,7 @@ const openBlacklistConfigDialog = () => {
   blacklistConfigDialogVisible.value = true
 }
 
-// 添加黑名单
+// 添加黑/白名单
 const addBlacklist = () => {
   if (!blacklistConfigText.value.trim()) {
     ElMessage.warning('请输入要添加的IP')
@@ -491,18 +491,32 @@ const addBlacklist = () => {
     return
   }
   
-  // 添加到黑名单
-  ips.forEach(ip => {
-    if (!blacklistData.value.some(item => item.ip === ip)) {
-      blacklistData.value.push({
-        ip,
-        addTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
-      })
-    }
-  })
+  // 根据当前标签页添加到黑名单或白名单
+  if (blacklistWhitelistTab.value === 'blacklist') {
+    // 添加到黑名单
+    ips.forEach(ip => {
+      if (!blacklistData.value.some(item => item.ip === ip)) {
+        blacklistData.value.push({
+          ip,
+          addTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        })
+      }
+    })
+    ElMessage.success(`成功添加 ${ips.length} 个IP到黑名单`)
+  } else {
+    // 添加到白名单
+    ips.forEach(ip => {
+      if (!whitelistData.value.some(item => item.ip === ip)) {
+        whitelistData.value.push({
+          ip,
+          addTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        })
+      }
+    })
+    ElMessage.success(`成功添加 ${ips.length} 个IP到白名单`)
+  }
   
   blacklistConfigDialogVisible.value = false
-  ElMessage.success(`成功添加 ${ips.length} 个IP到黑名单`)
 }
 
 // 验证IP地址格式
