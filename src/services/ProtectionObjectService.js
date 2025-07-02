@@ -59,6 +59,7 @@ export function updateIpProtectionConfig(data) {
 
 // 域名防护对象相关接口
 export function getDomainProtectionList(params) {
+  // 支持的参数：customerName, instanceName, publicIp, domain, status, pageNum, pageSize
   return request({
     url: '/api/protection/domain/list',
     method: 'get',

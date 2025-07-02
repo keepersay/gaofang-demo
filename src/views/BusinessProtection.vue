@@ -38,7 +38,7 @@ watch(() => route.path, (path) => {
 
 // 处理标签页点击事件
 const handleTabClick = (tab) => {
-  router.push(`/business/protection/${tab.name}`)
+  router.push(`/business/protection/${tab.props.name}`)
 }
 </script>
 

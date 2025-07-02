@@ -2,26 +2,17 @@
   <div class="domain-protection">
     <div class="search-area">
       <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="域名">
-          <el-input v-model="searchForm.domain" placeholder="请输入域名" clearable />
+        <el-form-item label="客户名称">
+          <el-input v-model="searchForm.customerName" placeholder="请输入客户名称" clearable />
         </el-form-item>
         <el-form-item label="业务实例">
-          <el-select v-model="searchForm.instanceId" placeholder="请选择业务实例" clearable>
-            <el-option label="全部" value="" />
-            <el-option 
-              v-for="item in instanceOptions" 
-              :key="item.value" 
-              :label="item.label" 
-              :value="item.value" 
-            />
-          </el-select>
+          <el-input v-model="searchForm.instanceName" placeholder="请输入业务实例名称" clearable />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="已启用" value="active" />
-            <el-option label="已禁用" value="inactive" />
-          </el-select>
+        <el-form-item label="防护公网IP">
+          <el-input v-model="searchForm.publicIp" placeholder="请输入防护公网IP" clearable />
+        </el-form-item>
+        <el-form-item label="防护域名">
+          <el-input v-model="searchForm.domain" placeholder="请输入防护域名" clearable />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
@@ -43,25 +34,47 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="domain" label="域名" min-width="180" />
-      <el-table-column prop="instanceName" label="业务实例" min-width="150" />
-      <el-table-column prop="customerName" label="客户名称" min-width="180" />
-      <el-table-column prop="protectionType" label="防护类型" width="120">
+      <el-table-column prop="customerName" label="客户名称" min-width="150" />
+      <el-table-column prop="instanceName" label="业务实例" min-width="120" />
+      <el-table-column prop="addressType" label="地址类型" width="100">
         <template #default="{ row }">
-          <el-tag :type="getProtectionTypeTag(row.protectionType)">
-            {{ getProtectionTypeLabel(row.protectionType) }}
+          <el-tag :type="getAddressTypeTag(row.addressType)">
+            {{ row.addressType }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="cname" label="CNAME记录" min-width="200" />
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column prop="publicIp" label="防护公网IP" min-width="140" />
+      <el-table-column prop="domain" label="防护域名" min-width="150" />
+      <el-table-column prop="cname" label="防护CNAME" min-width="180" />
+      <el-table-column label="防护带宽(Mbps)" min-width="150">
+        <template #default="{ row }">
+          {{ getBandwidthDisplay(row, 'protection') }}
+        </template>
+      </el-table-column>
+      <el-table-column label="业务带宽(Mbps)" min-width="150">
+        <template #default="{ row }">
+          {{ getBandwidthDisplay(row, 'business') }}
+        </template>
+      </el-table-column>
+      <el-table-column label="业务QPS" min-width="150">
+        <template #default="{ row }">
+          {{ getQpsDisplay(row) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="protectionPackage" label="防护套餐" min-width="120">
+        <template #default="{ row }">
+          <el-tag :type="getProtectionPackageTag(row.protectionPackage)">
+            {{ getProtectionPackageLabel(row.protectionPackage) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="status" label="状态" width="100" :filters="statusFilters" :filter-method="filterStatus">
         <template #default="{ row }">
           <el-tag :type="getStatusType(row.status)">
             {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" sortable />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button 
@@ -83,9 +96,16 @@
           <el-button 
             type="primary" 
             link
-            @click="handleEdit(row)"
+            @click="handleConfig(row)"
           >
-            编辑
+            配置
+          </el-button>
+          <el-button 
+            type="primary" 
+            link
+            @click="handleSecurityConfig(row)"
+          >
+            安全防护
           </el-button>
           <el-button 
             type="danger" 
@@ -113,6 +133,13 @@
         @current-change="handleCurrentChange"
       />
     </div>
+
+    <!-- 域名防护对象模态框 -->
+    <DomainProtectionModal
+      v-model:visible="modalVisible"
+      :edit-data="currentEditData"
+      @success="handleModalSuccess"
+    />
   </div>
 </template>
 
@@ -125,20 +152,34 @@ import {
   deleteDomainProtection, 
   batchDeleteDomainProtection,
   enableDomainProtection,
-  disableDomainProtection,
-  getBusinessInstanceOptions
+  disableDomainProtection
 } from '@/services/ProtectionObjectService'
+import DomainProtectionModal from '@/components/BusinessInstance/DomainProtectionModal.vue'
 
 // 状态
 const loading = ref(false)
 const tableData = ref([])
 const selectedRows = ref([])
-const instanceOptions = ref([])
+const modalVisible = ref(false)
+const currentEditData = ref(null)
+
+// 状态过滤选项
+const statusFilters = [
+  { text: '已启用', value: 'active' },
+  { text: '已禁用', value: 'inactive' }
+]
+
+// 状态过滤方法
+const filterStatus = (value, row) => {
+  return row.status === value
+}
 
 // 搜索表单
 const searchForm = reactive({
+  customerName: '',
+  instanceName: '',
+  publicIp: '',
   domain: '',
-  instanceId: '',
   status: ''
 })
 
@@ -148,18 +189,6 @@ const pagination = reactive({
   pageSize: 10,
   total: 0
 })
-
-// 获取业务实例选项
-const fetchInstanceOptions = async () => {
-  try {
-    const res = await getBusinessInstanceOptions()
-    if (res.code === 200) {
-      instanceOptions.value = res.data
-    }
-  } catch (error) {
-    console.error('获取业务实例选项失败:', error)
-  }
-}
 
 // 获取域名防护对象列表
 const fetchDomainProtectionList = async () => {
@@ -193,8 +222,10 @@ const handleSearch = () => {
 
 // 重置搜索
 const resetSearch = () => {
+  searchForm.customerName = ''
+  searchForm.instanceName = ''
+  searchForm.publicIp = ''
   searchForm.domain = ''
-  searchForm.instanceId = ''
   searchForm.status = ''
   handleSearch()
 }
@@ -217,12 +248,19 @@ const handleCurrentChange = (page) => {
 
 // 添加域名防护对象
 const handleAdd = () => {
-  ElMessage.info('添加域名防护对象功能待实现')
+  currentEditData.value = null
+  modalVisible.value = true
 }
 
-// 编辑域名防护对象
-const handleEdit = (row) => {
-  ElMessage.info(`编辑域名防护对象: ${row.domain}`)
+// 配置域名防护对象
+const handleConfig = (row) => {
+  currentEditData.value = row
+  modalVisible.value = true
+}
+
+// 安全防护配置
+const handleSecurityConfig = (row) => {
+  ElMessage.info(`安全防护配置功能待实现: ${row.domain}`)
 }
 
 // 删除域名防护对象
@@ -335,7 +373,12 @@ const handleDisable = (row) => {
   }).catch(() => {})
 }
 
-// 工具函数
+// 处理模态框成功
+const handleModalSuccess = () => {
+  fetchDomainProtectionList()
+}
+
+// 工具函数 - 状态
 const getStatusType = (status) => {
   const map = {
     active: 'success',
@@ -352,27 +395,60 @@ const getStatusLabel = (status) => {
   return map[status] || status
 }
 
-const getProtectionTypeTag = (type) => {
+// 工具函数 - 地址类型
+const getAddressTypeTag = (type) => {
   const map = {
-    'ads': 'danger',
-    'cc': 'warning',
-    'waf': 'success'
+    'IPv4': 'primary',
+    'IPv6': 'success'
   }
   return map[type] || 'info'
 }
 
-const getProtectionTypeLabel = (type) => {
+// 工具函数 - 防护套餐
+const getProtectionPackageTag = (type) => {
   const map = {
-    'ads': 'ADS防护',
-    'cc': 'CC防护',
-    'waf': 'WAF防护'
+    'standard': 'primary',
+    'enhanced': 'success'
+  }
+  return map[type] || 'info'
+}
+
+const getProtectionPackageLabel = (type) => {
+  const map = {
+    'standard': 'WAF标准防护',
+    'enhanced': 'WAF增强防护'
   }
   return map[type] || type
 }
 
+// 工具函数 - 带宽显示
+const getBandwidthDisplay = (row, type) => {
+  if (type === 'protection') {
+    if (row.protectionBandwidthType === 'shared') {
+      return `共享/${row.instanceProtectionBandwidth}`
+    } else {
+      return `${row.dedicatedProtectionBandwidth}/${row.instanceProtectionBandwidth}`
+    }
+  } else {
+    if (row.businessBandwidthType === 'shared') {
+      return `共享/${row.instanceBusinessBandwidth}`
+    } else {
+      return `${row.dedicatedBusinessBandwidth}/${row.instanceBusinessBandwidth}`
+    }
+  }
+}
+
+// 工具函数 - QPS显示
+const getQpsDisplay = (row) => {
+  if (row.businessQpsType === 'shared') {
+    return `共享/${row.instanceBusinessQps}`
+  } else {
+    return `${row.dedicatedBusinessQps}/${row.instanceBusinessQps}`
+  }
+}
+
 // 初始化
 onMounted(() => {
-  fetchInstanceOptions()
   fetchDomainProtectionList()
 })
 </script>

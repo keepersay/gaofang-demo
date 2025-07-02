@@ -10,7 +10,10 @@ const ipProtectionList = Mock.mock({
     'instanceName': function() {
       return `业务实例-${this.instanceId.replace('BI', '') % 10 || 1}`
     },
-    'customerName': '@cname科技有限公司',
+    'customerName': function() {
+      const names = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
+      return names[Math.floor(Math.random() * names.length)];
+    },
     'publicIp': function() {
       if (this.id % 3 === 0) {
         // IPv6
@@ -59,12 +62,61 @@ const ipProtectionList = Mock.mock({
 const domainProtectionList = Mock.mock({
   'data|10-30': [{
     'id|+1': 1,
-    'domain': '@domain',
-    'instanceId|+1': 10001,
-    'instanceName': '业务实例-@integer(1, 5)',
-    'customerName': '@cname公司',
-    'protectionType': 'waf',
-    'cname': '@domain.cdn.cloudflare.net',
+    'instanceId': function() {
+      return `BI${10000 + this.id % 10 + 1}`
+    },
+    'instanceName': function() {
+      return `业务实例-${this.instanceId.replace('BI', '') % 10 || 1}`
+    },
+    'customerName': function() {
+      const names = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
+      return names[Math.floor(Math.random() * names.length)];
+    },
+    'publicIp': function() {
+      if (this.id % 3 === 0) {
+        // IPv6
+        const segments = []
+        for (let j = 0; j < 8; j++) {
+          segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
+        }
+        return segments.join(':')
+      } else {
+        // IPv4
+        return `203.0.113.${this.id % 255 + 1}`
+      }
+    },
+    'addressType': function() {
+      return this.publicIp.includes(':') ? 'IPv6' : 'IPv4'
+    },
+    'domain': function() {
+      return `example${this.id}.com`
+    },
+    'cname': function() {
+      return `${this.domain}.vmdat.com`
+    },
+    'protectionBandwidthType': function() {
+      return this.id % 2 === 0 ? 'shared' : 'dedicated'
+    },
+    'dedicatedProtectionBandwidth': function() {
+      return this.protectionBandwidthType === 'dedicated' ? (this.id % 5 + 1) * 50 : 0
+    },
+    'instanceProtectionBandwidth': 500,
+    'businessBandwidthType': function() {
+      return this.id % 3 === 0 ? 'shared' : 'dedicated'
+    },
+    'dedicatedBusinessBandwidth': function() {
+      return this.businessBandwidthType === 'dedicated' ? (this.id % 3 + 1) * 30 : 0
+    },
+    'instanceBusinessBandwidth': 200,
+    'businessQpsType': function() {
+      return this.id % 2 === 0 ? 'shared' : 'dedicated'
+    },
+    'dedicatedBusinessQps': function() {
+      return this.businessQpsType === 'dedicated' ? (this.id % 5 + 1) * 500 : 0
+    },
+    'instanceBusinessQps': 5000,
+    'protectionPackage|1': ['standard', 'enhanced'],
+    'accessType|1': ['domain', 'port'],
     'status|1': ['active', 'inactive'],
     'createTime': '@datetime("yyyy-MM-dd HH:mm:ss")'
   }]
@@ -134,40 +186,62 @@ Mock.mock(/\/api\/protection\/ip\/list/, 'get', (options) => {
   }
 })
 
-// 域名防护对象列表接口
+// 获取新域名防护对象ID
+const getNewDomainProtectionId = () => {
+  return domainProtectionData.length > 0 ? Math.max(...domainProtectionData.map(item => item.id)) + 1 : 1
+}
+
+// 获取域名防护对象列表
 Mock.mock(/\/api\/protection\/domain\/list/, 'get', (options) => {
-  const { url } = options
-  const params = new URLSearchParams(url.split('?')[1])
-  const pageNum = parseInt(params.get('pageNum')) || 1
-  const pageSize = parseInt(params.get('pageSize')) || 10
-  const domain = params.get('domain') || ''
-  const instanceId = params.get('instanceId') || ''
-  const status = params.get('status') || ''
+  const url = new URL(options.url, 'http://localhost')
+  const params = Object.fromEntries(url.searchParams.entries())
   
-  let filteredList = [...domainProtectionData]
+  // 解析分页参数
+  const pageNum = parseInt(params.pageNum) || 1
+  const pageSize = parseInt(params.pageSize) || 10
   
-  // 筛选
-  if (domain) {
-    filteredList = filteredList.filter(item => item.domain.includes(domain))
-  }
-  if (instanceId) {
-    filteredList = filteredList.filter(item => item.instanceId.toString() === instanceId)
-  }
-  if (status) {
-    filteredList = filteredList.filter(item => item.status === status)
+  // 过滤数据
+  let filteredData = [...domainProtectionData]
+  
+  if (params.customerName) {
+    filteredData = filteredData.filter(item => 
+      item.customerName && item.customerName.toLowerCase().includes(params.customerName.toLowerCase())
+    )
   }
   
-  // 分页
-  const total = filteredList.length
+  if (params.instanceName) {
+    filteredData = filteredData.filter(item => 
+      item.instanceName && item.instanceName.toLowerCase().includes(params.instanceName.toLowerCase())
+    )
+  }
+  
+  if (params.publicIp) {
+    filteredData = filteredData.filter(item => 
+      item.publicIp && item.publicIp.toLowerCase().includes(params.publicIp.toLowerCase())
+    )
+  }
+  
+  if (params.domain) {
+    filteredData = filteredData.filter(item => 
+      item.domain && item.domain.toLowerCase().includes(params.domain.toLowerCase())
+    )
+  }
+  
+  if (params.status) {
+    filteredData = filteredData.filter(item => item.status === params.status)
+  }
+  
+  // 计算分页
+  const total = filteredData.length
   const start = (pageNum - 1) * pageSize
   const end = start + pageSize
-  const list = filteredList.slice(start, end)
+  const pagedData = filteredData.slice(start, end)
   
   return {
     code: 200,
     message: 'success',
     data: {
-      list,
+      list: pagedData,
       total,
       pageNum,
       pageSize
@@ -299,33 +373,159 @@ Mock.mock(/\/api\/protection\/ip\/disable\/\d+/, 'put', (options) => {
 })
 
 // 添加域名防护对象
-Mock.mock(/\/api\/protection\/domain\/add/, 'post', () => {
+Mock.mock(/\/api\/protection\/domain\/add/, 'post', (options) => {
+  const body = JSON.parse(options.body)
+  
+  // 创建新记录
+  const newItem = {
+    id: getNewDomainProtectionId(),
+    instanceId: body.instanceId,
+    instanceName: getInstanceNameById(body.instanceId),
+    customerName: `客户${Math.floor(Math.random() * 100)}`,
+    publicIp: body.publicIp,
+    addressType: body.addressType,
+    domain: body.domain,
+    cname: body.cname,
+    protectionBandwidthType: body.protectionBandwidthType,
+    dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
+    instanceProtectionBandwidth: 500,
+    businessBandwidthType: body.businessBandwidthType,
+    dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
+    instanceBusinessBandwidth: 200,
+    businessQpsType: body.businessQpsType,
+    dedicatedBusinessQps: body.dedicatedBusinessQps,
+    instanceBusinessQps: 5000,
+    protectionPackage: body.protectionPackage,
+    accessType: body.accessType,
+    status: 'active',
+    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+  }
+  
+  // 添加到数组
+  domainProtectionData.unshift(newItem)
+  
   return successResponse
 })
 
 // 更新域名防护对象
-Mock.mock(/\/api\/protection\/domain\/update/, 'put', () => {
-  return successResponse
+Mock.mock(/\/api\/protection\/domain\/update/, 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = parseInt(body.id)
+  
+  // 查找要更新的记录
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 更新记录
+    domainProtectionData[index] = {
+      ...domainProtectionData[index],
+      instanceId: body.instanceId,
+      instanceName: getInstanceNameById(body.instanceId),
+      publicIp: body.publicIp,
+      addressType: body.addressType,
+      domain: body.domain,
+      cname: body.cname,
+      protectionBandwidthType: body.protectionBandwidthType,
+      dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
+      businessBandwidthType: body.businessBandwidthType,
+      dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
+      businessQpsType: body.businessQpsType,
+      dedicatedBusinessQps: body.dedicatedBusinessQps,
+      protectionPackage: body.protectionPackage,
+      accessType: body.accessType,
+      updateTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    }
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: '记录不存在',
+      data: null
+    }
+  }
 })
 
 // 删除域名防护对象
-Mock.mock(/\/api\/protection\/domain\/delete\/\d+/, 'delete', () => {
-  return successResponse
+Mock.mock(/\/api\/protection\/domain\/delete\/\d+/, 'delete', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/domain\/delete\/(\d+)/)[1])
+  
+  // 查找要删除的记录
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 删除记录
+    domainProtectionData.splice(index, 1)
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: '记录不存在',
+      data: null
+    }
+  }
 })
 
 // 批量删除域名防护对象
-Mock.mock(/\/api\/protection\/domain\/batch-delete/, 'delete', () => {
+Mock.mock(/\/api\/protection\/domain\/batch-delete/, 'delete', (options) => {
+  const body = JSON.parse(options.body)
+  const ids = body.ids || []
+  
+  if (ids.length === 0) {
+    return {
+      code: 400,
+      message: '请选择要删除的记录',
+      data: null
+    }
+  }
+  
+  // 批量删除记录
+  domainProtectionData = domainProtectionData.filter(item => !ids.includes(item.id))
+  
   return successResponse
 })
 
 // 启用域名防护对象
-Mock.mock(/\/api\/protection\/domain\/enable\/\d+/, 'put', () => {
-  return successResponse
+Mock.mock(/\/api\/protection\/domain\/enable\/\d+/, 'put', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/domain\/enable\/(\d+)/)[1])
+  
+  // 查找要启用的记录
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 启用记录
+    domainProtectionData[index].status = 'active'
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: '记录不存在',
+      data: null
+    }
+  }
 })
 
 // 禁用域名防护对象
-Mock.mock(/\/api\/protection\/domain\/disable\/\d+/, 'put', () => {
-  return successResponse
+Mock.mock(/\/api\/protection\/domain\/disable\/\d+/, 'put', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/domain\/disable\/(\d+)/)[1])
+  
+  // 查找要禁用的记录
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 禁用记录
+    domainProtectionData[index].status = 'inactive'
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: '记录不存在',
+      data: null
+    }
+  }
 })
 
 // 获取IP防护对象详情
