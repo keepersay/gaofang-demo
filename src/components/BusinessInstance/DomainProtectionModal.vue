@@ -373,7 +373,10 @@ const handleInstanceChange = async (instanceId) => {
   if (!instanceId) return
   
   try {
-    const res = await getBusinessInstanceDetail(instanceId)
+    // 处理业务实例ID格式，如果是字符串格式（如BI10001），则提取数字部分
+    const numericId = instanceId.toString().replace(/\D/g, '')
+    
+    const res = await getBusinessInstanceDetail(numericId)
     if (res.code === 200) {
       const data = res.data
       
