@@ -346,6 +346,14 @@ const initFormData = () => {
       dedicatedBusinessQps: editData.dedicatedBusinessQps || 0,
       protectionPackage: editData.protectionPackage || 'standard'
     })
+    
+    // 先将当前使用的IP添加到选项中
+    if (editData.publicIp) {
+      publicIpOptions.value = [{
+        label: editData.publicIp,
+        value: editData.publicIp
+      }];
+    }
 
     // 获取业务实例详情
     handleInstanceChange(editData.instanceId)
