@@ -362,6 +362,9 @@ const initFormData = () => {
 
 // 处理业务实例变更
 const handleInstanceChange = async (instanceId) => {
+  // 保存当前选中的IP，以便在获取新的IP列表后能恢复选择
+  const currentIp = form.publicIp
+  
   // 重置相关字段
   form.publicIp = ''
   publicIpOptions.value = []
@@ -414,6 +417,14 @@ const handleInstanceChange = async (instanceId) => {
             value: props.editData.publicIp
           })
         }
+        
+        // 如果是编辑模式，设置当前IP为已有IP
+        form.publicIp = props.editData.publicIp
+        handlePublicIpChange(form.publicIp)
+      } else if (currentIp) {
+        // 如果有保存的当前IP，则恢复选择
+        form.publicIp = currentIp
+        handlePublicIpChange(form.publicIp)
       }
       
       // 设置默认值
