@@ -550,6 +550,19 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
       }))
     }
     
+    // 添加安全配置信息
+    const securityConfig = item.securityConfig || {
+      icmp: {
+        enabled: id % 2 === 0 // 随机设置ICMP禁用状态
+      },
+      blacklist: [],
+      whitelist: [],
+      regionBlock: [],
+      rateLimit: {},
+      reflection: {},
+      fingerprint: {}
+    }
+    
     // 添加业务实例信息
     const instanceId = parseInt(item.instanceId.toString().replace(/\D/g, ''))
     const instanceInfo = {
@@ -583,6 +596,7 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
       data: {
         ...item,
         slbConfig,
+        securityConfig,
         instanceInfo
       }
     }
@@ -603,18 +617,28 @@ Mock.mock('/api/protection/ip/config', 'put', (options) => {
   
   if (index !== -1) {
     // 更新基本配置
-    ipProtectionData[index].publicIp = body.publicIp
-    ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
-    ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
-    ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
-    ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
-    ipProtectionData[index].businessQpsType = body.businessQpsType
-    ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
-    ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
-    ipProtectionData[index].layer7Protection = body.layer7Protection
+    if (body.publicIp) ipProtectionData[index].publicIp = body.publicIp
+    if (body.protectionBandwidthType) ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
+    if (body.dedicatedProtectionBandwidth !== undefined) ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
+    if (body.businessBandwidthType) ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
+    if (body.dedicatedBusinessBandwidth !== undefined) ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
+    if (body.businessQpsType) ipProtectionData[index].businessQpsType = body.businessQpsType
+    if (body.dedicatedBusinessQps !== undefined) ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
+    if (body.nearSourceSuppression !== undefined) ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
+    if (body.layer7Protection !== undefined) ipProtectionData[index].layer7Protection = body.layer7Protection
     
     // 更新负载均衡配置
-    ipProtectionData[index].slbConfig = body.slbConfig
+    if (body.slbConfig) {
+      ipProtectionData[index].slbConfig = body.slbConfig
+    }
+    
+    // 更新安全配置
+    if (body.securityConfig) {
+      ipProtectionData[index].securityConfig = {
+        ...(ipProtectionData[index].securityConfig || {}),
+        ...body.securityConfig
+      }
+    }
     
     return {
       code: 200,
