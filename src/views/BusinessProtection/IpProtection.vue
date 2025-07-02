@@ -125,6 +125,13 @@
       :protection-id="currentConfigId"
       @success="handleConfigSuccess"
     />
+    
+    <!-- IP防护对象安全防护配置抽屉 -->
+    <ip-protection-security-drawer
+      v-model:visible="securityDrawerVisible"
+      :protection-id="currentSecurityId"
+      @success="handleSecurityConfigSuccess"
+    />
   </div>
 </template>
 
@@ -136,6 +143,7 @@ import { getIpProtectionList, deleteIpProtection, batchDeleteIpProtection } from
 import { getBusinessInstanceOptions } from '@/services/BusinessInstanceService'
 import IpProtectionModal from '@/components/BusinessInstance/IpProtectionModal.vue'
 import IpProtectionConfigDrawer from '@/components/BusinessInstance/IpProtectionConfigDrawer.vue'
+import IpProtectionSecurityDrawer from '@/components/BusinessInstance/IpProtectionSecurityDrawer.vue'
 
 // 状态
 const loading = ref(false)
@@ -161,6 +169,10 @@ const pagination = reactive({
 // 配置IP防护对象
 const configDrawerVisible = ref(false)
 const currentConfigId = ref(null)
+
+// 安全防护配置
+const securityDrawerVisible = ref(false)
+const currentSecurityId = ref(null)
 
 // 获取业务实例选项
 const fetchInstanceOptions = async () => {
@@ -241,7 +253,8 @@ const handleConfig = (row) => {
 
 // 安全防护配置
 const handleSecurityConfig = (row) => {
-  ElMessage.info(`安全防护配置: ${row.publicIp}，功能待实现`)
+  currentSecurityId.value = row.id
+  securityDrawerVisible.value = true
 }
 
 // 删除IP防护对象
@@ -312,6 +325,11 @@ const handleConfigSuccess = () => {
   fetchIpProtectionList()
 }
 
+// 处理安全防护配置成功
+const handleSecurityConfigSuccess = () => {
+  fetchIpProtectionList()
+}
+
 // 格式化带宽显示
 const getBandwidthDisplay = (type, dedicated, total) => {
   if (type === 'shared') {
@@ -365,4 +383,4 @@ onMounted(() => {
 .text-center {
   text-align: center;
 }
-</style> 
+</style>
