@@ -88,13 +88,13 @@
         <el-input-number 
           v-model="form.dedicatedProtectionBandwidth" 
           :min="1" 
-          :max="remainingProtectionBandwidth" 
+          :max="remainingProtectionBandwidth || 1" 
           :step="10" 
           style="width: 120px"
         />
         <span class="unit">Mbps</span>
         <div class="form-tip">
-          可分配的最大独享防护带宽为 {{ remainingProtectionBandwidth }} Mbps
+          可分配的最大独享防护带宽为 {{ remainingProtectionBandwidth || 0 }} Mbps
         </div>
       </el-form-item>
       
@@ -113,13 +113,13 @@
         <el-input-number 
           v-model="form.dedicatedBusinessBandwidth" 
           :min="1" 
-          :max="remainingBusinessBandwidth" 
+          :max="remainingBusinessBandwidth || 1" 
           :step="10" 
           style="width: 120px"
         />
         <span class="unit">Mbps</span>
         <div class="form-tip">
-          可分配的最大独享业务带宽为 {{ remainingBusinessBandwidth }} Mbps
+          可分配的最大独享业务带宽为 {{ remainingBusinessBandwidth || 0 }} Mbps
         </div>
       </el-form-item>
       
@@ -138,12 +138,12 @@
         <el-input-number 
           v-model="form.dedicatedBusinessQps" 
           :min="1" 
-          :max="remainingBusinessQps" 
+          :max="remainingBusinessQps || 1" 
           :step="100" 
           style="width: 120px"
         />
         <div class="form-tip">
-          可分配的最大独享业务QPS为 {{ remainingBusinessQps }}
+          可分配的最大独享业务QPS为 {{ remainingBusinessQps || 0 }}
         </div>
       </el-form-item>
 
@@ -213,15 +213,15 @@ const instanceInfo = reactive({
 
 // 计算剩余可分配的带宽和QPS
 const remainingProtectionBandwidth = computed(() => {
-  return instanceInfo.protectionBandwidth - instanceInfo.allocatedProtectionBandwidth
+  return Math.max(0, instanceInfo.protectionBandwidth - instanceInfo.allocatedProtectionBandwidth)
 })
 
 const remainingBusinessBandwidth = computed(() => {
-  return instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth
+  return Math.max(0, instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth)
 })
 
 const remainingBusinessQps = computed(() => {
-  return instanceInfo.businessQps - instanceInfo.allocatedBusinessQps
+  return Math.max(0, instanceInfo.businessQps - instanceInfo.allocatedBusinessQps)
 })
 
 // 表单数据
@@ -493,7 +493,7 @@ const handleProtectionBandwidthTypeChange = (type) => {
   if (type === 'shared') {
     form.dedicatedProtectionBandwidth = 0
   } else {
-    form.dedicatedProtectionBandwidth = Math.min(100, remainingProtectionBandwidth.value)
+    form.dedicatedProtectionBandwidth = Math.min(100, Math.max(1, remainingProtectionBandwidth.value || 1))
   }
 }
 
@@ -502,7 +502,7 @@ const handleBusinessBandwidthTypeChange = (type) => {
   if (type === 'shared') {
     form.dedicatedBusinessBandwidth = 0
   } else {
-    form.dedicatedBusinessBandwidth = Math.min(50, remainingBusinessBandwidth.value)
+    form.dedicatedBusinessBandwidth = Math.min(50, Math.max(1, remainingBusinessBandwidth.value || 1))
   }
 }
 
@@ -511,7 +511,7 @@ const handleBusinessQpsTypeChange = (type) => {
   if (type === 'shared') {
     form.dedicatedBusinessQps = 0
   } else {
-    form.dedicatedBusinessQps = Math.min(1000, remainingBusinessQps.value)
+    form.dedicatedBusinessQps = Math.min(1000, Math.max(1, remainingBusinessQps.value || 1))
   }
 }
 
