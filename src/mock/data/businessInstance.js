@@ -24,25 +24,25 @@ function generateIPv6() {
 
 // 生成30条业务实例数据
 for (let i = 0; i < 30; i++) {
-  const isAnycast = Random.boolean()
+  // 套餐名称及对应的集群类型
+  const packageTypes = [
+    { name: 'DDOS防护', clusterType: 'standby' },
+    { name: 'WAF标准防护', clusterType: 'distributed' },
+    { name: 'WAF增强防护', clusterType: 'anycast' }
+  ]
+  
+  // 随机选择套餐和集群类型
+  const packageInfo = Random.pick(packageTypes)
+  const packageName = packageInfo.name
+  const clusterType = packageInfo.clusterType
+  
   const addressType = Random.pick(addressTypes)
-  const regionId = isAnycast ? '' : Random.pick(regions)
+  const regionId = clusterType === 'anycast' ? '' : Random.pick(regions)
   const protectionIpCount = Random.natural(1, 10)
   
-  // 生成防护IP列表
-  const protectionIps = []
-  const ipCount = Random.natural(0, protectionIpCount)
-  
-  for (let j = 0; j < ipCount; j++) {
-    if (addressType === 'IPv4' || (addressType === 'dual' && Random.boolean())) {
-      protectionIps.push(generateIPv4())
-    } else {
-      protectionIps.push(generateIPv6())
-    }
-  }
-  
-  // 套餐名称列表
-  const packageNames = ['DDOS防护', 'WAF标准防护', 'WAF增强防护']
+  // 生成防护IP组
+  const protectionIpGroups = []
+  // 暂时不生成随机IP组，将在实现IP分配逻辑时处理
   
   // 生成业务实例
   businessInstances.push({
@@ -52,8 +52,8 @@ for (let i = 0; i < 30; i++) {
     customerName: Random.pick(customerNames),
     orderId: Random.pick(orderIds),
     packageId: 'PKG' + Random.natural(100, 999),
-    packageName: Random.pick(packageNames),
-    isAnycast,
+    packageName,
+    clusterType,
     addressType,
     regionId,
     // 资源配置
@@ -61,7 +61,7 @@ for (let i = 0; i < 30; i++) {
     businessBandwidth: Random.natural(50, 5000), // 业务带宽
     qps: Random.natural(1000, 100000), // 业务QPS
     protectionIpCount,
-    protectionIps,
+    protectionIpGroups,
     domainCount: Random.natural(5, 50), // 防护域名数
     portCount: Random.natural(5, 50), // 端口数量
     status: Random.pick(statuses),
@@ -134,7 +134,7 @@ export default {
       instanceId: 'BI' + Random.natural(10000, 99999),
       createTime: new Date().toISOString(),
       updateTime: new Date().toISOString(),
-      protectionIps: []
+      protectionIpGroups: []
     }
     
     businessInstances.unshift(newInstance)
@@ -188,11 +188,11 @@ export default {
     return null
   },
   
-  // 分配防护IP
-  allocateProtectionIps(id, ips) {
+  // 分配防护IP组
+  allocateProtectionIpGroups(id, ipGroups) {
     const instance = businessInstances.find(item => item.instanceId === id)
     if (instance) {
-      instance.protectionIps = ips
+      instance.protectionIpGroups = ipGroups
       instance.updateTime = new Date().toISOString()
       return instance
     }
@@ -202,14 +202,22 @@ export default {
   // 获取可用订单列表
   getAvailableOrders(params) {
     const { keyword } = params || {}
-    const packageNames = ['DDOS防护', 'WAF标准防护', 'WAF增强防护']
+    const packageTypes = [
+      { name: 'DDOS防护', clusterType: 'standby' },
+      { name: 'WAF标准防护', clusterType: 'distributed' },
+      { name: 'WAF增强防护', clusterType: 'anycast' }
+    ]
     
-    let results = orderIds.map(orderId => ({
-      orderId,
-      customerName: Random.pick(customerNames),
-      packageName: Random.pick(packageNames),
-      createTime: Random.datetime('yyyy-MM-dd HH:mm:ss')
-    }))
+    let results = orderIds.map(orderId => {
+      const packageInfo = Random.pick(packageTypes)
+      return {
+        orderId,
+        customerName: Random.pick(customerNames),
+        packageName: packageInfo.name,
+        clusterType: packageInfo.clusterType,
+        createTime: Random.datetime('yyyy-MM-dd HH:mm:ss')
+      }
+    })
     
     // 关键词过滤
     if (keyword) {

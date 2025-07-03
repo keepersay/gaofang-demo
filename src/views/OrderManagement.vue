@@ -119,31 +119,32 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="isAnycast" label="是否Anycast" width="90">
+        <el-table-column prop="clusterType" label="集群类型" width="100">
           <template #header>
             <div class="filter-header">
-              是否Anycast
-              <el-dropdown trigger="click" @command="handleAnycastFilterChange">
+              集群类型
+              <el-dropdown trigger="click" @command="handleClusterTypeFilterChange">
                 <el-icon class="filter-icon"><Filter /></el-icon>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">是</el-dropdown-item>
-                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                    <el-dropdown-item command="standby">主备</el-dropdown-item>
+                    <el-dropdown-item command="distributed">分布式</el-dropdown-item>
+                    <el-dropdown-item command="anycast">Anycast</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
             </div>
           </template>
           <template #default="scope">
-            <el-tag :type="scope.row.isAnycast ? 'success' : 'info'" size="small">
-              {{ scope.row.isAnycast ? '是' : '否' }}
+            <el-tag :type="getClusterTypeTagType(scope.row.clusterType || (scope.row.isAnycast ? 'anycast' : 'standby'))" size="small">
+              {{ getClusterTypeText(scope.row.clusterType || (scope.row.isAnycast ? 'anycast' : 'standby')) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="regionName" label="地域" width="80">
           <template #default="scope">
-            <span v-if="!scope.row.isAnycast">{{ getRegionName(scope.row.regionId) }}</span>
+            <span v-if="getOrderClusterType(scope.row) === 'standby'">{{ getRegionName(scope.row.regionId) }}</span>
             <el-tag v-else type="info" size="small">不适用</el-tag>
           </template>
         </el-table-column>
@@ -325,13 +326,13 @@
             {{ getStatusText(currentOrder.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="是否Anycast" label-align="right">
-          <el-tag :type="currentOrder.isAnycast ? 'success' : 'info'" size="small">
-            {{ currentOrder.isAnycast ? '是' : '否' }}
+        <el-descriptions-item label="集群类型" label-align="right">
+          <el-tag :type="getClusterTypeTagType(currentOrder.clusterType || (currentOrder.isAnycast ? 'anycast' : 'standby'))" size="small">
+            {{ getClusterTypeText(currentOrder.clusterType || (currentOrder.isAnycast ? 'anycast' : 'standby')) }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="地域" label-align="right">
-          <span v-if="!currentOrder.isAnycast">{{ getRegionName(currentOrder.regionId) }}</span>
+          <span v-if="getOrderClusterType(currentOrder) === 'standby'">{{ getRegionName(currentOrder.regionId) }}</span>
           <el-tag v-else type="info" size="small">不适用</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="地址类型" label-align="right">
@@ -422,8 +423,8 @@
             border
           >
             {{ group.name }}
-            <el-tag size="small" type="info" class="ml-5">
-              {{ group.isDistributed ? '分布式' : group.regionId }}
+            <el-tag size="small" :type="getClusterGroupTypeTagType(group)" class="ml-5">
+              {{ getClusterGroupTypeText(group) }}
             </el-tag>
           </el-radio>
         </el-radio-group>
@@ -457,7 +458,7 @@ const mockOrders = [
     status: 'pending',
     orderType: 'new',
     packageType: 'ddos',
-    isAnycast: false,
+    clusterType: 'standby',
     regionId: 'cn-beijing',
     addressType: 'IPv4',
     hasAdsProtection: true,
@@ -479,14 +480,14 @@ const mockOrders = [
   {
     id: 'ORD20240502002',
     customerId: 'CUST10002',
-    customerName: '腾讯科技(深圳)有限公司',
+    customerName: '腾讯云计算有限责任公司',
     status: 'completed',
     orderType: 'new',
-    packageType: 'waf-standard',
-    isAnycast: true,
+    packageType: 'waf-enhanced',
+    clusterType: 'anycast',
     regionId: '',
-    addressType: 'IPv6',
-    hasAdsProtection: false,
+    addressType: 'dual',
+    hasAdsProtection: true,
     hasCcProtection: true,
     hasWafProtection: true,
     protectionBandwidth: 200,
@@ -495,65 +496,65 @@ const mockOrders = [
     protectionIpCount: 10,
     protectionDomainCount: 5,
     portCount: 15,
-    remark: '标准配置，Anycast部署',
-    orderTime: '2024-05-02T09:15:00',
-    lastUpdateTime: '2024-05-03T14:20:00',
-    lastUpdateUser: 'operator1',
-    finalStatusTime: '2024-05-03T14:20:00',
+    remark: 'Anycast部署，需要全球分发',
+    orderTime: '2024-05-02T11:15:00',
+    lastUpdateTime: '2024-05-03T09:30:00',
+    lastUpdateUser: 'operator',
+    finalStatusTime: '2024-05-03T09:30:00',
     clusterGroupId: 'CG20240502001'
   },
   {
     id: 'ORD20240503003',
     customerId: 'CUST10003',
-    customerName: '百度在线网络技术(北京)有限公司',
+    customerName: '百度云计算技术有限公司',
     status: 'cancelled',
     orderType: 'new',
-    packageType: 'waf-enhanced',
-    isAnycast: false,
-    regionId: 'cn-hangzhou',
-    addressType: 'IPv4',
-    hasAdsProtection: true,
-    hasCcProtection: false,
-    hasWafProtection: true,
-    protectionBandwidth: 150,
-    businessBandwidth: 75,
-    businessQps: 1500,
-    protectionIpCount: 3,
-    protectionDomainCount: 2,
-    portCount: 8,
-    remark: '客户取消订单',
-    orderTime: '2024-05-03T11:45:00',
-    lastUpdateTime: '2024-05-04T16:30:00',
-    lastUpdateUser: 'operator2',
-    finalStatusTime: '2024-05-04T16:30:00',
-    clusterGroupId: null
-  },
-  {
-    id: 'ORD20240504004',
-    customerId: 'CUST10001',
-    customerName: '阿里云科技有限公司',
-    status: 'pending',
-    orderType: 'change',
-    packageType: 'ddos',
-    isAnycast: true,
+    packageType: 'waf-standard',
+    clusterType: 'distributed',
     regionId: '',
     addressType: 'IPv4',
     hasAdsProtection: true,
     hasCcProtection: true,
-    hasWafProtection: true,
+    hasWafProtection: false,
+    protectionBandwidth: 150,
+    businessBandwidth: 75,
+    businessQps: 1500,
+    protectionIpCount: 8,
+    protectionDomainCount: 4,
+    portCount: 12,
+    remark: '客户需求变更，订单作废',
+    orderTime: '2024-05-03T14:20:00',
+    lastUpdateTime: '2024-05-04T10:15:00',
+    lastUpdateUser: 'admin',
+    finalStatusTime: '2024-05-04T10:15:00',
+    clusterGroupId: null
+  },
+  {
+    id: 'ORD20240504004',
+    customerId: 'CUST10004',
+    customerName: '华为云计算技术有限公司',
+    status: 'pending',
+    orderType: 'change',
+    packageType: 'waf-standard',
+    clusterType: 'distributed',
+    regionId: '',
+    addressType: 'IPv4',
+    hasAdsProtection: true,
+    hasCcProtection: true,
+    hasWafProtection: false,
     protectionBandwidth: 300,
     businessBandwidth: 150,
     businessQps: 3000,
-    protectionIpCount: 8,
-    protectionDomainCount: 6,
+    protectionIpCount: 12,
+    protectionDomainCount: 8,
     portCount: 20,
-    remark: '扩容订单，Anycast部署',
-    orderTime: '2024-05-04T08:20:00',
-    lastUpdateTime: '2024-05-04T08:20:00',
+    remark: '升级带宽和QPS',
+    orderTime: '2024-05-04T09:45:00',
+    lastUpdateTime: '2024-05-04T09:45:00',
     lastUpdateUser: 'admin',
     finalStatusTime: null,
-    clusterGroupId: 'CG20240502001',
-    originalOrderId: 'ORD20240502002'
+    clusterGroupId: 'CG20240503001',
+    originalOrderId: 'ORD20240503004'
   },
   {
     id: 'ORD20240505005',
@@ -562,7 +563,7 @@ const mockOrders = [
     status: 'completed',
     orderType: 'new',
     packageType: 'waf-standard',
-    isAnycast: false,
+    clusterType: 'standby',
     regionId: 'cn-shenzhen',
     addressType: 'IPv6',
     hasAdsProtection: false,
@@ -588,7 +589,7 @@ const mockOrders = [
     status: 'pending',
     orderType: 'change',
     packageType: 'waf-enhanced',
-    isAnycast: true,
+    clusterType: 'anycast',
     regionId: '',
     addressType: 'dual',
     hasAdsProtection: true,
@@ -628,7 +629,7 @@ const search = ref({
 const filters = reactive({
   orderType: null,
   status: null,
-  isAnycast: null,
+  clusterType: null,
   hasAdsProtection: null,
   hasCcProtection: null,
   hasWafProtection: null,
@@ -646,11 +647,11 @@ const sortParams = ref({
 const detailDialogVisible = ref(false);
 const currentOrder = reactive({
   id: '',
-  customerId: 0,
+  customerId: '',
   customerName: '',
   status: '',
   orderType: '',
-  isAnycast: false,
+  clusterType: '',
   regionId: '',
   regionName: '',
   addressType: '',
@@ -813,8 +814,13 @@ const filteredOrders = computed(() => {
     result = result.filter(order => order.addressType === filters.addressType)
   }
   
-  if (filters.isAnycast !== null) {
-    result = result.filter(order => order.isAnycast === filters.isAnycast)
+  if (filters.clusterType) {
+    result = result.filter(order => {
+      const orderClusterType = order.clusterType || (order.isAnycast ? 'anycast' : 'standby');
+      return orderClusterType === filters.clusterType;
+    });
+  } else if (filters.isAnycast !== null) {
+    result = result.filter(order => order.isAnycast === filters.isAnycast);
   }
   
   if (filters.hasAdsProtection !== null) {
@@ -884,6 +890,7 @@ const resetSearch = () => {
   filters.hasCcProtection = null;
   filters.hasWafProtection = null;
   filters.packageType = null;
+  filters.clusterType = null;
   sortParams.value = {
     prop: '',
     order: ''
@@ -1065,14 +1072,15 @@ const handleCancel = (order) => {
 
 // 验证订单业务规则
 const validateOrderRules = (order) => {
-  // 验证Anycast和地域的关系
-  if (order.isAnycast && order.regionId) {
-    ElMessage.error('Anycast订单不应指定地域');
+  // 检查必要字段
+  if (!order.addressType) {
+    ElMessage.warning('订单缺少地址类型信息');
     return false;
   }
   
-  if (!order.isAnycast && !order.regionId) {
-    ElMessage.error('非Anycast订单必须指定地域');
+  // 检查不同集群类型对应的地域
+  if (order.clusterType === 'standby' && !order.regionId) {
+    ElMessage.warning('主备类型的订单需要指定地域');
     return false;
   }
   
@@ -1088,8 +1096,24 @@ const handleRowClick = (row, column, event) => {
 };
 
 // 显示订单详情
-const showOrderDetail = (row) => {
-  Object.assign(currentOrder, row);
+const showOrderDetail = (order) => {
+  Object.keys(currentOrder).forEach(key => {
+    if (key in order) {
+      currentOrder[key] = order[key];
+    } else {
+      // 处理特殊字段
+      if (key === 'regionName' && order.regionId) {
+        currentOrder.regionName = getRegionName(order.regionId);
+      } else if (key === 'clusterType' && !order.clusterType && order.isAnycast !== undefined) {
+        // 兼容旧数据
+        currentOrder.clusterType = order.isAnycast ? 'anycast' : 'standby';
+      } else {
+        // 其他字段设为默认值
+        currentOrder[key] = '';
+      }
+    }
+  });
+  
   detailDialogVisible.value = true;
 };
 
@@ -1102,46 +1126,41 @@ const selectedClusterGroupId = ref('');
 const isDistributed = ref(false);
 
 // 选择逻辑集群组
-const selectClusterGroup = async (order) => {
+const selectClusterGroup = (order) => {
+  // 模拟可用的逻辑集群组
+  const clusterGroups = [
+    { id: 'CG20240501001', name: '主备集群组-北京', type: 'standby', regionId: 'cn-beijing', isDistributed: false, status: 'active' },
+    { id: 'CG20240501002', name: '主备集群组-上海', type: 'standby', regionId: 'cn-shanghai', isDistributed: false, status: 'active' },
+    { id: 'CG20240502001', name: '分布式集群组-华北', type: 'distributed', regionId: '', isDistributed: true, status: 'active' },
+    { id: 'CG20240502002', name: '分布式集群组-华南', type: 'distributed', regionId: '', isDistributed: true, status: 'active' },
+    { id: 'CG20240503001', name: '分布式集群组-华东', type: 'distributed', regionId: '', isDistributed: true, status: 'active' },
+    { id: 'CG20240504001', name: 'Anycast集群组-国内', type: 'anycast', regionId: '', isDistributed: false, status: 'active' },
+    { id: 'CG20240505001', name: 'Anycast集群组-全球', type: 'anycast', regionId: '', isDistributed: false, status: 'active' }
+  ];
+  
+  // 根据订单类型筛选合适的集群组
+  availableClusterGroups.value = clusterGroups.filter(group => {
+    // 集群组必须是活跃状态
+    if (group.status !== 'active') return false;
+    
+    // 根据订单类型筛选匹配的集群组类型
+    const orderClusterType = getOrderClusterType(order);
+    
+    // 根据集群组的type字段（优先）或isDistributed字段（兼容旧数据）判断类型
+    const groupType = group.type || (group.isDistributed ? 'distributed' : 'standby');
+    
+    // 集群组类型必须与订单类型匹配
+    if (orderClusterType !== groupType) return false;
+    
+    // 如果是主备类型，地域必须匹配
+    if (orderClusterType === 'standby' && group.regionId !== order.regionId) return false;
+    
+    return true;
+  });
+  
+  selectedClusterGroupId.value = availableClusterGroups.value.length > 0 ? availableClusterGroups.value[0].id : '';
   currentProcessingOrder.value = order;
-  selectedClusterGroupId.value = '';
-  isDistributed.value = order.isAnycast; // Anycast默认为分布式部署
-  
-  // 加载可用的逻辑集群组
-  await loadAvailableClusterGroups(order.regionId, order.isAnycast);
-  
   clusterGroupDialogVisible.value = true;
-};
-
-// 加载可用的逻辑集群组
-const loadAvailableClusterGroups = async (regionId, isAnycast) => {
-  loading.value = true;
-  try {
-    // 这里应该调用API获取可用的逻辑集群组
-    // 根据是否分布式和地域进行过滤
-    // 模拟数据
-    setTimeout(() => {
-      availableClusterGroups.value = [
-        { id: 'CG20240501001', name: '华北电信集群组', isDistributed: false, regionId: 'cn-beijing' },
-        { id: 'CG20240502001', name: 'Anycast全球加速集群组', isDistributed: true, regionId: '' },
-        { id: 'CG20240503001', name: '华东联通集群组', isDistributed: false, regionId: 'cn-hangzhou' },
-        { id: 'CG20240504001', name: '华南电信集群组', isDistributed: false, regionId: 'cn-shenzhen' },
-        { id: 'CG20240505001', name: '华南联通集群组', isDistributed: false, regionId: 'cn-shenzhen' },
-        { id: 'CG20240505002', name: '国际集群组', isDistributed: true, regionId: '' }
-      ].filter(group => {
-        if (isAnycast) {
-          return group.isDistributed;
-        } else {
-          return !group.isDistributed && group.regionId === regionId;
-        }
-      });
-      loading.value = false;
-    }, 300);
-  } catch (error) {
-    console.error('获取逻辑集群组失败', error);
-    ElMessage.error('获取逻辑集群组失败');
-    loading.value = false;
-  }
 };
 
 // 确认选择逻辑集群组
@@ -1166,6 +1185,56 @@ const confirmClusterGroupSelection = () => {
 // 取消选择逻辑集群组
 const cancelClusterGroupSelection = () => {
   clusterGroupDialogVisible.value = false;
+};
+
+// 处理集群类型过滤
+const handleClusterTypeFilterChange = (value) => {
+  filters.clusterType = value;
+  // 兼容旧数据，将isAnycast过滤器清空，避免冲突
+  filters.isAnycast = null;
+};
+
+// 获取集群类型文本
+const getClusterTypeText = (type) => {
+  const typeMap = {
+    'standby': '主备',
+    'distributed': '分布式',
+    'anycast': 'Anycast'
+  };
+  return typeMap[type] || type;
+};
+
+// 获取集群类型标签类型
+const getClusterTypeTagType = (type) => {
+  const typeMap = {
+    'standby': 'primary',
+    'distributed': 'success',
+    'anycast': 'warning'
+  };
+  return typeMap[type] || 'info';
+};
+
+// 辅助函数：获取订单的集群类型（处理兼容旧数据）
+const getOrderClusterType = (order) => {
+  return order.clusterType || (order.isAnycast ? 'anycast' : 'standby');
+};
+
+// 获取逻辑集群组的类型标签类型
+const getClusterGroupTypeTagType = (group) => {
+  if (group.type) {
+    return getClusterTypeTagType(group.type);
+  } else {
+    return group.isDistributed ? 'success' : 'primary';
+  }
+};
+
+// 获取逻辑集群组的类型文本
+const getClusterGroupTypeText = (group) => {
+  if (group.type) {
+    return getClusterTypeText(group.type);
+  } else {
+    return group.isDistributed ? '分布式' : '主备';
+  }
 };
 
 // 初始化

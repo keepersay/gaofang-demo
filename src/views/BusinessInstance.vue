@@ -58,18 +58,19 @@
         <el-table-column prop="orderId" label="订单ID" width="150" />
         <el-table-column prop="packageName" label="套餐名称" width="120" />
         <el-table-column 
-          label="Anycast" 
-          width="100"
+          label="集群类型" 
+          width="120"
           :filters="[
-            { text: '是', value: true },
-            { text: '否', value: false }
+            { text: '主备', value: 'standby' },
+            { text: '分布式', value: 'distributed' },
+            { text: 'Anycast', value: 'anycast' }
           ]"
-          :filter-method="filterAnycast"
+          :filter-method="filterClusterType"
           filter-placement="bottom-end"
         >
           <template #default="{ row }">
-            <el-tag :type="row.isAnycast ? 'success' : 'info'">
-              {{ row.isAnycast ? '是' : '否' }}
+            <el-tag :type="getClusterTypeTag(row.clusterType)">
+              {{ getClusterTypeLabel(row.clusterType) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -277,14 +278,16 @@ onMounted(() => {
 
 // 获取数据
 const fetchData = async () => {
-  loading.value = true
   try {
+    loading.value = true
     const params = {
       keyword: searchForm.keyword,
+      status: searchForm.status,
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize
     }
     
+    // 添加日期范围参数
     if (searchForm.dateRange && searchForm.dateRange.length === 2) {
       params.dateRange = searchForm.dateRange
     }
@@ -292,7 +295,14 @@ const fetchData = async () => {
     const result = await BusinessInstanceService.getBusinessInstances(params)
     
     if (result.code === 200) {
-      tableData.value = result.data.list
+      // 处理数据兼容性
+      tableData.value = result.data.list.map(item => {
+        // 如果没有clusterType字段但有isAnycast字段，根据isAnycast设置clusterType
+        if (!item.clusterType && item.isAnycast !== undefined) {
+          item.clusterType = item.isAnycast ? 'anycast' : 'standby';
+        }
+        return item;
+      });
       pagination.total = result.data.total
       pagination.pageNum = result.data.pageNum
       pagination.pageSize = result.data.pageSize
@@ -446,8 +456,7 @@ const confirmDisable = async () => {
 
 // 分配防护IP
 const handleAllocateIp = (row) => {
-  // 创建一个深拷贝，避免引用问题
-  currentInstance.value = JSON.parse(JSON.stringify(row))
+  currentInstance.value = row
   ipModalVisible.value = true
 }
 
@@ -496,8 +505,8 @@ const filterStatus = (value, row) => {
   return row.status === value
 }
 
-const filterAnycast = (value, row) => {
-  return row.isAnycast === value
+const filterClusterType = (value, row) => {
+  return row.clusterType === value
 }
 
 const filterAddressType = (value, row) => {
@@ -519,6 +528,24 @@ const getStatusLabel = (status) => {
     inactive: '已禁用'
   }
   return map[status] || status
+}
+
+const getClusterTypeTag = (type) => {
+  const map = {
+    'standby': 'primary',
+    'distributed': 'success',
+    'anycast': 'warning'
+  }
+  return map[type] || 'info'
+}
+
+const getClusterTypeLabel = (type) => {
+  const map = {
+    'standby': '主备',
+    'distributed': '分布式',
+    'anycast': 'Anycast'
+  }
+  return map[type] || type
 }
 
 const getAddressTypeTag = (type) => {

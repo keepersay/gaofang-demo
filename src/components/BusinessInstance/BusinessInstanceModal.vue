@@ -67,8 +67,12 @@
 
       <!-- 步骤2：部署配置 -->
       <div v-show="active === 1">
-        <el-form-item label="Anycast" prop="isAnycast">
-          <el-switch v-model="form.isAnycast" />
+        <el-form-item label="集群类型" prop="clusterType">
+          <el-radio-group v-model="form.clusterType" @change="handleClusterTypeChange">
+            <el-radio label="standby">主备</el-radio>
+            <el-radio label="distributed">分布式</el-radio>
+            <el-radio label="anycast">Anycast</el-radio>
+          </el-radio-group>
         </el-form-item>
         <el-form-item label="地址类型" prop="addressType">
           <el-radio-group v-model="form.addressType">
@@ -77,7 +81,7 @@
             <el-radio label="dual">双栈</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="地域" prop="regionId" v-if="!form.isAnycast">
+        <el-form-item label="地域" prop="regionId" v-if="form.clusterType === 'standby'">
           <el-select v-model="form.regionId" placeholder="请选择地域" style="width: 100%" @change="handleRegionChange">
             <el-option
               v-for="item in regionOptions"
@@ -94,23 +98,34 @@
             filterable 
             style="width: 100%"
             :loading="loading.clusterGroups"
+            @change="handleClusterGroupChange"
           >
             <el-option
               v-for="item in filteredClusterGroupOptions"
               :key="item.id"
               :label="item.name"
               :value="item.id"
+              :disabled="clusterGroupResourceStatus[item.id] === 'insufficient'"
             >
               <div style="display: flex; justify-content: space-between; align-items: center">
                 <span>{{ item.name }}</span>
-                <el-tag size="small" :type="getClusterGroupTypeTag(item)">
-                  {{ getClusterGroupTypeLabel(item) }}
-                </el-tag>
+                <div>
+                  <el-tag size="small" :type="getClusterGroupTypeTag(item)" style="margin-right: 5px">
+                    {{ getClusterGroupTypeLabel(item) }}
+                  </el-tag>
+                  <el-tag 
+                    v-if="clusterGroupResourceStatus[item.id]" 
+                    size="small" 
+                    :type="clusterGroupResourceStatus[item.id] === 'sufficient' ? 'success' : 'danger'"
+                  >
+                    {{ clusterGroupResourceStatus[item.id] === 'sufficient' ? '资源充足' : '资源不足' }}
+                  </el-tag>
+                </div>
               </div>
             </el-option>
           </el-select>
-          <div class="form-tip" v-if="form.isAnycast">Anycast实例建议选择Anycast或分布式类型的逻辑集群组</div>
-          <div class="form-tip" v-else>非Anycast实例建议选择与实例所在地域匹配的逻辑集群组</div>
+          <div class="form-tip">请选择与订单集群类型相匹配的逻辑集群组</div>
+          <div v-if="loading.resourceCheck" class="form-tip">正在检查网池资源充足性...</div>
         </el-form-item>
       </div>
 
@@ -198,6 +213,7 @@ import { ref, reactive, watch, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import BusinessInstanceService from '../../services/BusinessInstanceService'
 import ClusterService from '../../services/ClusterService'
+import RegionService from '../../services/RegionService'
 
 const props = defineProps({
   modelValue: {
@@ -216,14 +232,32 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'success'])
 
+// 提交状态
+const submitting = ref(false)
+
+// 数据加载状态
+const loading = reactive({
+  customers: false,
+  orders: false,
+  regions: false,
+  clusterGroups: false,
+  resourceCheck: false
+})
+
+// 逻辑集群组资源状态
+const clusterGroupResourceStatus = ref({})
+
 // 对话框可见性
 const dialogVisible = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
 })
 
+// 是否为编辑模式
+const isEdit = computed(() => props.isEdit)
+
 // 表单引用
-const formRef = ref(null)
+const formRef = ref()
 
 // 步骤
 const active = ref(0)
@@ -237,7 +271,7 @@ const form = reactive({
   packageId: '',
   packageName: '',
   packageType: 1, // 1: DDOS防护, 2: WAF标准防护, 3: WAF增强防护
-  isAnycast: false,
+  clusterType: 'standby',
   addressType: 'IPv4',
   regionId: '',
   adsProtection: true, // 默认开启ADS防护
@@ -252,9 +286,8 @@ const form = reactive({
   status: 'active',
   remark: '',
   clusterGroupId: '',
-  clusterGroupName: '',
-  clusterGroupType: '',
-  clusterGroupTypeLabel: ''
+  // 添加用于记录之前选择的逻辑集群组，便于检测变更
+  previousClusterGroupId: ''
 })
 
 // 表单验证规则
@@ -269,11 +302,14 @@ const rules = {
   orderId: [
     { required: true, message: '请选择关联订单', trigger: 'change' }
   ],
+  clusterType: [
+    { required: true, message: '请选择集群类型', trigger: 'change' }
+  ],
   addressType: [
     { required: true, message: '请选择地址类型', trigger: 'change' }
   ],
   regionId: [
-    { required: true, message: '请选择地域', trigger: 'change' }
+    { required: () => form.clusterType === 'standby', message: '请选择地域', trigger: 'change' }
   ],
   clusterGroupId: [
     { required: true, message: '请选择逻辑集群组', trigger: 'change' }
@@ -288,7 +324,6 @@ const customerOptions = ref([])
 const orderOptions = ref([])
 const regionOptions = ref([])
 const clusterGroupOptions = ref([])
-const loading = ref({ clusterGroups: false })
 
 // 重置表单
 const resetForm = () => {
@@ -299,7 +334,7 @@ const resetForm = () => {
   form.packageId = ''
   form.packageName = ''
   form.packageType = 1
-  form.isAnycast = false
+  form.clusterType = 'standby'
   form.addressType = 'IPv4'
   form.regionId = ''
   form.adsProtection = true
@@ -314,6 +349,7 @@ const resetForm = () => {
   form.status = 'active'
   form.remark = ''
   form.clusterGroupId = ''
+  form.previousClusterGroupId = ''
 }
 
 // 监听实例数据变化
@@ -325,24 +361,41 @@ watch(() => props.instanceData, (val) => {
       }
     })
     
-    // 根据套餐名称设置防护选项
+    // 根据套餐名称设置防护选项和集群类型
     if (val.packageName) {
       if (val.packageName === 'DDOS防护') {
         form.adsProtection = true;
         form.ccProtection = false;
         form.wafProtection = false;
         form.packageType = 1;
+        // 如果没有明确的clusterType，则根据包类型设置
+        if (!val.clusterType) {
+          form.clusterType = 'standby';
+        }
       } else if (val.packageName === 'WAF标准防护') {
         form.adsProtection = true;
         form.ccProtection = true;
         form.wafProtection = false;
         form.packageType = 2;
+        // 如果没有明确的clusterType，则根据包类型设置
+        if (!val.clusterType) {
+          form.clusterType = 'distributed';
+        }
       } else if (val.packageName === 'WAF增强防护') {
         form.adsProtection = true;
         form.ccProtection = true;
         form.wafProtection = true;
         form.packageType = 3;
+        // 如果没有明确的clusterType，则根据包类型设置
+        if (!val.clusterType) {
+          form.clusterType = 'anycast';
+        }
       }
+    }
+    
+    // 如果有集群类型但没有isAnycast字段（向下兼容），根据集群类型设置
+    if (!val.clusterType && val.isAnycast !== undefined) {
+      form.clusterType = val.isAnycast ? 'anycast' : 'standby';
     }
     
     // 如果有关联的逻辑集群组ID，获取集群组详情
@@ -454,6 +507,20 @@ const handleOrderChange = (val) => {
       form.ccProtection = true;
       form.wafProtection = true;
     }
+    
+    // 直接使用订单中的集群类型（如果有）
+    if (order.clusterType) {
+      form.clusterType = order.clusterType;
+    }
+    
+    // 如果切换为Anycast，清空地域选择
+    if (form.clusterType === 'anycast') {
+      form.regionId = '';
+    }
+    
+    // 清空之前选择的集群组
+    form.clusterGroupId = '';
+    form.previousClusterGroupId = '';
   }
 }
 
@@ -478,7 +545,7 @@ const handleNext = async () => {
     // 验证第二步表单
     try {
       await formRef.value.validateField(['addressType'])
-      if (!form.isAnycast) {
+      if (form.clusterType === 'standby') {
         await formRef.value.validateField(['regionId'])
       }
       // 验证逻辑集群组
@@ -501,44 +568,65 @@ const handleCancel = () => {
 // 提交表单
 const handleSubmit = async () => {
   try {
+    // 表单验证
     await formRef.value.validate()
     
-    // 构建提交数据
-    const submitData = {
-      ...form
-    }
+    // 禁用提交按钮
+    submitting.value = true
     
-    // 根据防护选项选择套餐名称
-    if (form.wafProtection && form.ccProtection && form.adsProtection) {
-      submitData.packageName = 'WAF增强防护';
-    } else if (form.ccProtection && form.adsProtection) {
-      submitData.packageName = 'WAF标准防护';
-    } else {
-      submitData.packageName = 'DDOS防护';  // 默认或只有ADS防护时
-    }
-    
-    // 如果是Anycast，清空地域ID
-    if (submitData.isAnycast) {
-      submitData.regionId = ''
-    }
-    
-    // 使用服务
     let result
     if (props.isEdit) {
-      result = await BusinessInstanceService.updateBusinessInstance(props.instanceData.instanceId, submitData)
+      // 编辑模式
+      const updateData = { ...form }
+      
+      // 如果修改了逻辑集群组，需要标记为重新分配IP组
+      const needReallocateIps = updateData.clusterGroupId !== props.instanceData.clusterGroupId
+      
+      result = await BusinessInstanceService.updateBusinessInstance(props.instanceData.instanceId, updateData)
+      
+      if (result.code === 200) {
+        ElMessage.success('更新成功')
+        
+        // 如果修改了逻辑集群组，自动重新分配IP组
+        if (needReallocateIps) {
+          const allocateResult = await BusinessInstanceService.autoAllocateIpGroups(result.data.instanceId)
+          if (allocateResult.code === 200) {
+            ElMessage.success('已自动重新分配防护IP组')
+          } else {
+            ElMessage.warning('自动分配防护IP组失败，可能需要手动分配')
+          }
+        }
+        
+        dialogVisible.value = false
+        emit('success')
+      } else {
+        ElMessage.error(result.message || '更新失败')
+      }
     } else {
-      result = await BusinessInstanceService.createBusinessInstance(submitData)
-    }
-    
-    if (result.code === 200) {
-      ElMessage.success(props.isEdit ? '修改成功' : '创建成功')
-      dialogVisible.value = false
-      emit('success')
-    } else {
-      ElMessage.error(result.message || (props.isEdit ? '修改失败' : '创建失败'))
+      // 新增模式
+      result = await BusinessInstanceService.createBusinessInstance(form)
+      
+      if (result.code === 200) {
+        ElMessage.success('创建成功')
+        
+        // 自动分配IP组
+        const allocateResult = await BusinessInstanceService.autoAllocateIpGroups(result.data.instanceId)
+        if (allocateResult.code === 200) {
+          ElMessage.success('已自动分配防护IP组')
+        } else {
+          ElMessage.warning('自动分配防护IP组失败，可能需要手动分配')
+        }
+        
+        dialogVisible.value = false
+        emit('success')
+      } else {
+        ElMessage.error(result.message || '创建失败')
+      }
     }
   } catch (error) {
-    console.error('表单验证失败:', error)
+    console.error('表单提交失败:', error)
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -565,26 +653,47 @@ const handlePackageTypeChange = (val) => {
 // 处理地域变更
 const handleRegionChange = () => {
   // 根据地域和Anycast状态过滤可用的逻辑集群组
-  if (!form.isAnycast && form.regionId) {
+  if (form.clusterType !== 'anycast' && form.regionId) {
     // 非Anycast模式下，建议使用主备类型且与地域匹配的集群组
     // 这里只是提示用户，不强制限制选择
   }
 }
 
 // 监听Anycast状态变化
-watch(() => form.isAnycast, (newVal) => {
-  // 如果切换了Anycast状态，可能需要重新考虑集群组选择
-  if (newVal) {
-    // Anycast模式下建议使用分布式或Anycast类型的集群组
+watch(() => form.clusterType, (newVal) => {
+  // 如果切换了集群类型，可能需要重新考虑集群组选择
+  if (newVal === 'anycast' || newVal === 'distributed') {
+    // Anycast或分布式模式下建议使用对应类型的集群组
+    form.regionId = '';
   } else {
-    // 非Anycast模式下建议使用与地域匹配的集群组
+    // 主备模式下建议使用主备类型的集群组
+  }
+})
+
+// 监听clusterType和addressType变化，自动修改regionId
+watch([() => form.clusterType, () => form.addressType], ([newClusterType]) => {
+  // 如果切换为Anycast或分布式，自动清空regionId
+  if (newClusterType === 'anycast' || newClusterType === 'distributed') {
+    form.regionId = ''
+  }
+  
+  // 如果逻辑集群组已选择，重新检查资源充足性
+  if (form.clusterGroupId) {
+    checkClusterGroupResourceSufficiency(form.clusterGroupId);
+  }
+})
+
+// 监听防护IP数量变化，自动重新检查资源充足性
+watch(() => form.protectionIpCount, (newCount, oldCount) => {
+  if (newCount !== oldCount && form.clusterGroupId) {
+    checkClusterGroupResourceSufficiency(form.clusterGroupId);
   }
 })
 
 // 获取逻辑集群组选项
 const fetchClusterGroupOptions = async () => {
   try {
-    loading.value.clusterGroups = true
+    loading.clusterGroups = true
     // 调用ClusterService获取集群组列表
     const result = await ClusterService.getClusterGroups()
     clusterGroupOptions.value = result
@@ -592,7 +701,7 @@ const fetchClusterGroupOptions = async () => {
     console.error('获取逻辑集群组列表失败:', error)
     ElMessage.error('获取逻辑集群组列表失败')
   } finally {
-    loading.value.clusterGroups = false
+    loading.clusterGroups = false
   }
 }
 
@@ -614,11 +723,24 @@ const filteredClusterGroupOptions = computed(() => {
   if (!clusterGroupOptions.value.length) return []
   
   return clusterGroupOptions.value.filter(item => {
-    // 默认显示所有集群组，但是给用户一些提示
-    // 如果是Anycast模式，建议使用分布式或Anycast类型的集群组
-    // 如果是非Anycast模式，建议使用与地域匹配的集群组
-    return item.status === 'active'
-  })
+    // 只显示活跃的集群组
+    if (item.status !== 'active') return false;
+    
+    // 根据选择的集群类型筛选匹配的逻辑集群组
+    if (form.clusterType === 'standby') {
+      // 主备类型实例只能选择主备类型的集群组
+      return item.type === 'standby' || (!item.type && !item.distributed);
+    } else if (form.clusterType === 'distributed') {
+      // 分布式类型实例只能选择分布式类型的集群组
+      return item.type === 'distributed' || (!item.type && item.distributed);
+    } else if (form.clusterType === 'anycast') {
+      // Anycast类型实例只能选择Anycast类型的集群组
+      return item.type === 'anycast';
+    }
+    
+    // 默认显示所有活跃的集群组
+    return true;
+  });
 })
 
 // 获取逻辑集群组类型标签类型
@@ -641,6 +763,63 @@ const getClusterGroupTypeLabel = (item) => {
   } else {
     return '主备'
   }
+}
+
+// 处理逻辑集群组选择变更
+const handleClusterGroupChange = async () => {
+  // 检查逻辑集群组是否发生了变更
+  if (form.clusterGroupId !== form.previousClusterGroupId) {
+    // 如果发生了变更，检查资源充足性
+    await checkClusterGroupResourceSufficiency(form.clusterGroupId);
+    // 更新previousClusterGroupId
+    form.previousClusterGroupId = form.clusterGroupId;
+  }
+};
+
+// 检查逻辑集群组的IP资源充足性
+const checkClusterGroupResourceSufficiency = async (clusterGroupId) => {
+  if (!clusterGroupId) return;
+  
+  loading.resourceCheck = true;
+  try {
+    const result = await BusinessInstanceService.checkClusterGroupIpResource(
+      clusterGroupId,
+      form.addressType,
+      form.protectionIpCount
+    );
+    
+    if (result.code === 200) {
+      // 更新资源状态
+      clusterGroupResourceStatus.value = {
+        ...clusterGroupResourceStatus.value,
+        [clusterGroupId]: result.data.sufficient ? 'sufficient' : 'insufficient'
+      };
+      
+      // 如果资源不足，显示警告
+      if (!result.data.sufficient) {
+        ElMessage.warning(`所选逻辑集群组的IP资源不足，无法满足${form.protectionIpCount}组IP的分配需求`);
+      }
+    } else {
+      ElMessage.error(result.message || '检查资源充足性失败');
+    }
+  } catch (error) {
+    console.error('检查资源充足性失败:', error);
+    ElMessage.error('检查资源充足性失败');
+  } finally {
+    loading.resourceCheck = false;
+  }
+};
+
+// 处理集群类型变更
+const handleClusterTypeChange = () => {
+  // 如果切换为Anycast或分布式，自动清空regionId
+  if (form.clusterType === 'anycast' || form.clusterType === 'distributed') {
+    form.regionId = '';
+  }
+  
+  // 清空之前选择的集群组，因为不同类型的实例需要选择不同类型的集群组
+  form.clusterGroupId = '';
+  form.previousClusterGroupId = '';
 }
 </script>
 
