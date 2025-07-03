@@ -77,7 +77,7 @@
             <span>流量分析</span>
         </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="/cluster-group-management">
+        <el-sub-menu index="/resource">
           <template #title>
             <el-icon>
               <!-- 资源组/多集群风格 -->
@@ -85,17 +85,17 @@
             </el-icon>
             <span>资源管理</span>
           </template>
-          <el-menu-item index="/region-management">
+          <el-menu-item index="/resource/region">
             <el-icon><Location /></el-icon>
             <span>地域</span>
           </el-menu-item>
-          <el-menu-item index="/datacenter-management">
+          <el-menu-item index="/resource/datacenter">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".15"/><path d="M7 10h10M7 14h10M12 6v12" stroke="currentColor" stroke-width="1.2"/></svg>
             </el-icon>
             <span>机房</span>
           </el-menu-item>
-          <el-menu-item index="/ip-pool-management">
+          <el-menu-item index="/resource/ippool">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none">
                 <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/>
@@ -113,14 +113,14 @@
             </el-icon>
             <span>网池</span>
           </el-menu-item>
-          <el-menu-item index="/cluster-group">
+          <el-menu-item index="/resource/logiccluster">
             <el-icon>
               <!-- 集群风格，参考云数据库/集群 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><ellipse cx="12" cy="7" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="17" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
             </el-icon>
             <span>逻辑集群</span>
           </el-menu-item>
-          <el-menu-item index="/cluster-group-management">
+          <el-menu-item index="/resource/logicclustergroup">
             <el-icon>
               <!-- 组/多集群风格，参考云资源组 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="7" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="11" width="10" height="2" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
@@ -252,15 +252,41 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Bell, QuestionFilled, ArrowDown, PieChart, Location, Setting, Box } from '@element-plus/icons-vue'
+import {
+  PieChart,
+  Location,
+  Bell,
+  QuestionFilled,
+  ArrowDown,
+  Box
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 
-// mock 激活菜单
-const activeMenu = computed(() => route.path)
+// 根据当前路由计算激活的菜单项
+const activeMenu = computed(() => {
+  // 如果是资源管理下的子路由，返回完整路径
+  if (route.path.startsWith('/resource/')) {
+    return route.path
+  }
+  // 如果是业务管理下的子路由，返回完整路径
+  if (route.path.startsWith('/business/')) {
+    return route.path
+  }
+  // 如果是日志管理下的子路由
+  if (route.path.startsWith('/log/')) {
+    return route.path
+  }
+  // 如果是业务日志下的子路由
+  if (route.path.startsWith('/business-log/')) {
+    return route.path
+  }
+  return route.path
+})
 
-function handleMenuSelect(index) {
+// 处理菜单选择
+const handleMenuSelect = (index) => {
   router.push(index)
 }
 </script> 

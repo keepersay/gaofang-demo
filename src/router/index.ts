@@ -18,6 +18,7 @@ import BusinessManagement from '../views/BusinessManagement.vue'
 import BusinessProtection from '../views/BusinessProtection.vue'
 import IpProtection from '../views/BusinessProtection/IpProtection.vue'
 import DomainProtection from '../views/BusinessProtection/DomainProtection.vue'
+import ResourceManagement from '../views/ResourceManagement/index.vue'
 
 declare global {
   interface ImportMeta {
@@ -264,6 +265,45 @@ const routes: Array<RouteRecordRaw> = [
     name: 'GlobalConfig',
     component: Placeholder,
     meta: { title: '全局配置' }
+  },
+  {
+    path: '/resource',
+    name: 'ResourceManagement',
+    component: ResourceManagement,
+    meta: { title: '资源管理' },
+    redirect: '/resource/region',
+    children: [
+      {
+        path: 'region',
+        name: 'ResourceRegion',
+        component: () => import('../views/RegionManagement.vue'),
+        meta: { title: '地域' }
+      },
+      {
+        path: 'datacenter',
+        name: 'ResourceDatacenter',
+        component: () => import('../views/DataCenterManagement.vue'),
+        meta: { title: '机房' }
+      },
+      {
+        path: 'ippool',
+        name: 'ResourceIpPool',
+        component: () => import('../views/IpPoolManagement.vue'),
+        meta: { title: '网池' }
+      },
+      {
+        path: 'logiccluster',
+        name: 'ResourceLogicCluster',
+        component: ClusterGroup,
+        meta: { title: '逻辑集群' }
+      },
+      {
+        path: 'logicclustergroup',
+        name: 'ResourceLogicClusterGroup',
+        component: ClusterGroupManagement,
+        meta: { title: '逻辑集群组' }
+      }
+    ]
   }
 ]
 
