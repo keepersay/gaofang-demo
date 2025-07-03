@@ -103,12 +103,7 @@
       
       <!-- 移除业务QPS配置 -->
       
-      <el-form-item label="七层防护" prop="layer7Protection">
-        <el-radio-group v-model="form.layer7Protection">
-          <el-radio :label="true">是</el-radio>
-          <el-radio :label="false">否</el-radio>
-        </el-radio-group>
-      </el-form-item>
+      <!-- 移除七层防护手动配置选项 -->
     </el-form>
     
     <template #footer>
@@ -312,10 +307,8 @@ const handleInstanceChange = async (instanceId) => {
     addressType: '',
     protectionBandwidth: 0,
     businessBandwidth: 0,
-    businessQps: 0,
     allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0,
-    allocatedBusinessQps: 0
+    allocatedBusinessBandwidth: 0
   })
   
   if (!instanceId) return
@@ -331,11 +324,13 @@ const handleInstanceChange = async (instanceId) => {
         addressType: data.addressType,
         protectionBandwidth: data.protectionBandwidth,
         businessBandwidth: data.businessBandwidth,
-        businessQps: data.businessQps,
         allocatedProtectionBandwidth: data.allocatedProtectionBandwidth || 0,
-        allocatedBusinessBandwidth: data.allocatedBusinessBandwidth || 0,
-        allocatedBusinessQps: data.allocatedBusinessQps || 0
+        allocatedBusinessBandwidth: data.allocatedBusinessBandwidth || 0
       })
+      
+      // 根据套餐类型设置七层防护状态
+      const packageName = data.packageName
+      form.layer7Protection = hasLayer7Protection(packageName)
       
       // 更新防护公网IP选项
       publicIpOptions.value = (data.publicIpList || []).map(ip => ({
@@ -362,14 +357,15 @@ const handleInstanceChange = async (instanceId) => {
       if (form.businessBandwidthType === 'dedicated') {
         form.dedicatedBusinessBandwidth = Math.min(form.dedicatedBusinessBandwidth, remainingBusinessBandwidth.value)
       }
-      
-      if (form.businessQpsType === 'dedicated') {
-        form.dedicatedBusinessQps = Math.min(form.dedicatedBusinessQps, remainingBusinessQps.value)
-      }
     }
   } catch (error) {
     console.error('获取业务实例详情失败:', error)
   }
+}
+
+// 根据套餐类型判断是否支持七层防护
+const hasLayer7Protection = (packageName) => {
+  return packageName === 'WAF标准防护' || packageName === 'WAF增强防护'
 }
 
 // 处理防护带宽类型变更
@@ -401,8 +397,7 @@ const initFormData = () => {
     dedicatedProtectionBandwidth: 0,
     businessBandwidthType: 'shared',
     dedicatedBusinessBandwidth: 0,
-
-    layer7Protection: false
+    layer7Protection: false // 默认值，将在加载业务实例详情时根据套餐类型更新
   })
   
   Object.assign(instanceInfo, {
@@ -410,10 +405,8 @@ const initFormData = () => {
     addressType: '',
     protectionBandwidth: 0,
     businessBandwidth: 0,
-    businessQps: 0,
     allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0,
-    allocatedBusinessQps: 0
+    allocatedBusinessBandwidth: 0
   })
   
   publicIpOptions.value = []
@@ -435,8 +428,7 @@ const initFormData = () => {
     
     // 移除业务QPS设置
     
-    // 其他选项
-    form.layer7Protection = editData.layer7Protection || false
+    // 七层防护状态将在加载业务实例详情时根据套餐类型自动设置
     
     // 加载业务实例详情
     handleInstanceChange(form.instanceId)
