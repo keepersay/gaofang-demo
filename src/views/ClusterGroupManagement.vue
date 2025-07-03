@@ -39,23 +39,23 @@
       >
         <el-table-column prop="id" label="ID" width="220" fixed="left" />
         <el-table-column prop="name" label="名称" width="150" />
-        <el-table-column label="是否分布式" width="100">
+        <el-table-column label="类型" width="100">
           <template #default="scope">
-            <el-tag :type="scope.row.distributed ? 'success' : 'info'">
-              {{ scope.row.distributed ? '是' : '否' }}
+            <el-tag :type="getTypeTagType(scope.row.type || (scope.row.distributed ? 'distributed' : 'standby'))">
+              {{ getTypeLabel(scope.row.type || (scope.row.distributed ? 'distributed' : 'standby')) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="机房" width="150" v-if="true">
           <template #default="scope">
-            <template v-if="!scope.row.distributed && scope.row.dataCenterId">
+            <template v-if="(scope.row.type === 'standby' || (!scope.row.type && !scope.row.distributed)) && scope.row.dataCenterId">
               <el-tooltip effect="dark" :content="getDataCenterName(scope.row.dataCenterId)" placement="top">
                 <el-tag type="warning" effect="plain">
                   {{ getDataCenterName(scope.row.dataCenterId) }}
                 </el-tag>
               </el-tooltip>
             </template>
-            <span v-else-if="scope.row.distributed" class="text-gray-400">分布式</span>
+            <span v-else-if="scope.row.type === 'distributed' || scope.row.type === 'anycast' || (!scope.row.type && scope.row.distributed)" class="text-gray-400">不限制</span>
             <span v-else class="text-gray-400">--</span>
           </template>
         </el-table-column>
@@ -69,8 +69,9 @@
                 :content="getClusterName(clusterId)"
                 placement="top"
               >
-                <div class="custom-tag primary">
+                <div class="custom-tag primary" :class="{ 'default-cluster': isDefaultCluster(scope.row, clusterId) }">
                   {{ getClusterName(clusterId) }}
+                  <span v-if="isDefaultCluster(scope.row, clusterId)" class="default-label">默认</span>
                 </div>
               </el-tooltip>
             </div>
@@ -90,6 +91,9 @@
                   {{ getClusterName(clusterId) }}
                 </div>
               </el-tooltip>
+            </div>
+            <div class="cluster-list" v-else-if="scope.row.type === 'anycast'">
+              <span class="text-gray-400">不支持</span>
             </div>
             <div class="cluster-list" v-else>
               <span class="text-gray-400">无</span>
@@ -565,6 +569,39 @@ const fetchData = async () => {
     loading.value = false
   }
 }
+
+// 获取类型标签类型
+const getTypeTagType = (type) => {
+  switch (type) {
+    case 'distributed':
+      return 'success'
+    case 'standby':
+      return 'info'
+    case 'anycast':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+// 获取类型标签文本
+const getTypeLabel = (type) => {
+  switch (type) {
+    case 'distributed':
+      return '分布式'
+    case 'standby':
+      return '主备'
+    case 'anycast':
+      return 'Anycast'
+    default:
+      return '未知类型'
+  }
+}
+
+// 判断是否为默认集群
+const isDefaultCluster = (row, clusterId) => {
+  return (row.type === 'distributed' || (row.distributed && !row.type)) && row.defaultClusterId === clusterId
+}
 </script>
 
 <style scoped>
@@ -670,10 +707,7 @@ const fetchData = async () => {
   justify-content: flex-end;
   gap: 10px;
 }
-</style>
 
-<style>
-/* 全局样式，处理Element Plus标签组件 */
 .custom-tag {
   display: inline-block;
   height: 20px;
@@ -702,5 +736,20 @@ const fetchData = async () => {
   color: #909399;
   background-color: #f4f4f5;
   border-color: #e9e9eb;
+}
+
+.custom-tag.default-cluster {
+  background-color: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #e1f3d8;
+}
+
+.default-label {
+  font-size: 10px;
+  background-color: #67c23a;
+  color: white;
+  padding: 0 4px;
+  border-radius: 2px;
+  margin-left: 4px;
 }
 </style> 
