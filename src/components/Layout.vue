@@ -87,13 +87,13 @@
           </template>
           <el-menu-item index="/region-management">
             <el-icon><Location /></el-icon>
-            <span>地域管理</span>
+            <span>地域</span>
           </el-menu-item>
           <el-menu-item index="/datacenter-management">
             <el-icon>
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" fill-opacity=".15"/><path d="M7 10h10M7 14h10M12 6v12" stroke="currentColor" stroke-width="1.2"/></svg>
             </el-icon>
-            <span>机房管理</span>
+            <span>机房</span>
           </el-menu-item>
           <el-menu-item index="/ip-pool-management">
             <el-icon>
@@ -111,7 +111,7 @@
                 <circle cx="17" cy="16" r="1" fill="currentColor"/>
               </svg>
             </el-icon>
-            <span>网池管理</span>
+            <span>网池</span>
           </el-menu-item>
           <el-menu-item index="/cluster-group">
             <el-icon>
