@@ -78,7 +78,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="地域" prop="regionId" v-if="!form.isAnycast">
-          <el-select v-model="form.regionId" placeholder="请选择地域" style="width: 100%">
+          <el-select v-model="form.regionId" placeholder="请选择地域" style="width: 100%" @change="handleRegionChange">
             <el-option
               v-for="item in regionOptions"
               :key="item.regionId"
@@ -86,6 +86,31 @@
               :value="item.regionId"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="逻辑集群组" prop="clusterGroupId">
+          <el-select 
+            v-model="form.clusterGroupId" 
+            placeholder="请选择逻辑集群组" 
+            filterable 
+            style="width: 100%"
+            :loading="loading.clusterGroups"
+          >
+            <el-option
+              v-for="item in filteredClusterGroupOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <span>{{ item.name }}</span>
+                <el-tag size="small" :type="getClusterGroupTypeTag(item)">
+                  {{ getClusterGroupTypeLabel(item) }}
+                </el-tag>
+              </div>
+            </el-option>
+          </el-select>
+          <div class="form-tip" v-if="form.isAnycast">Anycast实例建议选择Anycast或分布式类型的逻辑集群组</div>
+          <div class="form-tip" v-else>非Anycast实例建议选择与实例所在地域匹配的逻辑集群组</div>
         </el-form-item>
       </div>
 
@@ -172,6 +197,7 @@
 import { ref, reactive, watch, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import BusinessInstanceService from '../../services/BusinessInstanceService'
+import ClusterService from '../../services/ClusterService'
 
 const props = defineProps({
   modelValue: {
@@ -224,7 +250,11 @@ const form = reactive({
   domainCount: 10,
   portCount: 10,
   status: 'active',
-  remark: ''
+  remark: '',
+  clusterGroupId: '',
+  clusterGroupName: '',
+  clusterGroupType: '',
+  clusterGroupTypeLabel: ''
 })
 
 // 表单验证规则
@@ -245,6 +275,9 @@ const rules = {
   regionId: [
     { required: true, message: '请选择地域', trigger: 'change' }
   ],
+  clusterGroupId: [
+    { required: true, message: '请选择逻辑集群组', trigger: 'change' }
+  ],
   status: [
     { required: true, message: '请选择实例状态', trigger: 'change' }
   ]
@@ -254,6 +287,8 @@ const rules = {
 const customerOptions = ref([])
 const orderOptions = ref([])
 const regionOptions = ref([])
+const clusterGroupOptions = ref([])
+const loading = ref({ clusterGroups: false })
 
 // 重置表单
 const resetForm = () => {
@@ -278,6 +313,7 @@ const resetForm = () => {
   form.portCount = 10
   form.status = 'active'
   form.remark = ''
+  form.clusterGroupId = ''
 }
 
 // 监听实例数据变化
@@ -309,6 +345,11 @@ watch(() => props.instanceData, (val) => {
       }
     }
     
+    // 如果有关联的逻辑集群组ID，获取集群组详情
+    if (val.clusterGroupId) {
+      fetchClusterGroupDetail(val.clusterGroupId);
+    }
+    
     // 加载关联数据
     fetchOrderOptions()
   } else {
@@ -323,6 +364,7 @@ watch(() => dialogVisible.value, (val) => {
     nextTick(() => {
       fetchCustomerOptions()
       fetchRegionOptions()
+      fetchClusterGroupOptions()
     })
   }
 })
@@ -439,6 +481,8 @@ const handleNext = async () => {
       if (!form.isAnycast) {
         await formRef.value.validateField(['regionId'])
       }
+      // 验证逻辑集群组
+      await formRef.value.validateField(['clusterGroupId'])
       active.value++
     } catch (error) {
       console.error(error)
@@ -515,6 +559,87 @@ const handlePackageTypeChange = (val) => {
     form.adsProtection = true;
     form.ccProtection = true;
     form.wafProtection = true;
+  }
+}
+
+// 处理地域变更
+const handleRegionChange = () => {
+  // 根据地域和Anycast状态过滤可用的逻辑集群组
+  if (!form.isAnycast && form.regionId) {
+    // 非Anycast模式下，建议使用主备类型且与地域匹配的集群组
+    // 这里只是提示用户，不强制限制选择
+  }
+}
+
+// 监听Anycast状态变化
+watch(() => form.isAnycast, (newVal) => {
+  // 如果切换了Anycast状态，可能需要重新考虑集群组选择
+  if (newVal) {
+    // Anycast模式下建议使用分布式或Anycast类型的集群组
+  } else {
+    // 非Anycast模式下建议使用与地域匹配的集群组
+  }
+})
+
+// 获取逻辑集群组选项
+const fetchClusterGroupOptions = async () => {
+  try {
+    loading.value.clusterGroups = true
+    // 调用ClusterService获取集群组列表
+    const result = await ClusterService.getClusterGroups()
+    clusterGroupOptions.value = result
+  } catch (error) {
+    console.error('获取逻辑集群组列表失败:', error)
+    ElMessage.error('获取逻辑集群组列表失败')
+  } finally {
+    loading.value.clusterGroups = false
+  }
+}
+
+// 获取逻辑集群组详情
+const fetchClusterGroupDetail = async (id) => {
+  try {
+    const result = await ClusterService.getClusterGroupById(id)
+    if (result) {
+      // 更新集群组相关信息
+      form.clusterGroupId = result.id
+    }
+  } catch (error) {
+    console.error('获取逻辑集群组详情失败:', error)
+  }
+}
+
+// 过滤逻辑集群组选项
+const filteredClusterGroupOptions = computed(() => {
+  if (!clusterGroupOptions.value.length) return []
+  
+  return clusterGroupOptions.value.filter(item => {
+    // 默认显示所有集群组，但是给用户一些提示
+    // 如果是Anycast模式，建议使用分布式或Anycast类型的集群组
+    // 如果是非Anycast模式，建议使用与地域匹配的集群组
+    return item.status === 'active'
+  })
+})
+
+// 获取逻辑集群组类型标签类型
+const getClusterGroupTypeTag = (item) => {
+  if (item.type === 'anycast') {
+    return 'warning'
+  } else if (item.type === 'distributed' || item.distributed) {
+    return 'success'
+  } else {
+    return 'info'
+  }
+}
+
+// 获取逻辑集群组类型标签文本
+const getClusterGroupTypeLabel = (item) => {
+  if (item.type === 'anycast') {
+    return 'Anycast'
+  } else if (item.type === 'distributed' || item.distributed) {
+    return '分布式'
+  } else {
+    return '主备'
   }
 }
 </script>

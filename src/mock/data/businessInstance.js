@@ -67,7 +67,9 @@ for (let i = 0; i < 30; i++) {
     status: Random.pick(statuses),
     createTime: Random.datetime('yyyy-MM-dd HH:mm:ss'),
     updateTime: Random.datetime('yyyy-MM-dd HH:mm:ss'),
-    remark: Random.boolean() ? Random.sentence(3, 10) : ''
+    remark: Random.boolean() ? Random.sentence(3, 10) : '',
+    // 添加关联逻辑集群组ID字段，确保所有实例都关联集群组
+    clusterGroupId: `LCG75032811082019618${Random.natural(85, 94)}`
   })
 }
 

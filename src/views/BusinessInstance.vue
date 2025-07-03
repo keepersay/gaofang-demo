@@ -91,6 +91,20 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="逻辑集群组" min-width="180">
+          <template #default="{ row }">
+            <el-tooltip 
+              effect="light" 
+              :content="getClusterGroupTooltip(row)" 
+              placement="top" 
+              :show-after="500"
+            >
+              <el-link type="primary" @click="handleViewClusterGroup(row)">
+                {{ getClusterGroupName(row) }}
+              </el-link>
+            </el-tooltip>
+          </template>
+        </el-table-column>
         <el-table-column prop="bandwidth" label="防护带宽(Mbps)" width="140" sortable />
         <el-table-column prop="businessBandwidth" label="业务带宽(Mbps)" width="140" sortable />
         <el-table-column prop="qps" label="业务QPS" width="120" sortable />
@@ -229,6 +243,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import BusinessInstanceModal from '../components/BusinessInstance/BusinessInstanceModal.vue'
 import IpAllocationModal from '../components/BusinessInstance/IpAllocationModal.vue'
 import BusinessInstanceService from '../services/BusinessInstanceService'
+import ClusterService from '../services/ClusterService'
 
 // 状态
 const loading = ref(false)
@@ -239,6 +254,7 @@ const enableDialogVisible = ref(false)
 const disableDialogVisible = ref(false)
 const isEdit = ref(false)
 const currentInstance = ref(null)
+const clusterGroups = ref([]) // 缓存所有集群组数据
 
 // 搜索表单
 const searchForm = reactive({
@@ -256,25 +272,32 @@ const pagination = reactive({
 // 生命周期钩子
 onMounted(() => {
   fetchData()
+  fetchClusterGroups() // 获取所有集群组数据
 })
 
 // 获取数据
 const fetchData = async () => {
   loading.value = true
   try {
-    // 使用服务获取数据
-    const result = await BusinessInstanceService.getBusinessInstances({
-      pageNum: pagination.pageNum,
-      pageSize: pagination.pageSize,
+    const params = {
       keyword: searchForm.keyword,
-      dateRange: searchForm.dateRange && searchForm.dateRange.length === 2 ? searchForm.dateRange : undefined
-    })
+      pageNum: pagination.pageNum,
+      pageSize: pagination.pageSize
+    }
+    
+    if (searchForm.dateRange && searchForm.dateRange.length === 2) {
+      params.dateRange = searchForm.dateRange
+    }
+    
+    const result = await BusinessInstanceService.getBusinessInstances(params)
     
     if (result.code === 200) {
       tableData.value = result.data.list
       pagination.total = result.data.total
+      pagination.pageNum = result.data.pageNum
+      pagination.pageSize = result.data.pageSize
     } else {
-      ElMessage.error(result.message || '获取数据失败')
+      ElMessage.error(result.message || '获取业务实例列表失败')
     }
   } catch (error) {
     console.error('获取业务实例列表失败:', error)
@@ -282,6 +305,56 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 获取所有集群组数据
+const fetchClusterGroups = async () => {
+  try {
+    clusterGroups.value = await ClusterService.getClusterGroups()
+  } catch (error) {
+    console.error('获取逻辑集群组列表失败:', error)
+  }
+}
+
+// 获取集群组名称
+const getClusterGroupName = (row) => {
+  // 先从实例的属性中查找，可能已经从API获取
+  if (row.clusterGroupName) return row.clusterGroupName
+  
+  // 否则从缓存的集群组列表中查找
+  const group = clusterGroups.value.find(g => g.id === row.clusterGroupId)
+  if (group) return group.name
+  
+  // 如果都没有找到，返回ID
+  return row.clusterGroupId
+}
+
+// 获取集群组提示内容
+const getClusterGroupTooltip = (row) => {
+  
+  const group = clusterGroups.value.find(g => g.id === row.clusterGroupId)
+  if (!group) return `集群组ID: ${row.clusterGroupId}`
+  
+  let typeLabel = '主备'
+  if (group.type === 'anycast') {
+    typeLabel = 'Anycast'
+  } else if (group.type === 'distributed' || group.distributed) {
+    typeLabel = '分布式'
+  }
+  
+  return `${group.name} (${typeLabel}类型)\n${group.remark || ''}`
+}
+
+// 查看集群组详情
+const handleViewClusterGroup = (row) => {
+  if (!row.clusterGroupId) return
+  
+  // 跳转到集群组管理页面并高亮显示该集群组
+  // 这里只是简单提示，实际实现可能需要路由跳转等
+  ElMessage({
+    message: `查看集群组: ${getClusterGroupName(row)}`,
+    type: 'info'
+  })
 }
 
 // 搜索

@@ -332,6 +332,169 @@ class ClusterService {
       }, 100)
     })
   }
+
+  // 获取所有逻辑集群组
+  static async getClusterGroups() {
+    return new Promise((resolve) => {
+      // 模拟从服务器获取数据
+      // 这里使用 ClusterGroupManagement.vue 中的模拟数据
+      setTimeout(() => {
+        const clusterGroups = [
+          {
+            id: 'LCG7503281108201961885',
+            name: '上海电信集群组',
+            type: 'standby',
+            distributed: false,
+            dataCenterId: 'DC202401010002', // 上海机房01
+            primaryClusters: ['LC202407250001'], // 华东-电信-高级版
+            standbyClusters: [],
+            status: 'active',
+            remark: '上海电信集群，主要承载华东区域业务',
+            createTime: '2024-01-01 10:00:00',
+            createAccount: 'admin',
+            updateTime: '2024-01-10 11:00:00',
+            updateAccount: 'admin',
+            addressType: 'ipv4'
+          },
+          {
+            id: 'LCG7503281108201961886',
+            name: '北京电信集群组',
+            type: 'standby',
+            distributed: false,
+            dataCenterId: 'DC202401010001', // 北京机房01
+            primaryClusters: ['LC202407250003'], // 北京-电信-标准版
+            standbyClusters: [],
+            status: 'active',
+            remark: '北京电信集群，主要承载华北区域业务',
+            createTime: '2024-01-02 11:00:00',
+            createAccount: 'admin',
+            updateTime: '2024-01-11 12:00:00',
+            updateAccount: 'admin',
+            addressType: 'ipv4'
+          },
+          {
+            id: 'LCG7503281108201961887',
+            name: '国际分布式集群组',
+            type: 'distributed',
+            distributed: true,
+            dataCenterId: '',
+            primaryClusters: ['LC202407250005', 'LC202407250006'], // 首尔高级版, 法兰克福标准版
+            standbyClusters: ['LC202407250007'], // 迪拜高级版
+            defaultClusterId: 'LC202407250005',
+            status: 'active',
+            remark: '国际分布式集群组，覆盖亚洲、欧洲和中东地区',
+            createTime: '2024-05-15 09:30:00',
+            createAccount: 'admin',
+            updateTime: '2024-05-15 09:30:00',
+            updateAccount: 'admin',
+            addressType: 'dual'
+          },
+          {
+            id: 'LCG7503281108201961888',
+            name: '广州联通集群组',
+            type: 'standby',
+            distributed: false,
+            dataCenterId: 'DC202401010003', // 广州机房01
+            primaryClusters: ['LC202407250002'], // 华南-联通-基础版
+            standbyClusters: [],
+            status: 'active',
+            remark: '广州联通集群，主要承载华南区域业务',
+            createTime: '2024-03-05 14:20:00',
+            createAccount: 'admin',
+            updateTime: '2024-03-05 14:20:00',
+            updateAccount: 'admin',
+            addressType: 'dual'
+          },
+          {
+            id: 'LCG7503281108201961889',
+            name: '北美分布式集群组',
+            type: 'distributed',
+            distributed: true,
+            dataCenterId: '',
+            primaryClusters: ['LC202407250008'], // 洛杉矶标准版
+            standbyClusters: [],
+            defaultClusterId: 'LC202407250008',
+            status: 'active',
+            remark: '北美地区分布式集群组，目前仅覆盖美国西海岸',
+            createTime: '2024-02-28 16:30:00',
+            createAccount: 'admin',
+            updateTime: '2024-04-10 09:15:00',
+            updateAccount: 'admin',
+            addressType: 'ipv4'
+          },
+          {
+            id: 'LCG7503281108201961890',
+            name: '无锡备用集群组',
+            type: 'standby',
+            distributed: false,
+            dataCenterId: 'DC202401010004', // 无锡机房01
+            primaryClusters: ['LC202407250004'], // 华东-移动-标准版
+            standbyClusters: [],
+            status: 'active',
+            remark: '无锡备用集群组，作为华东地区容灾备份',
+            createTime: '2024-04-15 10:00:00',
+            createAccount: 'admin',
+            updateTime: '2024-04-15 10:00:00',
+            updateAccount: 'admin',
+            addressType: 'ipv4'
+          },
+          {
+            id: 'LCG7503281108201961892',
+            name: '欧洲多节点集群组',
+            type: 'anycast',
+            distributed: false,
+            dataCenterId: '',
+            primaryClusters: ['LC202407250006', 'LC202407250009'], // 法兰克福标准版, 伦敦基础版
+            standbyClusters: [],
+            status: 'active',
+            remark: '欧洲多节点Anycast集群组，覆盖西欧和北欧地区',
+            createTime: '2024-06-10 14:20:00',
+            createAccount: 'admin',
+            updateTime: '2024-06-10 14:20:00',
+            updateAccount: 'admin',
+            addressType: 'dual'
+          },
+          {
+            id: 'LCG7503281108201961894',
+            name: '韩国业务集群组',
+            type: 'standby',
+            distributed: false,
+            dataCenterId: 'DC202407200001', // 首尔机房01
+            primaryClusters: ['LC202407250005'], // 首尔高级版
+            standbyClusters: [],
+            status: 'active',
+            remark: '韩国本地业务集群组，提供低延迟服务',
+            createTime: '2024-05-20 10:30:00',
+            createAccount: 'admin',
+            updateTime: '2024-05-20 10:30:00',
+            updateAccount: 'admin',
+            addressType: 'ipv6'
+          }
+        ];
+        
+        // 只返回活跃状态的集群组
+        resolve(clusterGroups.filter(group => group.status === 'active'));
+      }, 300);
+    });
+  }
+  
+  // 根据ID获取逻辑集群组
+  static async getClusterGroupById(id) {
+    return new Promise((resolve, reject) => {
+      // 模拟从服务器获取数据
+      setTimeout(() => {
+        // 调用getClusterGroups获取所有集群组
+        this.getClusterGroups().then(groups => {
+          const group = groups.find(g => g.id === id);
+          if (group) {
+            resolve(group);
+          } else {
+            reject(new Error('逻辑集群组不存在'));
+          }
+        });
+      }, 100);
+    });
+  }
 }
 
 export default ClusterService 

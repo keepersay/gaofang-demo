@@ -1,5 +1,6 @@
 import businessInstanceData from '../mock/data/businessInstance'
 import request from '@/utils/request'
+import ClusterService from './ClusterService'
 
 // 业务实例服务
 export default {
@@ -14,12 +15,24 @@ export default {
 
   // 获取单个业务实例
   async getBusinessInstance(id) {
-    const data = businessInstanceData.getBusinessInstance(id)
+    const instance = businessInstanceData.getBusinessInstance(id)
     
-    if (data) {
+    // 如果实例有关联的逻辑集群组，获取集群组名称
+    if (instance && instance.clusterGroupId) {
+      try {
+        const clusterGroup = await ClusterService.getClusterGroupById(instance.clusterGroupId)
+        if (clusterGroup) {
+          instance.clusterGroupName = clusterGroup.name
+        }
+      } catch (error) {
+        console.error('获取逻辑集群组详情失败:', error)
+      }
+    }
+    
+    if (instance) {
       return {
         code: 200,
-        data,
+        data: instance,
         message: 'success'
       }
     } else {
