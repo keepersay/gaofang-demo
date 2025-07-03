@@ -104,13 +104,6 @@
                 </div>
               </el-form-item>
               
-              <el-form-item label="近源压制" prop="nearSourceSuppression">
-                <el-radio-group v-model="basicForm.nearSourceSuppression">
-                  <el-radio :label="true">是</el-radio>
-                  <el-radio :label="false">否</el-radio>
-                </el-radio-group>
-              </el-form-item>
-              
               <el-form-item label="七层防护" prop="layer7Protection">
                 <el-radio-group v-model="basicForm.layer7Protection">
                   <el-radio :label="true">是</el-radio>
@@ -310,7 +303,6 @@ const basicForm = reactive({
   businessQpsType: 'shared',
   dedicatedBusinessQps: 0,
   instanceBusinessQps: 0,
-  nearSourceSuppression: false,
   layer7Protection: false
 })
 
@@ -451,9 +443,6 @@ const basicRules = reactive({
       }
     }
   ],
-  nearSourceSuppression: [
-    { required: true, message: '请选择是否启用近源压制', trigger: 'change' }
-  ],
   layer7Protection: [
     { required: true, message: '请选择是否启用七层防护', trigger: 'change' }
   ]
@@ -544,7 +533,6 @@ const fetchProtectionDetail = async () => {
         businessQpsType: data.businessQpsType,
         dedicatedBusinessQps: data.dedicatedBusinessQps,
         instanceBusinessQps: data.instanceBusinessQps,
-        nearSourceSuppression: data.nearSourceSuppression,
         layer7Protection: data.layer7Protection
       })
       
@@ -659,7 +647,6 @@ const handleSave = async () => {
       dedicatedBusinessBandwidth: basicForm.businessBandwidthType === 'dedicated' ? basicForm.dedicatedBusinessBandwidth : 0,
       businessQpsType: basicForm.businessQpsType,
       dedicatedBusinessQps: basicForm.businessQpsType === 'dedicated' ? basicForm.dedicatedBusinessQps : 0,
-      nearSourceSuppression: basicForm.nearSourceSuppression,
       layer7Protection: basicForm.layer7Protection,
       slbConfig: !basicForm.layer7Protection ? {
         scheduler: slbForm.scheduler,

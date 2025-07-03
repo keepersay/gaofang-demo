@@ -153,6 +153,7 @@ Mock.mock(/\/api\/protection\/ip\/list/, 'get', (options) => {
   const pageSize = parseInt(params.get('pageSize')) || 10
   const publicIp = params.get('publicIp') || ''
   const instanceId = params.get('instanceId') || ''
+  const instanceName = params.get('instanceName') || ''
   const status = params.get('status') || ''
   
   let filteredList = [...ipProtectionData]
@@ -163,6 +164,9 @@ Mock.mock(/\/api\/protection\/ip\/list/, 'get', (options) => {
   }
   if (instanceId) {
     filteredList = filteredList.filter(item => item.instanceId.toString() === instanceId)
+  }
+  if (instanceName) {
+    filteredList = filteredList.filter(item => item.instanceName.includes(instanceName))
   }
   if (status) {
     filteredList = filteredList.filter(item => item.status === status)
@@ -348,28 +352,91 @@ Mock.mock(/\/api\/protection\/ip\/batch-delete/, 'delete', (options) => {
   return successResponse
 })
 
-// 启用IP防护对象
-Mock.mock(/\/api\/protection\/ip\/enable\/\d+/, 'put', (options) => {
-  const id = parseInt(options.url.match(/\/api\/protection\/ip\/enable\/(\d+)/)[1])
+// 更新IP防护对象配置
+Mock.mock('/api/protection/ip/config', 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = body.id
   const index = ipProtectionData.findIndex(item => item.id === id)
   
   if (index !== -1) {
-    ipProtectionData[index].status = 'active'
+    // 更新基本配置
+    if (body.publicIp) ipProtectionData[index].publicIp = body.publicIp
+    if (body.protectionBandwidthType) ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
+    if (body.dedicatedProtectionBandwidth !== undefined) ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
+    if (body.businessBandwidthType) ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
+    if (body.dedicatedBusinessBandwidth !== undefined) ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
+    if (body.businessQpsType) ipProtectionData[index].businessQpsType = body.businessQpsType
+    if (body.dedicatedBusinessQps !== undefined) ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
+    if (body.nearSourceSuppression !== undefined) ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
+    if (body.layer7Protection !== undefined) ipProtectionData[index].layer7Protection = body.layer7Protection
+    
+    // 更新负载均衡配置
+    if (body.slbConfig) {
+      ipProtectionData[index].slbConfig = body.slbConfig
+    }
+    
+    // 更新安全配置
+    if (body.securityConfig) {
+      ipProtectionData[index].securityConfig = {
+        ...(ipProtectionData[index].securityConfig || {}),
+        ...body.securityConfig
+      }
+    }
+    
+    return {
+      code: 200,
+      message: 'success',
+      data: null
+    }
+  } else {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在',
+      data: null
+    }
   }
+})
+
+// 启用IP防护对象
+Mock.mock(/\/api\/protection\/ip\/enable\/\d+/, 'put', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/ip\/enable\/(\d+)/)[1])
   
-  return successResponse
+  // 查找要启用的记录
+  const index = ipProtectionData.findIndex(item => item.id === id)
+  
+  if (index !== -1) {
+    // 启用记录
+    ipProtectionData[index].status = 'active'
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在',
+      data: null
+    }
+  }
 })
 
 // 禁用IP防护对象
 Mock.mock(/\/api\/protection\/ip\/disable\/\d+/, 'put', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/ip\/disable\/(\d+)/)[1])
+  
+  // 查找要禁用的记录
   const index = ipProtectionData.findIndex(item => item.id === id)
   
   if (index !== -1) {
+    // 禁用记录
     ipProtectionData[index].status = 'inactive'
+    
+    return successResponse
+  } else {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在',
+      data: null
+    }
   }
-  
-  return successResponse
 })
 
 // 添加域名防护对象
@@ -606,51 +673,6 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
         securityConfig,
         instanceInfo
       }
-    }
-  } else {
-    return {
-      code: 404,
-      message: 'IP防护对象不存在',
-      data: null
-    }
-  }
-})
-
-// 更新IP防护对象配置
-Mock.mock('/api/protection/ip/config', 'put', (options) => {
-  const body = JSON.parse(options.body)
-  const id = body.id
-  const index = ipProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 更新基本配置
-    if (body.publicIp) ipProtectionData[index].publicIp = body.publicIp
-    if (body.protectionBandwidthType) ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
-    if (body.dedicatedProtectionBandwidth !== undefined) ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
-    if (body.businessBandwidthType) ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
-    if (body.dedicatedBusinessBandwidth !== undefined) ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
-    if (body.businessQpsType) ipProtectionData[index].businessQpsType = body.businessQpsType
-    if (body.dedicatedBusinessQps !== undefined) ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
-    if (body.nearSourceSuppression !== undefined) ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
-    if (body.layer7Protection !== undefined) ipProtectionData[index].layer7Protection = body.layer7Protection
-    
-    // 更新负载均衡配置
-    if (body.slbConfig) {
-      ipProtectionData[index].slbConfig = body.slbConfig
-    }
-    
-    // 更新安全配置
-    if (body.securityConfig) {
-      ipProtectionData[index].securityConfig = {
-        ...(ipProtectionData[index].securityConfig || {}),
-        ...body.securityConfig
-      }
-    }
-    
-    return {
-      code: 200,
-      message: 'success',
-      data: null
     }
   } else {
     return {

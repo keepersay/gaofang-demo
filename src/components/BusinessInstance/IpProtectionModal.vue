@@ -125,13 +125,6 @@
         </div>
       </el-form-item>
       
-      <el-form-item label="近源压制" prop="nearSourceSuppression">
-        <el-radio-group v-model="form.nearSourceSuppression">
-          <el-radio :label="true">是</el-radio>
-          <el-radio :label="false">否</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      
       <el-form-item label="七层防护" prop="layer7Protection">
         <el-radio-group v-model="form.layer7Protection">
           <el-radio :label="true">是</el-radio>
@@ -220,7 +213,6 @@ const form = reactive({
   dedicatedBusinessBandwidth: 0,
   businessQpsType: 'shared',
   dedicatedBusinessQps: 0,
-  nearSourceSuppression: false,
   layer7Protection: false
 })
 
@@ -446,7 +438,6 @@ const initFormData = () => {
     dedicatedBusinessBandwidth: 0,
     businessQpsType: 'shared',
     dedicatedBusinessQps: 0,
-    nearSourceSuppression: false,
     layer7Protection: false
   })
   
@@ -483,7 +474,6 @@ const initFormData = () => {
     form.dedicatedBusinessQps = editData.dedicatedBusinessQps || 0
     
     // 其他选项
-    form.nearSourceSuppression = editData.nearSourceSuppression || false
     form.layer7Protection = editData.layer7Protection || false
     
     // 加载业务实例详情
@@ -510,7 +500,6 @@ const handleSubmit = async () => {
       dedicatedBusinessBandwidth: form.businessBandwidthType === 'dedicated' ? form.dedicatedBusinessBandwidth : 0,
       businessQpsType: form.businessQpsType,
       dedicatedBusinessQps: form.businessQpsType === 'dedicated' ? form.dedicatedBusinessQps : 0,
-      nearSourceSuppression: form.nearSourceSuppression,
       layer7Protection: form.layer7Protection
     }
     

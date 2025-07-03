@@ -6,15 +6,7 @@
           <el-input v-model="searchForm.publicIp" placeholder="请输入IP地址" clearable />
         </el-form-item>
         <el-form-item label="业务实例">
-          <el-select v-model="searchForm.instanceId" placeholder="请选择业务实例" clearable>
-            <el-option label="全部" value="" />
-            <el-option 
-              v-for="item in instanceOptions" 
-              :key="item.value" 
-              :label="item.label" 
-              :value="item.value" 
-            />
-          </el-select>
+          <el-input v-model="searchForm.instanceName" placeholder="请输入业务实例名称" clearable />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
@@ -55,13 +47,6 @@
           {{ getBandwidthDisplay(row.businessQpsType, row.dedicatedBusinessQps, row.instanceBusinessQps) }}
         </template>
       </el-table-column>
-      <el-table-column label="近源压制" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.nearSourceSuppression ? 'success' : 'info'">
-            {{ row.nearSourceSuppression ? '是' : '否' }}
-          </el-tag>
-        </template>
-      </el-table-column>
       <el-table-column label="七层防护" width="100">
         <template #default="{ row }">
           <el-tag :type="row.layer7Protection ? 'success' : 'info'">
@@ -69,8 +54,36 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="状态" width="100"
+        :filters="statusFilters"
+        :filter-method="filterStatus"
+        filter-placement="bottom-end"
+        prop="status"
+      >
         <template #default="{ row }">
+          <el-tag :type="getStatusType(row.status)">
+            {{ getStatusLabel(row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="240" fixed="right">
+        <template #default="{ row }">
+          <el-button 
+            v-if="row.status === 'inactive'" 
+            type="success" 
+            link
+            @click="handleEnable(row)"
+          >
+            启用
+          </el-button>
+          <el-button 
+            v-if="row.status === 'active'" 
+            type="warning" 
+            link
+            @click="handleDisable(row)"
+          >
+            禁用
+          </el-button>
           <el-button 
             type="primary" 
             link
@@ -139,7 +152,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getIpProtectionList, deleteIpProtection, batchDeleteIpProtection } from '@/services/ProtectionObjectService'
+import { 
+  getIpProtectionList, 
+  deleteIpProtection, 
+  batchDeleteIpProtection,
+  enableIpProtection,
+  disableIpProtection
+} from '@/services/ProtectionObjectService'
 import { getBusinessInstanceOptions } from '@/services/BusinessInstanceService'
 import IpProtectionModal from '@/components/BusinessInstance/IpProtectionModal.vue'
 import IpProtectionConfigDrawer from '@/components/BusinessInstance/IpProtectionConfigDrawer.vue'
@@ -156,7 +175,8 @@ const currentEditData = ref(null)
 // 搜索表单
 const searchForm = reactive({
   publicIp: '',
-  instanceId: ''
+  instanceName: '',
+  status: ''
 })
 
 // 分页
@@ -219,7 +239,7 @@ const handleSearch = () => {
 // 重置搜索
 const resetSearch = () => {
   searchForm.publicIp = ''
-  searchForm.instanceId = ''
+  searchForm.instanceName = ''
   handleSearch()
 }
 
@@ -255,6 +275,58 @@ const handleConfig = (row) => {
 const handleSecurityConfig = (row) => {
   currentSecurityId.value = row.id
   securityDrawerVisible.value = true
+}
+
+// 启用IP防护对象
+const handleEnable = (row) => {
+  ElMessageBox.confirm(
+    `确定要启用IP防护对象 ${row.publicIp} 吗？`,
+    '确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info',
+    }
+  ).then(async () => {
+    try {
+      const res = await enableIpProtection(row.id)
+      if (res.code === 200) {
+        ElMessage.success(`启用IP防护对象 ${row.publicIp} 成功`)
+        fetchIpProtectionList()
+      } else {
+        ElMessage.error(res.message || '启用失败')
+      }
+    } catch (error) {
+      console.error('启用IP防护对象失败:', error)
+      ElMessage.error('启用失败')
+    }
+  }).catch(() => {})
+}
+
+// 禁用IP防护对象
+const handleDisable = (row) => {
+  ElMessageBox.confirm(
+    `确定要禁用IP防护对象 ${row.publicIp} 吗？`,
+    '确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info',
+    }
+  ).then(async () => {
+    try {
+      const res = await disableIpProtection(row.id)
+      if (res.code === 200) {
+        ElMessage.success(`禁用IP防护对象 ${row.publicIp} 成功`)
+        fetchIpProtectionList()
+      } else {
+        ElMessage.error(res.message || '禁用失败')
+      }
+    } catch (error) {
+      console.error('禁用IP防护对象失败:', error)
+      ElMessage.error('禁用失败')
+    }
+  }).catch(() => {})
 }
 
 // 删除IP防护对象
@@ -338,6 +410,30 @@ const getBandwidthDisplay = (type, dedicated, total) => {
     return `${dedicated}/${total}`
   }
 }
+
+// 工具函数 - 状态
+const getStatusType = (status) => {
+  const map = {
+    active: 'success',
+    inactive: 'info'
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status) => {
+  const map = {
+    active: '已启用',
+    inactive: '已禁用'
+  }
+  return map[status] || status
+}
+
+// 在<script setup>中添加：
+const statusFilters = [
+  { text: '已启用', value: 'active' },
+  { text: '已禁用', value: 'inactive' }
+]
+const filterStatus = (value, row) => row.status === value
 
 // 初始化
 onMounted(() => {
