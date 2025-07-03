@@ -103,7 +103,15 @@
       
       <!-- 移除业务QPS配置 -->
       
-      <!-- 移除七层防护手动配置选项 -->
+      <!-- 显示七层防护状态 -->
+      <el-form-item label="七层防护">
+        <el-tag :type="form.layer7Protection ? 'success' : 'info'">
+          {{ form.layer7Protection ? '是' : '否' }}
+        </el-tag>
+        <div class="form-tip">
+          七层防护状态由业务实例套餐类型决定，不可手动修改
+        </div>
+      </el-form-item>
     </el-form>
     
     <template #footer>

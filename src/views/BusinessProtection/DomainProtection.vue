@@ -46,16 +46,6 @@
       <el-table-column prop="publicIp" label="防护公网IP" min-width="140" />
       <el-table-column prop="domain" label="防护域名" min-width="150" />
       <el-table-column prop="cname" label="防护CNAME" min-width="180" />
-      <el-table-column label="防护带宽(Mbps)" min-width="150">
-        <template #default="{ row }">
-          {{ getBandwidthDisplay(row, 'protection') }}
-        </template>
-      </el-table-column>
-      <el-table-column label="业务带宽(Mbps)" min-width="150">
-        <template #default="{ row }">
-          {{ getBandwidthDisplay(row, 'business') }}
-        </template>
-      </el-table-column>
       <el-table-column label="业务QPS" min-width="150">
         <template #default="{ row }">
           {{ getQpsDisplay(row) }}
@@ -419,23 +409,6 @@ const getProtectionPackageLabel = (type) => {
     'enhanced': 'WAF增强防护'
   }
   return map[type] || type
-}
-
-// 工具函数 - 带宽显示
-const getBandwidthDisplay = (row, type) => {
-  if (type === 'protection') {
-    if (row.protectionBandwidthType === 'shared') {
-      return `共享/${row.instanceProtectionBandwidth}`
-    } else {
-      return `${row.dedicatedProtectionBandwidth}/${row.instanceProtectionBandwidth}`
-    }
-  } else {
-    if (row.businessBandwidthType === 'shared') {
-      return `共享/${row.instanceBusinessBandwidth}`
-    } else {
-      return `${row.dedicatedBusinessBandwidth}/${row.instanceBusinessBandwidth}`
-    }
-  }
 }
 
 // 工具函数 - QPS显示

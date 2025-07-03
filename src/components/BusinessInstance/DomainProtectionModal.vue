@@ -73,56 +73,6 @@
         <el-input v-model="form.cname" disabled />
       </el-form-item>
       
-      <el-form-item label="防护带宽" prop="protectionBandwidthType">
-        <el-radio-group v-model="form.protectionBandwidthType" @change="handleProtectionBandwidthTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      
-      <el-form-item 
-        v-if="form.protectionBandwidthType === 'dedicated'" 
-        label="独享防护带宽" 
-        prop="dedicatedProtectionBandwidth"
-      >
-        <el-input-number 
-          v-model="form.dedicatedProtectionBandwidth" 
-          :min="1" 
-          :max="remainingProtectionBandwidth || 1" 
-          :step="10" 
-          style="width: 120px"
-        />
-        <span class="unit">Mbps</span>
-        <div class="form-tip">
-          可分配的最大独享防护带宽为 {{ remainingProtectionBandwidth || 0 }} Mbps
-        </div>
-      </el-form-item>
-      
-      <el-form-item label="业务带宽" prop="businessBandwidthType">
-        <el-radio-group v-model="form.businessBandwidthType" @change="handleBusinessBandwidthTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      
-      <el-form-item 
-        v-if="form.businessBandwidthType === 'dedicated'" 
-        label="独享业务带宽" 
-        prop="dedicatedBusinessBandwidth"
-      >
-        <el-input-number 
-          v-model="form.dedicatedBusinessBandwidth" 
-          :min="1" 
-          :max="remainingBusinessBandwidth || 1" 
-          :step="10" 
-          style="width: 120px"
-        />
-        <span class="unit">Mbps</span>
-        <div class="form-tip">
-          可分配的最大独享业务带宽为 {{ remainingBusinessBandwidth || 0 }} Mbps
-        </div>
-      </el-form-item>
-      
       <el-form-item label="业务QPS" prop="businessQpsType">
         <el-radio-group v-model="form.businessQpsType" @change="handleBusinessQpsTypeChange">
           <el-radio :label="'shared'">共享</el-radio>
@@ -203,23 +153,11 @@ const publicIpOptions = ref([])
 // 业务实例信息
 const instanceInfo = reactive({
   customerName: '',
-  protectionBandwidth: 0,
-  businessBandwidth: 0,
   businessQps: 0,
-  allocatedProtectionBandwidth: 0,
-  allocatedBusinessBandwidth: 0,
   allocatedBusinessQps: 0
 })
 
-// 计算剩余可分配的带宽和QPS
-const remainingProtectionBandwidth = computed(() => {
-  return Math.max(0, instanceInfo.protectionBandwidth - instanceInfo.allocatedProtectionBandwidth)
-})
-
-const remainingBusinessBandwidth = computed(() => {
-  return Math.max(0, instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth)
-})
-
+// 计算剩余可分配的QPS
 const remainingBusinessQps = computed(() => {
   return Math.max(0, instanceInfo.businessQps - instanceInfo.allocatedBusinessQps)
 })
@@ -232,10 +170,6 @@ const form = reactive({
   addressType: '',
   domain: '',
   cname: '',
-  protectionBandwidthType: 'shared',
-  dedicatedProtectionBandwidth: 0,
-  businessBandwidthType: 'shared',
-  dedicatedBusinessBandwidth: 0,
   businessQpsType: 'shared',
   dedicatedBusinessQps: 0,
   protectionPackage: 'standard'
@@ -255,18 +189,6 @@ const rules = reactive({
   domain: [
     { required: true, message: '请输入防护域名', trigger: 'blur' },
     { pattern: /^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/, message: '请输入有效的域名', trigger: 'blur' }
-  ],
-  protectionBandwidthType: [
-    { required: true, message: '请选择防护带宽类型', trigger: 'change' }
-  ],
-  dedicatedProtectionBandwidth: [
-    { required: true, message: '请输入独享防护带宽', trigger: 'blur' }
-  ],
-  businessBandwidthType: [
-    { required: true, message: '请选择业务带宽类型', trigger: 'change' }
-  ],
-  dedicatedBusinessBandwidth: [
-    { required: true, message: '请输入独享业务带宽', trigger: 'blur' }
   ],
   businessQpsType: [
     { required: true, message: '请选择业务QPS类型', trigger: 'change' }
@@ -304,10 +226,6 @@ const initFormData = () => {
     addressType: '',
     domain: '',
     cname: '',
-    protectionBandwidthType: 'shared',
-    dedicatedProtectionBandwidth: 0,
-    businessBandwidthType: 'shared',
-    dedicatedBusinessBandwidth: 0,
     businessQpsType: 'shared',
     dedicatedBusinessQps: 0,
     protectionPackage: 'standard'
@@ -316,11 +234,7 @@ const initFormData = () => {
   // 重置实例信息
   Object.assign(instanceInfo, {
     customerName: '',
-    protectionBandwidth: 0,
-    businessBandwidth: 0,
     businessQps: 0,
-    allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0,
     allocatedBusinessQps: 0
   })
 
@@ -338,10 +252,6 @@ const initFormData = () => {
       addressType: editData.addressType,
       domain: editData.domain,
       cname: editData.cname,
-      protectionBandwidthType: editData.protectionBandwidthType || 'shared',
-      dedicatedProtectionBandwidth: editData.dedicatedProtectionBandwidth || 0,
-      businessBandwidthType: editData.businessBandwidthType || 'shared',
-      dedicatedBusinessBandwidth: editData.dedicatedBusinessBandwidth || 0,
       businessQpsType: editData.businessQpsType || 'shared',
       dedicatedBusinessQps: editData.dedicatedBusinessQps || 0,
       protectionPackage: editData.protectionPackage || 'standard'
@@ -373,11 +283,7 @@ const handleInstanceChange = async (instanceId) => {
   // 重置实例信息
   Object.assign(instanceInfo, {
     customerName: '',
-    protectionBandwidth: 0,
-    businessBandwidth: 0,
     businessQps: 0,
-    allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0,
     allocatedBusinessQps: 0
   })
   
@@ -394,11 +300,7 @@ const handleInstanceChange = async (instanceId) => {
       // 更新实例信息
       Object.assign(instanceInfo, {
         customerName: data.customerName,
-        protectionBandwidth: data.protectionBandwidth,
-        businessBandwidth: data.businessBandwidth,
         businessQps: data.businessQps,
-        allocatedProtectionBandwidth: data.allocatedProtectionBandwidth || 0,
-        allocatedBusinessBandwidth: data.allocatedBusinessBandwidth || 0,
         allocatedBusinessQps: data.allocatedBusinessQps || 0
       })
       
@@ -428,14 +330,6 @@ const handleInstanceChange = async (instanceId) => {
       }
       
       // 设置默认值
-      if (form.protectionBandwidthType === 'dedicated') {
-        form.dedicatedProtectionBandwidth = Math.min(form.dedicatedProtectionBandwidth, remainingProtectionBandwidth.value)
-      }
-      
-      if (form.businessBandwidthType === 'dedicated') {
-        form.dedicatedBusinessBandwidth = Math.min(form.dedicatedBusinessBandwidth, remainingBusinessBandwidth.value)
-      }
-      
       if (form.businessQpsType === 'dedicated') {
         form.dedicatedBusinessQps = Math.min(form.dedicatedBusinessQps, remainingBusinessQps.value)
       }
@@ -457,8 +351,6 @@ const handleInstanceChange = async (instanceId) => {
         }
         
         // 设置一些默认值
-        instanceInfo.protectionBandwidth = props.editData.instanceProtectionBandwidth || 500;
-        instanceInfo.businessBandwidth = props.editData.instanceBusinessBandwidth || 200;
         instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
       }
     }
@@ -481,8 +373,6 @@ const handleInstanceChange = async (instanceId) => {
       }
       
       // 设置一些默认值
-      instanceInfo.protectionBandwidth = props.editData.instanceProtectionBandwidth || 500;
-      instanceInfo.businessBandwidth = props.editData.instanceBusinessBandwidth || 200;
       instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
     }
   }
@@ -504,24 +394,6 @@ const generateCname = () => {
     form.cname = `${form.domain}.vmdat.com`
   } else {
     form.cname = ''
-  }
-}
-
-// 处理防护带宽类型变更
-const handleProtectionBandwidthTypeChange = (type) => {
-  if (type === 'shared') {
-    form.dedicatedProtectionBandwidth = 0
-  } else {
-    form.dedicatedProtectionBandwidth = Math.min(100, Math.max(1, remainingProtectionBandwidth.value || 1))
-  }
-}
-
-// 处理业务带宽类型变更
-const handleBusinessBandwidthTypeChange = (type) => {
-  if (type === 'shared') {
-    form.dedicatedBusinessBandwidth = 0
-  } else {
-    form.dedicatedBusinessBandwidth = Math.min(50, Math.max(1, remainingBusinessBandwidth.value || 1))
   }
 }
 
@@ -551,10 +423,6 @@ const handleSubmit = async () => {
       addressType: form.addressType,
       domain: form.domain,
       cname: form.cname,
-      protectionBandwidthType: form.protectionBandwidthType,
-      dedicatedProtectionBandwidth: form.protectionBandwidthType === 'dedicated' ? form.dedicatedProtectionBandwidth : 0,
-      businessBandwidthType: form.businessBandwidthType,
-      dedicatedBusinessBandwidth: form.businessBandwidthType === 'dedicated' ? form.dedicatedBusinessBandwidth : 0,
       businessQpsType: form.businessQpsType,
       dedicatedBusinessQps: form.businessQpsType === 'dedicated' ? form.dedicatedBusinessQps : 0,
       protectionPackage: form.protectionPackage

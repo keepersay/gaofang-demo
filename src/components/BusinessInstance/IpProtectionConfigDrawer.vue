@@ -80,35 +80,13 @@
                 </div>
               </el-form-item>
               
-              <el-form-item label="业务QPS" prop="businessQpsType">
-                <el-radio-group v-model="basicForm.businessQpsType" @change="handleBusinessQpsTypeChange">
-                  <el-radio :label="'shared'">共享</el-radio>
-                  <el-radio :label="'dedicated'">独享</el-radio>
-                </el-radio-group>
-              </el-form-item>
-              
-              <el-form-item 
-                v-if="basicForm.businessQpsType === 'dedicated'" 
-                label="独享业务QPS" 
-                prop="dedicatedBusinessQps"
-              >
-                <el-input-number 
-                  v-model="basicForm.dedicatedBusinessQps" 
-                  :min="1" 
-                  :max="remainingBusinessQps" 
-                  :step="1" 
-                  style="width: 120px"
-                />
-                <div class="form-tip">
-                  可分配的最大独享业务QPS为 {{ remainingBusinessQps }}
-                </div>
-              </el-form-item>
-              
               <el-form-item label="七层防护" prop="layer7Protection">
-                <el-radio-group v-model="basicForm.layer7Protection">
-                  <el-radio :label="true">是</el-radio>
-                  <el-radio :label="false">否</el-radio>
-                </el-radio-group>
+                <el-tag :type="basicForm.layer7Protection ? 'success' : 'info'">
+                  {{ basicForm.layer7Protection ? '是' : '否' }}
+                </el-tag>
+                <div class="form-tip">
+                  七层防护状态由业务实例套餐类型决定，不可手动修改
+                </div>
               </el-form-item>
             </el-form>
           </el-tab-pane>
@@ -300,46 +278,29 @@ const basicForm = reactive({
   businessBandwidthType: 'shared',
   dedicatedBusinessBandwidth: 0,
   instanceBusinessBandwidth: 0,
-  businessQpsType: 'shared',
-  dedicatedBusinessQps: 0,
-  instanceBusinessQps: 0,
   layer7Protection: false
 })
 
 // 防护公网IP选项
 const publicIpOptions = ref([])
 
-// 业务实例信息
+// 实例信息
 const instanceInfo = reactive({
-  instanceId: null,
-  customerName: '',
-  addressType: '',
   protectionBandwidth: 0,
   businessBandwidth: 0,
-  businessQps: 0,
   allocatedProtectionBandwidth: 0,
   allocatedBusinessBandwidth: 0,
-  allocatedBusinessQps: 0,
-  currentProtectionBandwidth: 0, // 当前防护对象的独享带宽（编辑时使用）
-  currentBusinessBandwidth: 0,   // 当前防护对象的独享业务带宽（编辑时使用）
-  currentBusinessQps: 0          // 当前防护对象的独享业务QPS（编辑时使用）
+  currentProtectionBandwidth: 0,
+  currentBusinessBandwidth: 0
 })
 
-// 计算剩余可分配的带宽和QPS
+// 计算剩余可分配的带宽
 const remainingProtectionBandwidth = computed(() => {
-  // 计算剩余可分配的防护带宽
-  // 如果是编辑模式，需要加上当前防护对象已分配的带宽
-  return instanceInfo.protectionBandwidth - instanceInfo.allocatedProtectionBandwidth + instanceInfo.currentProtectionBandwidth
+  return basicForm.instanceProtectionBandwidth - (basicForm.protectionBandwidthType === 'shared' ? 0 : basicForm.dedicatedProtectionBandwidth)
 })
 
 const remainingBusinessBandwidth = computed(() => {
-  // 计算剩余可分配的业务带宽
-  return instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth + instanceInfo.currentBusinessBandwidth
-})
-
-const remainingBusinessQps = computed(() => {
-  // 计算剩余可分配的业务QPS
-  return instanceInfo.businessQps - instanceInfo.allocatedBusinessQps + instanceInfo.currentBusinessQps
+  return basicForm.instanceBusinessBandwidth - (basicForm.businessBandwidthType === 'shared' ? 0 : basicForm.dedicatedBusinessBandwidth)
 })
 
 // 表单验证规则
@@ -405,38 +366,6 @@ const basicRules = reactive({
           callback(new Error('独享业务带宽必须大于0'));
         } else if (basicForm.businessBandwidthType === 'dedicated' && value > remainingBusinessBandwidth.value) {
           callback(new Error(`独享业务带宽不能超过${remainingBusinessBandwidth.value}Mbps`));
-        } else {
-          callback();
-        }
-      }
-    }
-  ],
-  businessQpsType: [
-    { required: true, message: '请选择业务QPS类型', trigger: 'change' }
-  ],
-  dedicatedBusinessQps: [
-    { 
-      required: true, 
-      message: '请输入独享业务QPS', 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (basicForm.businessQpsType === 'dedicated' && (!value || value <= 0)) {
-          callback(new Error('请输入独享业务QPS'));
-        } else {
-          callback();
-        }
-      }
-    },
-    { 
-      type: 'number', 
-      min: 1, 
-      message: '独享业务QPS必须大于0', 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (basicForm.businessQpsType === 'dedicated' && value <= 0) {
-          callback(new Error('独享业务QPS必须大于0'));
-        } else if (basicForm.businessQpsType === 'dedicated' && value > remainingBusinessQps.value) {
-          callback(new Error(`独享业务QPS不能超过${remainingBusinessQps.value}`));
         } else {
           callback();
         }
@@ -515,12 +444,7 @@ const fetchProtectionDetail = async () => {
     if (res.code === 200) {
       const data = res.data
       
-      // 保存当前防护对象的独享资源值（用于计算可用资源）
-      instanceInfo.currentProtectionBandwidth = data.protectionBandwidthType === 'dedicated' ? data.dedicatedProtectionBandwidth : 0
-      instanceInfo.currentBusinessBandwidth = data.businessBandwidthType === 'dedicated' ? data.dedicatedBusinessBandwidth : 0
-      instanceInfo.currentBusinessQps = data.businessQpsType === 'dedicated' ? data.dedicatedBusinessQps : 0
-      
-      // 填充基本信息
+      // 更新基本信息表单
       Object.assign(basicForm, {
         id: data.id,
         publicIp: data.publicIp,
@@ -530,24 +454,18 @@ const fetchProtectionDetail = async () => {
         businessBandwidthType: data.businessBandwidthType,
         dedicatedBusinessBandwidth: data.dedicatedBusinessBandwidth,
         instanceBusinessBandwidth: data.instanceBusinessBandwidth,
-        businessQpsType: data.businessQpsType,
-        dedicatedBusinessQps: data.dedicatedBusinessQps,
-        instanceBusinessQps: data.instanceBusinessQps,
         layer7Protection: data.layer7Protection
       })
       
       // 填充实例信息
       if (data.instanceInfo) {
         Object.assign(instanceInfo, {
-          instanceId: data.instanceInfo.id,
-          customerName: data.instanceInfo.customerName,
-          addressType: data.instanceInfo.addressType,
           protectionBandwidth: data.instanceInfo.protectionBandwidth,
           businessBandwidth: data.instanceInfo.businessBandwidth,
-          businessQps: data.instanceInfo.businessQps,
           allocatedProtectionBandwidth: data.instanceInfo.allocatedProtectionBandwidth || 0,
           allocatedBusinessBandwidth: data.instanceInfo.allocatedBusinessBandwidth || 0,
-          allocatedBusinessQps: data.instanceInfo.allocatedBusinessQps || 0
+          currentProtectionBandwidth: data.instanceInfo.currentProtectionBandwidth || 0,
+          currentBusinessBandwidth: data.instanceInfo.currentBusinessBandwidth || 0
         })
       }
       
@@ -612,16 +530,6 @@ const handleBusinessBandwidthTypeChange = (type) => {
   }
 }
 
-// 处理业务QPS类型变更
-const handleBusinessQpsTypeChange = (type) => {
-  if (type === 'dedicated') {
-    // 设置默认值，不超过可用QPS
-    basicForm.dedicatedBusinessQps = Math.min(1000, remainingBusinessQps.value)
-  } else {
-    basicForm.dedicatedBusinessQps = 0
-  }
-}
-
 // 保存配置
 const handleSave = async () => {
   try {
@@ -645,8 +553,6 @@ const handleSave = async () => {
       dedicatedProtectionBandwidth: basicForm.protectionBandwidthType === 'dedicated' ? basicForm.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: basicForm.businessBandwidthType,
       dedicatedBusinessBandwidth: basicForm.businessBandwidthType === 'dedicated' ? basicForm.dedicatedBusinessBandwidth : 0,
-      businessQpsType: basicForm.businessQpsType,
-      dedicatedBusinessQps: basicForm.businessQpsType === 'dedicated' ? basicForm.dedicatedBusinessQps : 0,
       layer7Protection: basicForm.layer7Protection,
       slbConfig: !basicForm.layer7Protection ? {
         scheduler: slbForm.scheduler,
