@@ -42,11 +42,7 @@
           {{ getBandwidthDisplay(row.businessBandwidthType, row.dedicatedBusinessBandwidth, row.instanceBusinessBandwidth) }}
         </template>
       </el-table-column>
-      <el-table-column label="业务QPS" width="150">
-        <template #default="{ row }">
-          {{ getBandwidthDisplay(row.businessQpsType, row.dedicatedBusinessQps, row.instanceBusinessQps) }}
-        </template>
-      </el-table-column>
+      <!-- 移除业务QPS列 -->
       <el-table-column label="七层防护" width="100">
         <template #default="{ row }">
           <el-tag :type="row.layer7Protection ? 'success' : 'info'">

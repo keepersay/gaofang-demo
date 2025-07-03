@@ -101,29 +101,7 @@
         </div>
       </el-form-item>
       
-      <el-form-item label="业务QPS" prop="businessQpsType">
-        <el-radio-group v-model="form.businessQpsType" @change="handleBusinessQpsTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      
-      <el-form-item 
-        v-if="form.businessQpsType === 'dedicated'" 
-        label="独享业务QPS" 
-        prop="dedicatedBusinessQps"
-      >
-        <el-input-number 
-          v-model="form.dedicatedBusinessQps" 
-          :min="1" 
-          :max="remainingBusinessQps" 
-          :step="1" 
-          style="width: 120px"
-        />
-        <div class="form-tip">
-          可分配的最大独享业务QPS为 {{ remainingBusinessQps }}
-        </div>
-      </el-form-item>
+      <!-- 移除业务QPS配置 -->
       
       <el-form-item label="七层防护" prop="layer7Protection">
         <el-radio-group v-model="form.layer7Protection">
@@ -184,10 +162,8 @@ const instanceInfo = reactive({
   addressType: '',
   protectionBandwidth: 0,
   businessBandwidth: 0,
-  businessQps: 0,
   allocatedProtectionBandwidth: 0,
-  allocatedBusinessBandwidth: 0,
-  allocatedBusinessQps: 0
+  allocatedBusinessBandwidth: 0
 })
 
 // 计算剩余可分配的带宽和QPS
@@ -199,9 +175,7 @@ const remainingBusinessBandwidth = computed(() => {
   return instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth
 })
 
-const remainingBusinessQps = computed(() => {
-  return instanceInfo.businessQps - instanceInfo.allocatedBusinessQps
-})
+// 移除业务QPS计算
 
 // 表单数据
 const form = reactive({
@@ -211,8 +185,6 @@ const form = reactive({
   dedicatedProtectionBandwidth: 0,
   businessBandwidthType: 'shared',
   dedicatedBusinessBandwidth: 0,
-  businessQpsType: 'shared',
-  dedicatedBusinessQps: 0,
   layer7Protection: false
 })
 
@@ -418,14 +390,7 @@ const handleBusinessBandwidthTypeChange = (type) => {
   }
 }
 
-// 处理业务QPS类型变更
-const handleBusinessQpsTypeChange = (type) => {
-  if (type === 'dedicated') {
-    form.dedicatedBusinessQps = Math.min(1000, remainingBusinessQps.value) // 默认值
-  } else {
-    form.dedicatedBusinessQps = 0
-  }
-}
+// 移除业务QPS类型变更处理
 
 // 初始化表单数据
 const initFormData = () => {
@@ -436,8 +401,7 @@ const initFormData = () => {
     dedicatedProtectionBandwidth: 0,
     businessBandwidthType: 'shared',
     dedicatedBusinessBandwidth: 0,
-    businessQpsType: 'shared',
-    dedicatedBusinessQps: 0,
+
     layer7Protection: false
   })
   
@@ -469,9 +433,7 @@ const initFormData = () => {
     form.businessBandwidthType = editData.businessBandwidthType || 'shared'
     form.dedicatedBusinessBandwidth = editData.dedicatedBusinessBandwidth || 0
     
-    // 业务QPS
-    form.businessQpsType = editData.businessQpsType || 'shared'
-    form.dedicatedBusinessQps = editData.dedicatedBusinessQps || 0
+    // 移除业务QPS设置
     
     // 其他选项
     form.layer7Protection = editData.layer7Protection || false
@@ -498,8 +460,6 @@ const handleSubmit = async () => {
       dedicatedProtectionBandwidth: form.protectionBandwidthType === 'dedicated' ? form.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: form.businessBandwidthType,
       dedicatedBusinessBandwidth: form.businessBandwidthType === 'dedicated' ? form.dedicatedBusinessBandwidth : 0,
-      businessQpsType: form.businessQpsType,
-      dedicatedBusinessQps: form.businessQpsType === 'dedicated' ? form.dedicatedBusinessQps : 0,
       layer7Protection: form.layer7Protection
     }
     
