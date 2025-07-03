@@ -3,7 +3,7 @@
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span>网池管理</span>
+          <span>网池</span>
           <el-button type="primary" @click="openModal()">新建网池</el-button>
         </div>
       </template>
@@ -377,7 +377,7 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 .box-card {
-  margin: 24px 0;
+  /* 移除外边距，与逻辑集群页面保持一致 */
 }
 .card-header {
   display: flex;
@@ -401,7 +401,6 @@ onMounted(() => {
   height: 38px;
 }
 .pagination-container {
-  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
 }

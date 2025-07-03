@@ -3,7 +3,7 @@
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span>地域管理</span>
+          <span>地域</span>
           <el-button type="primary" @click="handleAdd">新建地域</el-button>
         </div>
       </template>

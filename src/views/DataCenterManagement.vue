@@ -3,7 +3,7 @@
     <el-card class="box-card">
       <template #header>
         <div class="card-header">
-          <span>机房管理</span>
+          <span>机房</span>
           <el-button type="primary" @click="handleAdd">新建机房</el-button>
         </div>
       </template>
@@ -734,8 +734,6 @@ onMounted(async () => {
 }
 
 .pagination-container {
-  margin-top: 20px;
-  margin-bottom: 20px;
   display: flex;
   justify-content: flex-end;
   padding-right: 20px;
