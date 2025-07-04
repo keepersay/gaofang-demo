@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import Overview from '../views/Overview.vue'
 import ClusterGroup from '../views/ClusterGroup.vue'
-import ClusterGroupManagement from '../views/ClusterGroupManagement.vue'
+import LogicClusterGroupManagement from '../views/LogicClusterGroupManagement.vue'
 import UserManagement from '../views/UserManagement.vue'
 import CustomerManagement from '../views/CustomerManagement.vue'
 import ProductPackage from '../views/ConfigManagement/ProductPackage.vue'
@@ -81,7 +81,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/cluster-group-management',
     name: 'ClusterGroupManagement',
-    component: ClusterGroupManagement
+    component: LogicClusterGroupManagement
   },
   {
     path: '/waf-management',
@@ -300,7 +300,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'logicclustergroup',
         name: 'ResourceLogicClusterGroup',
-        component: ClusterGroupManagement,
+        component: LogicClusterGroupManagement,
         meta: { title: '逻辑集群组' }
       }
     ]
