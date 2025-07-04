@@ -53,9 +53,9 @@
       
       <div class="allocation-options">
         <el-radio-group v-model="allocationType">
-          <el-radio label="auto">自动分配</el-radio>
-          <el-radio label="pool">从IP池选择</el-radio>
-          <el-radio label="manual">手动输入</el-radio>
+          <el-radio value="auto">自动分配</el-radio>
+          <el-radio value="pool">从IP池选择</el-radio>
+          <el-radio value="manual">手动输入</el-radio>
         </el-radio-group>
       </div>
 

@@ -69,16 +69,16 @@
       <div v-show="active === 1">
         <el-form-item label="集群类型" prop="clusterType">
           <el-radio-group v-model="form.clusterType" @change="handleClusterTypeChange">
-            <el-radio label="standby">主备</el-radio>
-            <el-radio label="distributed">分布式</el-radio>
-            <el-radio label="anycast">Anycast</el-radio>
+            <el-radio value="standby">主备</el-radio>
+            <el-radio value="distributed">分布式</el-radio>
+            <el-radio value="anycast">Anycast</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="地址类型" prop="addressType">
           <el-radio-group v-model="form.addressType">
-            <el-radio label="IPv4">IPv4</el-radio>
-            <el-radio label="IPv6">IPv6</el-radio>
-            <el-radio label="dual">双栈</el-radio>
+            <el-radio value="IPv4">IPv4</el-radio>
+            <el-radio value="IPv6">IPv6</el-radio>
+            <el-radio value="dual">双栈</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="地域" prop="regionId" v-if="form.clusterType === 'standby'">
