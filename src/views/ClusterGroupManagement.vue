@@ -46,6 +46,13 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="地址类型" width="100">
+          <template #default="scope">
+            <el-tag :type="getAddressTypeTagType(scope.row.addressType)">
+              {{ getAddressTypeLabel(scope.row.addressType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="机房" width="150" v-if="true">
           <template #default="scope">
             <template v-if="(scope.row.type === 'standby' || (!scope.row.type && !scope.row.distributed)) && scope.row.dataCenterId">
@@ -601,6 +608,34 @@ const getTypeLabel = (type) => {
 // 判断是否为默认集群
 const isDefaultCluster = (row, clusterId) => {
   return (row.type === 'distributed' || (row.distributed && !row.type)) && row.defaultClusterId === clusterId
+}
+
+// 获取地址类型标签类型
+const getAddressTypeTagType = (type) => {
+  switch (type) {
+    case 'ipv4':
+      return 'success'
+    case 'ipv6':
+      return 'info'
+    case 'dual':
+      return 'warning'
+    default:
+      return 'info'
+  }
+}
+
+// 获取地址类型标签文本
+const getAddressTypeLabel = (type) => {
+  switch (type) {
+    case 'ipv4':
+      return 'IPv4'
+    case 'ipv6':
+      return 'IPv6'
+    case 'dual':
+      return '双栈'
+    default:
+      return '未知类型'
+  }
 }
 </script>
 
