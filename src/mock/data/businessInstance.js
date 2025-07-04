@@ -22,6 +22,27 @@ function generateIPv6() {
   return segments.join(':')
 }
 
+// 定义逻辑集群组ID映射，确保集群类型匹配
+const clusterGroupIdsByType = {
+  // 主备类型的逻辑集群组
+  standby: [
+    'LCG7503281108201961885', // 上海电信集群组
+    'LCG7503281108201961886', // 北京电信集群组
+    'LCG7503281108201961888', // 广州联通集群组
+    'LCG7503281108201961890', // 无锡备用集群组
+    'LCG7503281108201961894'  // 韩国业务集群组
+  ],
+  // 分布式类型的逻辑集群组
+  distributed: [
+    'LCG7503281108201961887', // 国际分布式集群组
+    'LCG7503281108201961889'  // 北美分布式集群组
+  ],
+  // Anycast类型的逻辑集群组
+  anycast: [
+    'LCG7503281108201961892'  // 欧洲多节点集群组
+  ]
+};
+
 // 生成30条业务实例数据
 for (let i = 0; i < 30; i++) {
   // 套餐名称及对应的集群类型
@@ -35,6 +56,10 @@ for (let i = 0; i < 30; i++) {
   const packageInfo = Random.pick(packageTypes)
   const packageName = packageInfo.name
   const clusterType = packageInfo.clusterType
+  
+  // 根据集群类型选择匹配的逻辑集群组ID
+  const matchingClusterGroupIds = clusterGroupIdsByType[clusterType];
+  const clusterGroupId = Random.pick(matchingClusterGroupIds);
   
   const addressType = Random.pick(addressTypes)
   const regionId = clusterType === 'anycast' ? '' : Random.pick(regions)
@@ -69,7 +94,7 @@ for (let i = 0; i < 30; i++) {
     updateTime: Random.datetime('yyyy-MM-dd HH:mm:ss'),
     remark: Random.boolean() ? Random.sentence(3, 10) : '',
     // 添加关联逻辑集群组ID字段，确保所有实例都关联集群组
-    clusterGroupId: `LCG75032811082019618${Random.natural(85, 94)}`
+    clusterGroupId
   })
 }
 
