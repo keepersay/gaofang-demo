@@ -121,7 +121,7 @@ function generateProtectionIpGroups(instance, logicClusterMap) {
   }
   
   const protectionIpGroups = [];
-  const ipCount = instance.protectionIpCount || 3;
+  const ipCount = instance.protectionIpCount || 4; // 默认IP配额为4
   const addressType = instance.addressType || 'IPv4';
   
   // 模拟逻辑集群数据
@@ -131,19 +131,21 @@ function generateProtectionIpGroups(instance, logicClusterMap) {
     { id: 'LC202407250003', name: '北京-电信-标准版' }
   ];
   
-  // 为每组分配IP
-  for (let i = 0; i < ipCount; i++) {
-    const group = {
-      groupId: generateUUID(),
-      ips: []
-    };
-    
-    // 在每个逻辑集群上分配IP
-    for (const logicCluster of logicClusters) {
-      if (addressType === 'IPv4' || addressType === 'dual') {
-        // 分配IPv4
+  // 按IP配额生成IP组
+  for (let groupIndex = 0; groupIndex < ipCount; groupIndex++) {
+    // 如果是IPv4或双栈类型，生成IPv4组
+    if (addressType === 'IPv4' || addressType === 'dual') {
+      const ipv4Group = {
+        groupId: generateUUID(),
+        addressType: 'IPv4',
+        displayName: `IPv4组 #${groupIndex + 1}（每个逻辑集群组从网池中生成的一个IPV4 IP地址，共计${logicClusters.length}个）`,
+        ips: []
+      };
+      
+      // 为每个逻辑集群分配一个IPv4
+      for (const logicCluster of logicClusters) {
         const ipv4 = generateRandomIp('IPv4');
-        group.ips.push({
+        ipv4Group.ips.push({
           ip: ipv4,
           type: 'IPv4',
           logicClusterId: logicCluster.id,
@@ -152,10 +154,22 @@ function generateProtectionIpGroups(instance, logicClusterMap) {
         });
       }
       
-      if (addressType === 'IPv6' || addressType === 'dual') {
-        // 分配IPv6
+      protectionIpGroups.push(ipv4Group);
+    }
+    
+    // 如果是IPv6或双栈类型，生成IPv6组
+    if (addressType === 'IPv6' || addressType === 'dual') {
+      const ipv6Group = {
+        groupId: generateUUID(),
+        addressType: 'IPv6',
+        displayName: `IPv6组 #${groupIndex + 1}（每个逻辑集群组从网池中生成的一个IPV6 IP地址，共计${logicClusters.length}个）`,
+        ips: []
+      };
+      
+      // 为每个逻辑集群分配一个IPv6
+      for (const logicCluster of logicClusters) {
         const ipv6 = generateRandomIp('IPv6');
-        group.ips.push({
+        ipv6Group.ips.push({
           ip: ipv6,
           type: 'IPv6',
           logicClusterId: logicCluster.id,
@@ -163,9 +177,9 @@ function generateProtectionIpGroups(instance, logicClusterMap) {
           status: 'active'
         });
       }
+      
+      protectionIpGroups.push(ipv6Group);
     }
-    
-    protectionIpGroups.push(group);
   }
   
   return protectionIpGroups;
