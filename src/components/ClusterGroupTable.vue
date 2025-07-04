@@ -42,6 +42,44 @@
               <div class="text-xs text-gray-500">{{ row.id }}</div>
             </template>
           </el-table-column>
+          <el-table-column label="类型" width="100">
+            <template #default="scope">
+              <el-tag :type="scope.row.linkType === 'L7' ? 'info' : 'success'">
+                {{ scope.row.linkType === 'L7' ? '七层防护' : '四层防护' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="地址类型" width="100">
+            <template #header>
+              <span>地址类型</span>
+              <el-popover
+                placement="bottom"
+                width="160"
+                trigger="click"
+                v-model:visible="addressTypePopoverVisible"
+              >
+                <div>
+                  <el-checkbox-group v-model="addressTypeFilterValue">
+                    <div v-for="item in addressTypeFilters" :key="item.value" style="margin-bottom: 5px;">
+                      <el-checkbox :value="item.value">{{ item.text }}</el-checkbox>
+                    </div>
+                  </el-checkbox-group>
+                  <div class="mt-2 flex justify-end">
+                    <el-button size="small" @click="resetAddressTypeFilter">重置</el-button>
+                    <el-button size="small" type="primary" @click="confirmAddressTypeFilter">确定</el-button>
+                  </div>
+                </div>
+                <template #reference>
+                  <el-icon :color="addressTypeFilterValue.length ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
+                </template>
+              </el-popover>
+            </template>
+            <template #default="{ row }">
+              <el-tag :type="getAddressTypeTagType(row.addressType)">
+                {{ getAddressTypeLabel(row.addressType) }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column
             prop="location"
             min-width="140"
@@ -73,41 +111,6 @@
             </template>
             <template #default="{ row }">
               {{ row.location }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="linkType"
-            min-width="140"
-            column-key="linkType"
-          >
-            <template #header>
-              <span>链路类型</span>
-              <el-popover
-                placement="bottom"
-                width="160"
-                trigger="click"
-                v-model:visible="linkTypePopoverVisible"
-              >
-                <div>
-                  <el-checkbox-group v-model="linkTypeFilterValue">
-                    <div v-for="item in linkTypeFilters" :key="item.value" style="margin-bottom: 5px;">
-                      <el-checkbox :value="item.value">{{ item.text }}</el-checkbox>
-                    </div>
-                  </el-checkbox-group>
-                  <div class="mt-2 flex justify-end">
-                    <el-button size="small" @click="resetLinkTypeFilter">重置</el-button>
-                    <el-button size="small" type="primary" @click="confirmLinkTypeFilter">确定</el-button>
-                  </div>
-                </div>
-                <template #reference>
-                  <el-icon :color="linkTypeFilterValue.length ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
-                </template>
-              </el-popover>
-            </template>
-            <template #default="{ row }">
-              <el-tag :type="row.linkType === 'L7' ? 'info' : 'success'">
-                {{ row.linkType === 'L7' ? '七层防护' : '四层防护' }}
-              </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="elementCount" label="网元数量" min-width="100" />
@@ -181,6 +184,18 @@ const props = defineProps({
   filteredLinkType: {
     type: Array,
     default: () => []
+  },
+  addressTypeFilters: {
+    type: Array,
+    default: () => [
+      { text: 'IPv4', value: 'ipv4' },
+      { text: 'IPv6', value: 'ipv6' },
+      { text: '双栈', value: 'dual' }
+    ]
+  },
+  filteredAddressType: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -217,6 +232,18 @@ function resetLinkTypeFilter() {
 function confirmLinkTypeFilter() {
   linkTypePopoverVisible.value = false
   emits('filter-change', { location: [...locationFilterValue.value], linkType: [...linkTypeFilterValue.value] })
+}
+
+// 地址类型过滤
+const addressTypePopoverVisible = ref(false)
+const addressTypeFilterValue = ref([...props.filteredAddressType])
+watch(() => props.filteredAddressType, val => { addressTypeFilterValue.value = [...val] })
+function resetAddressTypeFilter() {
+  addressTypeFilterValue.value = []
+}
+function confirmAddressTypeFilter() {
+  addressTypePopoverVisible.value = false
+  emits('filter-change', { location: [...locationFilterValue.value], linkType: [...linkTypeFilterValue.value], addressType: [...addressTypeFilterValue.value] })
 }
 
 const mockRegions = [
@@ -285,6 +312,34 @@ const getRegionName = (regionId) => {
 const getDistributedStatus = (regionId) => {
   const region = getRegionById(regionId)
   return region ? region.distributed : false
+}
+
+// 获取地址类型标签类型
+const getAddressTypeTagType = (addressType) => {
+  switch(addressType?.toLowerCase()) {
+    case 'ipv4':
+      return 'success'
+    case 'ipv6':
+      return 'warning'
+    case 'dual':
+      return 'info'
+    default:
+      return 'info'
+  }
+}
+
+// 获取地址类型标签文本
+const getAddressTypeLabel = (addressType) => {
+  switch(addressType?.toLowerCase()) {
+    case 'ipv4':
+      return 'IPv4'
+    case 'ipv6':
+      return 'IPv6'
+    case 'dual':
+      return '双栈'
+    default:
+      return '未知'
+  }
 }
 
 const tableData = ref([
