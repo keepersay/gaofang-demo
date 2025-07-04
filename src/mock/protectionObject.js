@@ -1,4 +1,5 @@
 import Mock from 'mockjs'
+import { generateUUID } from '../utils/common'
 
 // IP防护对象列表
 const ipProtectionList = Mock.mock({
@@ -54,7 +55,16 @@ const ipProtectionList = Mock.mock({
     'nearSourceSuppression|1': [true, false],
     'layer7Protection|1': [true, false],
     'status|1': ['active', 'inactive'],
-    'createTime': '@datetime("yyyy-MM-dd HH:mm:ss")'
+    'createTime': '@datetime("yyyy-MM-dd HH:mm:ss")',
+    // 新增字段：IP组ID
+    'protectionIpGroupId': function() {
+      return generateUUID();
+    },
+    'protectionIpGroupInfo': function() {
+      const addressTypes = ['IPv4', 'IPv6', 'dual'];
+      const ipCount = this.id % 5 + 2;
+      return `IP组 #${this.id % 10 + 1}（${this.instanceName}，${addressTypes[this.id % 3]}，${ipCount}个IP）`;
+    }
   }]
 })
 
@@ -134,6 +144,105 @@ const businessInstanceOptions = Mock.mock({
 let ipProtectionData = [...ipProtectionList.data]
 let domainProtectionData = [...domainProtectionList.data]
 
+// 模拟IP组数据
+const generateIpGroupData = (instanceId) => {
+  // 根据实例ID生成固定数量的IP组
+  const instanceNumber = parseInt(instanceId.replace('BI', ''));
+  // 生成1-2个IPv4组和1-2个IPv6组
+  const ipv4GroupCount = (instanceNumber % 2) + 1; // 1-2个IPv4组
+  const ipv6GroupCount = (instanceNumber % 2) + 1; // 1-2个IPv6组
+  
+  const groups = [];
+  
+  // 生成IPv4组
+  for (let i = 0; i < ipv4GroupCount; i++) {
+    const groupId = generateUUID();
+    const addressType = 'IPv4';
+    const instanceName = `业务实例-${instanceNumber % 10 || 1}`;
+    
+    // 生成IP列表
+    const ips = [];
+    const logicClusters = [
+      { id: 'LC202407250001', name: '华东-电信-高级版' },
+      { id: 'LC202407250002', name: '华南-联通-基础版' },
+      { id: 'LC202407250003', name: '北京-电信-标准版' }
+    ];
+    
+    // 为每个逻辑集群生成IPv4
+    logicClusters.forEach(cluster => {
+      // 生成IPv4
+      const ipv4 = `203.0.113.${Math.floor(Math.random() * 254) + 1}`;
+      ips.push({
+        ip: ipv4,
+        type: 'IPv4',
+        logicClusterId: cluster.id,
+        logicClusterName: cluster.name,
+        status: 'active'
+      });
+    });
+    
+    // 添加IPv4组
+    const ipCount = ips.length;
+    groups.push({
+      groupId,
+      instanceId,
+      addressType,
+      ipCount,
+      ips,
+      status: 'active',
+      firstIp: ips[0]?.ip || '',
+      displayName: `IPv4组 #${i + 1}（${instanceName}，${ipCount}个IP）`
+    });
+  }
+  
+  // 生成IPv6组
+  for (let i = 0; i < ipv6GroupCount; i++) {
+    const groupId = generateUUID();
+    const addressType = 'IPv6';
+    const instanceName = `业务实例-${instanceNumber % 10 || 1}`;
+    
+    // 生成IP列表
+    const ips = [];
+    const logicClusters = [
+      { id: 'LC202407250001', name: '华东-电信-高级版' },
+      { id: 'LC202407250002', name: '华南-联通-基础版' },
+      { id: 'LC202407250003', name: '北京-电信-标准版' }
+    ];
+    
+    // 为每个逻辑集群生成IPv6
+    logicClusters.forEach(cluster => {
+      // 生成IPv6
+      const segments = [];
+      for (let j = 0; j < 8; j++) {
+        segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
+      }
+      const ipv6 = segments.join(':');
+      ips.push({
+        ip: ipv6,
+        type: 'IPv6',
+        logicClusterId: cluster.id,
+        logicClusterName: cluster.name,
+        status: 'active'
+      });
+    });
+    
+    // 添加IPv6组
+    const ipCount = ips.length;
+    groups.push({
+      groupId,
+      instanceId,
+      addressType,
+      ipCount,
+      ips,
+      status: 'active',
+      firstIp: ips[0]?.ip || '',
+      displayName: `IPv6组 #${i + 1}（${instanceName}，${ipCount}个IP）`
+    });
+  }
+  
+  return groups;
+};
+
 // 获取新ID
 const getNewIpProtectionId = () => {
   return ipProtectionData.length > 0 ? Math.max(...ipProtectionData.map(item => item.id)) + 1 : 1
@@ -154,6 +263,7 @@ Mock.mock(/\/api\/protection\/ip\/list/, 'get', (options) => {
   const publicIp = params.get('publicIp') || ''
   const instanceId = params.get('instanceId') || ''
   const instanceName = params.get('instanceName') || ''
+  const addressType = params.get('addressType') || ''
   const status = params.get('status') || ''
   
   let filteredList = [...ipProtectionData]
@@ -167,6 +277,9 @@ Mock.mock(/\/api\/protection\/ip\/list/, 'get', (options) => {
   }
   if (instanceName) {
     filteredList = filteredList.filter(item => item.instanceName.includes(instanceName))
+  }
+  if (addressType) {
+    filteredList = filteredList.filter(item => item.addressType === addressType)
   }
   if (status) {
     filteredList = filteredList.filter(item => item.status === status)
@@ -253,147 +366,131 @@ Mock.mock(/\/api\/protection\/domain\/list/, 'get', (options) => {
   }
 })
 
-// 业务实例选项接口
-Mock.mock(/\/api\/business-instance\/options/, 'get', () => {
+// 获取业务实例的IP组列表
+Mock.mock(/\/api\/business-instance\/.*\/ip-groups/, 'get', (options) => {
+  const instanceId = options.url.match(/\/api\/business-instance\/(.+?)\/ip-groups/)[1];
+  
+  // 生成该业务实例的IP组数据
+  const ipGroups = generateIpGroupData(instanceId);
+  
   return {
     code: 200,
     message: 'success',
-    data: businessInstanceOptions.data
-  }
-})
+    data: ipGroups
+  };
+});
 
-// 通用的成功响应
-const successResponse = {
-  code: 200,
-  message: 'success',
-  data: null
-}
+// 获取IP组详情
+Mock.mock(/\/api\/ip-group\/.*\/detail/, 'get', (options) => {
+  const groupId = options.url.match(/\/api\/ip-group\/(.+?)\/detail/)[1];
+  
+  // 从所有业务实例中查找该IP组
+  // 为了简化，这里直接生成一个IP组
+  const instanceId = `BI${10000 + Math.floor(Math.random() * 10) + 1}`;
+  const groups = generateIpGroupData(instanceId);
+  const group = groups[0];
+  group.groupId = groupId;
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: group
+  };
+});
 
 // 添加IP防护对象
-Mock.mock(/\/api\/protection\/ip\/add/, 'post', (options) => {
+Mock.mock('/api/protection/ip/add', 'post', (options) => {
   const body = JSON.parse(options.body)
   
-  // 创建新记录
+  // 创建新对象
+  const newId = getNewIpProtectionId()
   const newItem = {
-    id: getNewIpProtectionId(),
-    instanceId: body.instanceId,
-    instanceName: getInstanceNameById(body.instanceId),
-    customerName: `客户${Math.floor(Math.random() * 100)}`,
-    publicIp: body.publicIp,
-    addressType: body.publicIp.includes(':') ? 'IPv6' : 'IPv4',
-    protectionBandwidthType: body.protectionBandwidthType,
-    dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
-    instanceProtectionBandwidth: 500,
-    businessBandwidthType: body.businessBandwidthType,
-    dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
-    instanceBusinessBandwidth: 200,
-    businessQpsType: body.businessQpsType,
-    dedicatedBusinessQps: body.dedicatedBusinessQps,
-    instanceBusinessQps: 5000,
-    nearSourceSuppression: body.nearSourceSuppression,
-    layer7Protection: body.layer7Protection,
-    status: 'active',
-    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    id: newId,
+    ...body,
+    createTime: new Date().toISOString()
   }
   
-  // 添加到数组
+  // 如果没有设置客户名称，根据业务实例ID设置
+  if (!newItem.customerName && newItem.instanceId) {
+    // 模拟根据业务实例ID获取客户名称
+    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司']
+    newItem.customerName = customerNames[newItem.instanceId % customerNames.length]
+  }
+  
+  // 如果没有设置业务实例名称，根据业务实例ID设置
+  if (!newItem.instanceName && newItem.instanceId) {
+    newItem.instanceName = getInstanceNameById(newItem.instanceId)
+  }
+  
+  // 添加到数据列表
   ipProtectionData.unshift(newItem)
   
-  return successResponse
+  return {
+    code: 200,
+    message: 'success',
+    data: newItem
+  }
 })
 
 // 更新IP防护对象
-Mock.mock(/\/api\/protection\/ip\/update/, 'put', (options) => {
+Mock.mock('/api/protection/ip/update', 'put', (options) => {
   const body = JSON.parse(options.body)
-  const index = ipProtectionData.findIndex(item => item.id === body.id)
+  const id = body.id
   
-  if (index !== -1) {
-    // 保留原有的一些字段
-    const oldItem = ipProtectionData[index]
-    
-    // 更新字段
-    ipProtectionData[index] = {
-      ...oldItem,
-      instanceId: body.instanceId,
-      instanceName: getInstanceNameById(body.instanceId),
-      publicIp: body.publicIp,
-      addressType: body.publicIp.includes(':') ? 'IPv6' : 'IPv4',
-      protectionBandwidthType: body.protectionBandwidthType,
-      dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
-      businessBandwidthType: body.businessBandwidthType,
-      dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
-      businessQpsType: body.businessQpsType,
-      dedicatedBusinessQps: body.dedicatedBusinessQps,
-      nearSourceSuppression: body.nearSourceSuppression,
-      layer7Protection: body.layer7Protection,
+  // 查找对象
+  const index = ipProtectionData.findIndex(item => item.id === id)
+  if (index === -1) {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在'
     }
   }
   
-  return successResponse
+  // 更新对象
+  ipProtectionData[index] = {
+    ...ipProtectionData[index],
+    ...body
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: ipProtectionData[index]
+  }
 })
 
 // 删除IP防护对象
 Mock.mock(/\/api\/protection\/ip\/delete\/\d+/, 'delete', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/ip\/delete\/(\d+)/)[1])
-  ipProtectionData = ipProtectionData.filter(item => item.id !== id)
   
-  return successResponse
+  // 查找对象
+  const index = ipProtectionData.findIndex(item => item.id === id)
+  if (index === -1) {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在'
+    }
+  }
+  
+  // 删除对象
+  ipProtectionData.splice(index, 1)
+  
+  return {
+    code: 200,
+    message: 'success'
+  }
 })
 
 // 批量删除IP防护对象
-Mock.mock(/\/api\/protection\/ip\/batch-delete/, 'delete', (options) => {
-  const body = JSON.parse(options.body)
-  const ids = body.ids || []
+Mock.mock('/api/protection/ip/batch-delete', 'delete', (options) => {
+  const { ids } = JSON.parse(options.body)
   
-  if (ids.length > 0) {
-    ipProtectionData = ipProtectionData.filter(item => !ids.includes(item.id))
-  }
+  // 批量删除
+  ipProtectionData = ipProtectionData.filter(item => !ids.includes(item.id))
   
-  return successResponse
-})
-
-// 更新IP防护对象配置
-Mock.mock('/api/protection/ip/config', 'put', (options) => {
-  const body = JSON.parse(options.body)
-  const id = body.id
-  const index = ipProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 更新基本配置
-    if (body.publicIp) ipProtectionData[index].publicIp = body.publicIp
-    if (body.protectionBandwidthType) ipProtectionData[index].protectionBandwidthType = body.protectionBandwidthType
-    if (body.dedicatedProtectionBandwidth !== undefined) ipProtectionData[index].dedicatedProtectionBandwidth = body.dedicatedProtectionBandwidth
-    if (body.businessBandwidthType) ipProtectionData[index].businessBandwidthType = body.businessBandwidthType
-    if (body.dedicatedBusinessBandwidth !== undefined) ipProtectionData[index].dedicatedBusinessBandwidth = body.dedicatedBusinessBandwidth
-    if (body.businessQpsType) ipProtectionData[index].businessQpsType = body.businessQpsType
-    if (body.dedicatedBusinessQps !== undefined) ipProtectionData[index].dedicatedBusinessQps = body.dedicatedBusinessQps
-    if (body.nearSourceSuppression !== undefined) ipProtectionData[index].nearSourceSuppression = body.nearSourceSuppression
-    if (body.layer7Protection !== undefined) ipProtectionData[index].layer7Protection = body.layer7Protection
-    
-    // 更新负载均衡配置
-    if (body.slbConfig) {
-      ipProtectionData[index].slbConfig = body.slbConfig
-    }
-    
-    // 更新安全配置
-    if (body.securityConfig) {
-      ipProtectionData[index].securityConfig = {
-        ...(ipProtectionData[index].securityConfig || {}),
-        ...body.securityConfig
-      }
-    }
-    
-    return {
-      code: 200,
-      message: 'success',
-      data: null
-    }
-  } else {
-    return {
-      code: 404,
-      message: 'IP防护对象不存在',
-      data: null
-    }
+  return {
+    code: 200,
+    message: 'success'
   }
 })
 
@@ -401,20 +498,22 @@ Mock.mock('/api/protection/ip/config', 'put', (options) => {
 Mock.mock(/\/api\/protection\/ip\/enable\/\d+/, 'put', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/ip\/enable\/(\d+)/)[1])
   
-  // 查找要启用的记录
+  // 查找对象
   const index = ipProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 启用记录
-    ipProtectionData[index].status = 'active'
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: 'IP防护对象不存在',
-      data: null
+      message: 'IP防护对象不存在'
     }
+  }
+  
+  // 更新状态
+  ipProtectionData[index].status = 'active'
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: ipProtectionData[index]
   }
 })
 
@@ -422,94 +521,130 @@ Mock.mock(/\/api\/protection\/ip\/enable\/\d+/, 'put', (options) => {
 Mock.mock(/\/api\/protection\/ip\/disable\/\d+/, 'put', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/ip\/disable\/(\d+)/)[1])
   
-  // 查找要禁用的记录
+  // 查找对象
   const index = ipProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 禁用记录
-    ipProtectionData[index].status = 'inactive'
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: 'IP防护对象不存在',
-      data: null
+      message: 'IP防护对象不存在'
     }
+  }
+  
+  // 更新状态
+  ipProtectionData[index].status = 'inactive'
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: ipProtectionData[index]
+  }
+})
+
+// 获取IP防护对象详情
+Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/ip\/detail\/(\d+)/)[1])
+  
+  // 查找对象
+  const item = ipProtectionData.find(item => item.id === id)
+  if (!item) {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在'
+    }
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: item
+  }
+})
+
+// 更新IP防护对象配置
+Mock.mock('/api/protection/ip/config', 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = body.id
+  
+  // 查找对象
+  const index = ipProtectionData.findIndex(item => item.id === id)
+  if (index === -1) {
+    return {
+      code: 404,
+      message: 'IP防护对象不存在'
+    }
+  }
+  
+  // 更新配置
+  ipProtectionData[index] = {
+    ...ipProtectionData[index],
+    ...body
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: ipProtectionData[index]
   }
 })
 
 // 添加域名防护对象
-Mock.mock(/\/api\/protection\/domain\/add/, 'post', (options) => {
+Mock.mock('/api/protection/domain/add', 'post', (options) => {
   const body = JSON.parse(options.body)
   
-  // 创建新记录
+  // 创建新对象
+  const newId = getNewDomainProtectionId()
   const newItem = {
-    id: getNewDomainProtectionId(),
-    instanceId: body.instanceId,
-    instanceName: getInstanceNameById(body.instanceId),
-    customerName: `客户${Math.floor(Math.random() * 100)}`,
-    publicIp: body.publicIp,
-    addressType: body.addressType,
-    domain: body.domain,
-    cname: body.cname,
-    protectionBandwidthType: body.protectionBandwidthType,
-    dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
-    instanceProtectionBandwidth: 500,
-    businessBandwidthType: body.businessBandwidthType,
-    dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
-    instanceBusinessBandwidth: 200,
-    businessQpsType: body.businessQpsType,
-    dedicatedBusinessQps: body.dedicatedBusinessQps,
-    instanceBusinessQps: 5000,
-    protectionPackage: body.protectionPackage,
-    accessType: body.accessType,
-    status: 'active',
-    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+    id: newId,
+    ...body,
+    createTime: new Date().toISOString()
   }
   
-  // 添加到数组
+  // 如果没有设置客户名称，根据业务实例ID设置
+  if (!newItem.customerName && newItem.instanceId) {
+    // 模拟根据业务实例ID获取客户名称
+    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司']
+    newItem.customerName = customerNames[newItem.instanceId % customerNames.length]
+  }
+  
+  // 如果没有设置业务实例名称，根据业务实例ID设置
+  if (!newItem.instanceName && newItem.instanceId) {
+    newItem.instanceName = getInstanceNameById(newItem.instanceId)
+  }
+  
+  // 添加到数据列表
   domainProtectionData.unshift(newItem)
   
-  return successResponse
+  return {
+    code: 200,
+    message: 'success',
+    data: newItem
+  }
 })
 
 // 更新域名防护对象
-Mock.mock(/\/api\/protection\/domain\/update/, 'put', (options) => {
+Mock.mock('/api/protection/domain/update', 'put', (options) => {
   const body = JSON.parse(options.body)
-  const id = parseInt(body.id)
+  const id = body.id
   
-  // 查找要更新的记录
+  // 查找对象
   const index = domainProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 更新记录
-    domainProtectionData[index] = {
-      ...domainProtectionData[index],
-      instanceId: body.instanceId,
-      instanceName: getInstanceNameById(body.instanceId),
-      publicIp: body.publicIp,
-      addressType: body.addressType,
-      domain: body.domain,
-      cname: body.cname,
-      protectionBandwidthType: body.protectionBandwidthType,
-      dedicatedProtectionBandwidth: body.dedicatedProtectionBandwidth,
-      businessBandwidthType: body.businessBandwidthType,
-      dedicatedBusinessBandwidth: body.dedicatedBusinessBandwidth,
-      businessQpsType: body.businessQpsType,
-      dedicatedBusinessQps: body.dedicatedBusinessQps,
-      protectionPackage: body.protectionPackage,
-      accessType: body.accessType,
-      updateTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
-    }
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: '记录不存在',
-      data: null
+      message: '域名防护对象不存在'
     }
+  }
+  
+  // 更新对象
+  domainProtectionData[index] = {
+    ...domainProtectionData[index],
+    ...body
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: domainProtectionData[index]
   }
 })
 
@@ -517,60 +652,57 @@ Mock.mock(/\/api\/protection\/domain\/update/, 'put', (options) => {
 Mock.mock(/\/api\/protection\/domain\/delete\/\d+/, 'delete', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/domain\/delete\/(\d+)/)[1])
   
-  // 查找要删除的记录
+  // 查找对象
   const index = domainProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 删除记录
-    domainProtectionData.splice(index, 1)
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: '记录不存在',
-      data: null
+      message: '域名防护对象不存在'
     }
+  }
+  
+  // 删除对象
+  domainProtectionData.splice(index, 1)
+  
+  return {
+    code: 200,
+    message: 'success'
   }
 })
 
 // 批量删除域名防护对象
-Mock.mock(/\/api\/protection\/domain\/batch-delete/, 'delete', (options) => {
-  const body = JSON.parse(options.body)
-  const ids = body.ids || []
+Mock.mock('/api/protection/domain/batch-delete', 'delete', (options) => {
+  const { ids } = JSON.parse(options.body)
   
-  if (ids.length === 0) {
-    return {
-      code: 400,
-      message: '请选择要删除的记录',
-      data: null
-    }
-  }
-  
-  // 批量删除记录
+  // 批量删除
   domainProtectionData = domainProtectionData.filter(item => !ids.includes(item.id))
   
-  return successResponse
+  return {
+    code: 200,
+    message: 'success'
+  }
 })
 
 // 启用域名防护对象
 Mock.mock(/\/api\/protection\/domain\/enable\/\d+/, 'put', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/domain\/enable\/(\d+)/)[1])
   
-  // 查找要启用的记录
+  // 查找对象
   const index = domainProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 启用记录
-    domainProtectionData[index].status = 'active'
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: '记录不存在',
-      data: null
+      message: '域名防护对象不存在'
     }
+  }
+  
+  // 更新状态
+  domainProtectionData[index].status = 'active'
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: domainProtectionData[index]
   }
 })
 
@@ -578,107 +710,30 @@ Mock.mock(/\/api\/protection\/domain\/enable\/\d+/, 'put', (options) => {
 Mock.mock(/\/api\/protection\/domain\/disable\/\d+/, 'put', (options) => {
   const id = parseInt(options.url.match(/\/api\/protection\/domain\/disable\/(\d+)/)[1])
   
-  // 查找要禁用的记录
+  // 查找对象
   const index = domainProtectionData.findIndex(item => item.id === id)
-  
-  if (index !== -1) {
-    // 禁用记录
-    domainProtectionData[index].status = 'inactive'
-    
-    return successResponse
-  } else {
+  if (index === -1) {
     return {
       code: 404,
-      message: '记录不存在',
-      data: null
+      message: '域名防护对象不存在'
     }
+  }
+  
+  // 更新状态
+  domainProtectionData[index].status = 'inactive'
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: domainProtectionData[index]
   }
 })
 
-// 获取IP防护对象详情
-Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
-  const id = parseInt(options.url.match(/\/api\/protection\/ip\/detail\/(\d+)/)[1])
-  const item = ipProtectionData.find(item => item.id === id)
-  
-  if (item) {
-    // 添加负载均衡配置信息
-    const slbConfig = item.slbConfig || {
-      scheduler: 'wrr',
-      sessionTimeout: 300,
-      healthCheck: 'TCP',
-      insertToa: false,
-      sessionResetEnabled: false,
-      syslogIp: '',
-      syslogPort: 514,
-      members: Array.from({ length: Math.floor(Math.random() * 3) + 1 }, (_, i) => ({
-        ip: `192.168.1.${10 + i}`,
-        port: 80 + i * 100,
-        weight: 10 + i * 5
-      }))
-    }
-    
-    // 添加安全配置信息
-    const securityConfig = item.securityConfig || {
-      icmp: {
-        enabled: id % 2 === 0 // 随机设置ICMP禁用状态
-      },
-      blacklist: Array.from({ length: id % 5 }, (_, i) => ({
-        ip: `192.168.${id}.${i + 1}`,
-        addTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
-      })),
-      whitelist: Array.from({ length: id % 3 }, (_, i) => ({
-        ip: `10.0.${id}.${i + 1}`,
-        addTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19)
-      })),
-      blacklistExpireTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').substring(0, 19),
-      regionBlock: [],
-      rateLimit: {},
-      reflection: {},
-      fingerprint: {}
-    }
-    
-    // 添加业务实例信息
-    const instanceId = parseInt(item.instanceId.toString().replace(/\D/g, ''))
-    const instanceInfo = {
-      id: item.instanceId,
-      customerName: item.customerName,
-      addressType: item.addressType,
-      protectionBandwidth: 500,
-      businessBandwidth: 200,
-      businessQps: 5000,
-      allocatedProtectionBandwidth: Math.floor(Math.random() * 300), // 模拟已分配的防护带宽
-      allocatedBusinessBandwidth: Math.floor(Math.random() * 100),   // 模拟已分配的业务带宽
-      allocatedBusinessQps: Math.floor(Math.random() * 3000),        // 模拟已分配的业务QPS
-      publicIpList: Array.from({ length: 5 }, (_, i) => {
-        if (i % 2 === 0) {
-          // IPv4
-          return `203.0.113.${(instanceId * 10 + i) % 255 + 1}`
-        } else {
-          // IPv6
-          const segments = []
-          for (let j = 0; j < 8; j++) {
-            segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
-          }
-          return segments.join(':')
-        }
-      })
-    }
-    
-    return {
-      code: 200,
-      message: 'success',
-      data: {
-        ...item,
-        slbConfig,
-        securityConfig,
-        instanceInfo
-      }
-    }
-  } else {
-    return {
-      code: 404,
-      message: 'IP防护对象不存在',
-      data: null
-    }
+// 获取业务实例选项
+Mock.mock('/api/business-instance/options', 'get', () => {
+  return {
+    code: 200,
+    message: 'success',
+    data: businessInstanceOptions.data
   }
 }) 

@@ -33,24 +33,41 @@
         <el-input v-model="instanceInfo.customerName" disabled />
       </el-form-item>
       
-      <el-form-item label="地址类型">
-        <el-input v-model="instanceInfo.addressType" disabled />
+      <el-form-item label="地址类型" prop="addressType">
+        <el-radio-group v-model="form.addressType" @change="handleAddressTypeChange">
+          <el-radio label="all">全部</el-radio>
+          <el-radio label="IPv4">IPv4</el-radio>
+          <el-radio label="IPv6">IPv6</el-radio>
+        </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="防护公网IP" prop="publicIp">
+      <el-form-item label="IP组" prop="protectionIpGroupId">
         <el-select 
-          v-model="form.publicIp" 
-          placeholder="请选择防护公网IP" 
+          v-model="form.protectionIpGroupId" 
+          placeholder="请选择IP组" 
           style="width: 100%"
           :disabled="!form.instanceId"
+          @change="handleIpGroupChange"
         >
           <el-option
-            v-for="item in publicIpOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in filteredIpGroupOptions"
+            :key="item.groupId"
+            :label="item.displayName"
+            :value="item.groupId"
           />
         </el-select>
+      </el-form-item>
+      
+      <el-form-item label="IP列表">
+        <div class="ip-list-container">
+          <div v-for="(ip, index) in selectedIpGroupInfo.ips" :key="index" class="ip-item">
+            <span>{{ ip.ip }}</span>
+            <span class="ip-cluster">({{ ip.logicClusterName }})</span>
+          </div>
+          <div v-if="!selectedIpGroupInfo.ips || selectedIpGroupInfo.ips.length === 0" class="no-ip">
+            暂无IP信息
+          </div>
+        </div>
       </el-form-item>
       
       <el-form-item label="防护带宽" prop="protectionBandwidthType">
@@ -101,8 +118,6 @@
         </div>
       </el-form-item>
       
-      <!-- 移除业务QPS配置 -->
-      
       <!-- 显示七层防护状态 -->
       <el-form-item label="七层防护">
         <el-tag :type="form.layer7Protection ? 'success' : 'info'">
@@ -127,7 +142,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getBusinessInstanceOptions, getBusinessInstanceDetail } from '@/services/BusinessInstanceService'
-import { addIpProtection, updateIpProtection } from '@/services/ProtectionObjectService'
+import { addIpProtection, updateIpProtection, getInstanceIpGroups, getIpGroupDetail } from '@/services/ProtectionObjectService'
 
 const props = defineProps({
   visible: {
@@ -156,20 +171,34 @@ const isEdit = computed(() => !!props.editData)
 // 业务实例选项
 const instanceOptions = ref([])
 
-// 防护公网IP选项
-const publicIpOptions = ref([])
+// IP组选项
+const ipGroupOptions = ref([])
+
+// 根据地址类型筛选IP组选项
+const filteredIpGroupOptions = computed(() => {
+  if (form.addressType === 'all') {
+    return ipGroupOptions.value
+  }
+  return ipGroupOptions.value.filter(item => item.addressType === form.addressType)
+})
+
+// 选中的IP组信息
+const selectedIpGroupInfo = reactive({
+  addressType: '',
+  ipCount: 0,
+  ips: []
+})
 
 // 业务实例信息
 const instanceInfo = reactive({
   customerName: '',
-  addressType: '',
   protectionBandwidth: 0,
   businessBandwidth: 0,
   allocatedProtectionBandwidth: 0,
   allocatedBusinessBandwidth: 0
 })
 
-// 计算剩余可分配的带宽和QPS
+// 计算剩余可分配的带宽
 const remainingProtectionBandwidth = computed(() => {
   return instanceInfo.protectionBandwidth - instanceInfo.allocatedProtectionBandwidth
 })
@@ -178,12 +207,11 @@ const remainingBusinessBandwidth = computed(() => {
   return instanceInfo.businessBandwidth - instanceInfo.allocatedBusinessBandwidth
 })
 
-// 移除业务QPS计算
-
 // 表单数据
 const form = reactive({
   instanceId: '',
-  publicIp: '',
+  addressType: 'all',
+  protectionIpGroupId: '',
   protectionBandwidthType: 'shared',
   dedicatedProtectionBandwidth: 0,
   businessBandwidthType: 'shared',
@@ -196,8 +224,11 @@ const rules = reactive({
   instanceId: [
     { required: true, message: '请选择业务实例', trigger: 'change' }
   ],
-  publicIp: [
-    { required: true, message: '请选择防护公网IP', trigger: 'change' }
+  addressType: [
+    { required: true, message: '请选择地址类型', trigger: 'change' }
+  ],
+  protectionIpGroupId: [
+    { required: true, message: '请选择IP组', trigger: 'change' }
   ],
   protectionBandwidthType: [
     { required: true, message: '请选择防护带宽类型', trigger: 'change' }
@@ -258,188 +289,181 @@ const rules = reactive({
         }
       }
     }
-  ],
-  businessQpsType: [
-    { required: true, message: '请选择业务QPS类型', trigger: 'change' }
-  ],
-  dedicatedBusinessQps: [
-    { 
-      required: true, 
-      message: '请输入独享业务QPS', 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (form.businessQpsType === 'dedicated' && (!value || value <= 0)) {
-          callback(new Error('请输入独享业务QPS'));
-        } else {
-          callback();
-        }
-      }
-    },
-    { 
-      type: 'number', 
-      min: 1, 
-      message: '独享业务QPS必须大于0', 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (form.businessQpsType === 'dedicated' && value <= 0) {
-          callback(new Error('独享业务QPS必须大于0'));
-        } else {
-          callback();
-        }
-      }
-    }
   ]
 })
 
-// 获取业务实例选项
-const fetchInstanceOptions = async () => {
+// 初始化
+const init = async () => {
   try {
+    // 获取业务实例选项
     const res = await getBusinessInstanceOptions()
     if (res.code === 200) {
       instanceOptions.value = res.data
     }
+    
+    // 编辑模式下，初始化表单数据
+    if (isEdit.value) {
+      const editData = props.editData
+      form.instanceId = editData.instanceId
+      form.protectionIpGroupId = editData.protectionIpGroupId
+      form.protectionBandwidthType = editData.protectionBandwidthType
+      form.dedicatedProtectionBandwidth = editData.dedicatedProtectionBandwidth
+      form.businessBandwidthType = editData.businessBandwidthType
+      form.dedicatedBusinessBandwidth = editData.dedicatedBusinessBandwidth
+      form.layer7Protection = editData.layer7Protection
+      
+      // 获取业务实例详情
+      await handleInstanceChange(form.instanceId)
+      
+      // 获取IP组详情
+      await handleIpGroupChange(form.protectionIpGroupId)
+      
+      // 设置地址类型
+      if (selectedIpGroupInfo.addressType) {
+        form.addressType = selectedIpGroupInfo.addressType
+      }
+    }
   } catch (error) {
-    console.error('获取业务实例选项失败:', error)
+    console.error('初始化失败:', error)
+    ElMessage.error('初始化失败')
   }
 }
 
 // 处理业务实例变更
 const handleInstanceChange = async (instanceId) => {
-  // 重置相关字段
-  form.publicIp = ''
-  publicIpOptions.value = []
+  if (!instanceId) {
+    resetInstanceInfo()
+    return
+  }
   
-  // 重置实例信息
-  Object.assign(instanceInfo, {
-    customerName: '',
-    addressType: '',
-    protectionBandwidth: 0,
-    businessBandwidth: 0,
-    allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0
-  })
-  
-  if (!instanceId) return
-  
+  loading.value = true
   try {
+    // 获取业务实例详情
     const res = await getBusinessInstanceDetail(instanceId)
     if (res.code === 200) {
       const data = res.data
+      instanceInfo.customerName = data.customerName
+      instanceInfo.protectionBandwidth = data.protectionBandwidth
+      instanceInfo.businessBandwidth = data.businessBandwidth
+      instanceInfo.allocatedProtectionBandwidth = data.allocatedProtectionBandwidth
+      instanceInfo.allocatedBusinessBandwidth = data.allocatedBusinessBandwidth
       
-      // 更新实例信息
-      Object.assign(instanceInfo, {
-        customerName: data.customerName,
-        addressType: data.addressType,
-        protectionBandwidth: data.protectionBandwidth,
-        businessBandwidth: data.businessBandwidth,
-        allocatedProtectionBandwidth: data.allocatedProtectionBandwidth || 0,
-        allocatedBusinessBandwidth: data.allocatedBusinessBandwidth || 0
-      })
+      // 设置七层防护状态
+      form.layer7Protection = data.layer7Protection || false
       
-      // 根据套餐类型设置七层防护状态
-      const packageName = data.packageName
-      form.layer7Protection = hasLayer7Protection(packageName)
-      
-      // 更新防护公网IP选项
-      publicIpOptions.value = (data.publicIpList || []).map(ip => ({
-        label: ip,
-        value: ip
-      }))
-      
-      // 如果是编辑模式，需要把当前IP也加入选项中
-      if (isEdit.value && props.editData.publicIp) {
-        const exists = publicIpOptions.value.some(item => item.value === props.editData.publicIp)
-        if (!exists) {
-          publicIpOptions.value.push({
-            label: props.editData.publicIp,
-            value: props.editData.publicIp
-          })
-        }
-      }
-      
-      // 设置默认值
-      if (form.protectionBandwidthType === 'dedicated') {
-        form.dedicatedProtectionBandwidth = Math.min(form.dedicatedProtectionBandwidth, remainingProtectionBandwidth.value)
-      }
-      
-      if (form.businessBandwidthType === 'dedicated') {
-        form.dedicatedBusinessBandwidth = Math.min(form.dedicatedBusinessBandwidth, remainingBusinessBandwidth.value)
-      }
+      // 获取IP组列表
+      await fetchIpGroups(instanceId)
     }
   } catch (error) {
     console.error('获取业务实例详情失败:', error)
+    ElMessage.error('获取业务实例详情失败')
+  } finally {
+    loading.value = false
   }
 }
 
-// 根据套餐类型判断是否支持七层防护
-const hasLayer7Protection = (packageName) => {
-  return packageName === 'WAF标准防护' || packageName === 'WAF增强防护'
+// 处理地址类型变更
+const handleAddressTypeChange = (type) => {
+  // 清空已选择的IP组
+  form.protectionIpGroupId = ''
+  resetIpGroupInfo()
+  
+  // 如果筛选后只有一个IP组，自动选择
+  if (filteredIpGroupOptions.value.length === 1) {
+    form.protectionIpGroupId = filteredIpGroupOptions.value[0].groupId
+    handleIpGroupChange(form.protectionIpGroupId)
+  }
+}
+
+// 获取IP组列表
+const fetchIpGroups = async (instanceId) => {
+  if (!instanceId) return
+  
+  try {
+    const res = await getInstanceIpGroups(instanceId)
+    if (res.code === 200) {
+      ipGroupOptions.value = res.data
+      
+      // 如果只有一个IP组，自动选择
+      if (ipGroupOptions.value.length === 1 && !form.protectionIpGroupId) {
+        form.protectionIpGroupId = ipGroupOptions.value[0].groupId
+        await handleIpGroupChange(form.protectionIpGroupId)
+      }
+    }
+  } catch (error) {
+    console.error('获取IP组列表失败:', error)
+    ElMessage.error('获取IP组列表失败')
+  }
+}
+
+// 处理IP组变更
+const handleIpGroupChange = async (groupId) => {
+  if (!groupId) {
+    resetIpGroupInfo()
+    return
+  }
+  
+  try {
+    // 先从选项中查找
+    let ipGroup = ipGroupOptions.value.find(item => item.groupId === groupId)
+    
+    // 如果没有找到，从服务器获取详情
+    if (!ipGroup) {
+      const res = await getIpGroupDetail(groupId)
+      if (res.code === 200) {
+        ipGroup = res.data
+      }
+    }
+    
+    if (ipGroup) {
+      selectedIpGroupInfo.addressType = ipGroup.addressType
+      selectedIpGroupInfo.ipCount = ipGroup.ipCount
+      selectedIpGroupInfo.ips = ipGroup.ips || []
+      
+      // 如果地址类型为"全部"，则更新为实际IP组的地址类型
+      if (form.addressType === 'all') {
+        form.addressType = ipGroup.addressType
+      }
+    }
+  } catch (error) {
+    console.error('获取IP组详情失败:', error)
+    ElMessage.error('获取IP组详情失败')
+  }
+}
+
+// 重置业务实例信息
+const resetInstanceInfo = () => {
+  instanceInfo.customerName = ''
+  instanceInfo.protectionBandwidth = 0
+  instanceInfo.businessBandwidth = 0
+  instanceInfo.allocatedProtectionBandwidth = 0
+  instanceInfo.allocatedBusinessBandwidth = 0
+  form.layer7Protection = false
+  
+  // 清空IP组选项
+  ipGroupOptions.value = []
+  form.protectionIpGroupId = ''
+  resetIpGroupInfo()
+}
+
+// 重置IP组信息
+const resetIpGroupInfo = () => {
+  selectedIpGroupInfo.addressType = ''
+  selectedIpGroupInfo.ipCount = 0
+  selectedIpGroupInfo.ips = []
 }
 
 // 处理防护带宽类型变更
 const handleProtectionBandwidthTypeChange = (type) => {
-  if (type === 'dedicated') {
-    form.dedicatedProtectionBandwidth = Math.min(100, remainingProtectionBandwidth.value) // 默认值
-  } else {
+  if (type === 'shared') {
     form.dedicatedProtectionBandwidth = 0
   }
 }
 
 // 处理业务带宽类型变更
 const handleBusinessBandwidthTypeChange = (type) => {
-  if (type === 'dedicated') {
-    form.dedicatedBusinessBandwidth = Math.min(50, remainingBusinessBandwidth.value) // 默认值
-  } else {
+  if (type === 'shared') {
     form.dedicatedBusinessBandwidth = 0
-  }
-}
-
-// 移除业务QPS类型变更处理
-
-// 初始化表单数据
-const initFormData = () => {
-  Object.assign(form, {
-    instanceId: '',
-    publicIp: '',
-    protectionBandwidthType: 'shared',
-    dedicatedProtectionBandwidth: 0,
-    businessBandwidthType: 'shared',
-    dedicatedBusinessBandwidth: 0,
-    layer7Protection: false // 默认值，将在加载业务实例详情时根据套餐类型更新
-  })
-  
-  Object.assign(instanceInfo, {
-    customerName: '',
-    addressType: '',
-    protectionBandwidth: 0,
-    businessBandwidth: 0,
-    allocatedProtectionBandwidth: 0,
-    allocatedBusinessBandwidth: 0
-  })
-  
-  publicIpOptions.value = []
-  
-  // 如果是编辑模式，填充表单数据
-  if (isEdit.value && props.editData) {
-    const editData = props.editData
-    
-    form.instanceId = editData.instanceId
-    form.publicIp = editData.publicIp
-    
-    // 防护带宽
-    form.protectionBandwidthType = editData.protectionBandwidthType || 'shared'
-    form.dedicatedProtectionBandwidth = editData.dedicatedProtectionBandwidth || 0
-    
-    // 业务带宽
-    form.businessBandwidthType = editData.businessBandwidthType || 'shared'
-    form.dedicatedBusinessBandwidth = editData.dedicatedBusinessBandwidth || 0
-    
-    // 移除业务QPS设置
-    
-    // 七层防护状态将在加载业务实例详情时根据套餐类型自动设置
-    
-    // 加载业务实例详情
-    handleInstanceChange(form.instanceId)
   }
 }
 
@@ -452,10 +476,10 @@ const handleSubmit = async () => {
     
     loading.value = true
     
-    // 构建提交数据
-    const submitData = {
+    // 构造提交数据
+    const data = {
       instanceId: form.instanceId,
-      publicIp: form.publicIp,
+      protectionIpGroupId: form.protectionIpGroupId,
       protectionBandwidthType: form.protectionBandwidthType,
       dedicatedProtectionBandwidth: form.protectionBandwidthType === 'dedicated' ? form.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: form.businessBandwidthType,
@@ -463,26 +487,26 @@ const handleSubmit = async () => {
       layer7Protection: form.layer7Protection
     }
     
-    // 如果是编辑模式，需要传入ID
-    if (isEdit.value && props.editData) {
-      submitData.id = props.editData.id
+    // 编辑模式下添加ID
+    if (isEdit.value) {
+      data.id = props.editData.id
     }
     
-    // 调用API
-    const res = isEdit.value
-      ? await updateIpProtection(submitData)
-      : await addIpProtection(submitData)
+    // 提交数据
+    const res = isEdit.value 
+      ? await updateIpProtection(data)
+      : await addIpProtection(data)
     
     if (res.code === 200) {
       ElMessage.success(isEdit.value ? '编辑成功' : '添加成功')
       emit('success')
-      dialogVisible.value = false
+      handleClose()
     } else {
       ElMessage.error(res.message || (isEdit.value ? '编辑失败' : '添加失败'))
     }
   } catch (error) {
-    console.error(isEdit.value ? '编辑IP防护对象失败:' : '添加IP防护对象失败:', error)
-    ElMessage.error('表单验证失败，请检查输入')
+    console.error('表单提交失败:', error)
+    ElMessage.error(isEdit.value ? '编辑失败' : '添加失败')
   } finally {
     loading.value = false
   }
@@ -491,26 +515,53 @@ const handleSubmit = async () => {
 // 关闭对话框
 const handleClose = () => {
   dialogVisible.value = false
+  formRef.value?.resetFields()
+  resetInstanceInfo()
+  resetIpGroupInfo()
 }
 
 // 监听对话框可见性变化
-watch(() => dialogVisible.value, (val) => {
+watch(() => props.visible, (val) => {
   if (val) {
-    fetchInstanceOptions()
-    initFormData()
+    init()
   }
 })
 </script>
 
 <style scoped>
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .form-tip {
   font-size: 12px;
   color: #909399;
   margin-top: 5px;
+}
+
+.ip-list-container {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.ip-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed #ebeef5;
+}
+
+.ip-item:last-child {
+  border-bottom: none;
+}
+
+.ip-cluster {
+  color: #909399;
+  font-size: 12px;
+}
+
+.no-ip {
+  color: #909399;
+  text-align: center;
+  padding: 10px 0;
 }
 </style> 

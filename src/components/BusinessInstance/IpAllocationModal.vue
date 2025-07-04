@@ -36,7 +36,15 @@
           <el-card class="ip-group-card">
             <template #header>
               <div class="card-header">
-                <span class="group-title">IP组 {{ groupIndex + 1 }}</span>
+                <span class="group-title">
+                  {{ group.displayName || `IP组 ${groupIndex + 1}` }}
+                </span>
+                <el-tag 
+                  :type="group.addressType === 'IPv4' ? 'success' : 'warning'"
+                  class="address-type-tag"
+                >
+                  {{ group.addressType }}
+                </el-tag>
                 <span class="group-id">ID: {{ group.groupId }}</span>
                 <span class="ip-count">{{ group.ips.length }} 个IP</span>
               </div>
@@ -188,6 +196,10 @@ const getAddressTypeLabel = (type) => {
 .group-title {
   font-weight: bold;
   font-size: 16px;
+}
+
+.address-type-tag {
+  margin-left: 10px;
 }
 
 .group-id {

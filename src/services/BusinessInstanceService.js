@@ -333,22 +333,24 @@ export default {
         throw new Error('逻辑集群组中没有可用的逻辑集群');
       }
       
-      // 3. 创建IP组
+      // 3. 创建IP组，将IPv4和IPv6分开成独立的IP组
       const protectionIpGroups = [];
       
-      // 4. 为每组分配IP
-      for (let i = 0; i < ipCount; i++) {
-        const group = {
+      // 根据地址类型创建不同的IP组
+      if (addressType === 'IPv4' || addressType === 'dual') {
+        // 创建IPv4组
+        const ipv4Group = {
           groupId: generateUUID(),
+          addressType: 'IPv4',
+          displayName: `IPv4组 #1（${clusterGroup.name}，${logicClusters.length * ipCount}个IP）`,
           ips: []
         };
         
-        // 5. 在每个逻辑集群上分配IP
-        for (const logicCluster of logicClusters) {
-          if (addressType === 'IPv4' || addressType === 'dual') {
-            // 分配IPv4
+        // 为每个逻辑集群分配IPv4
+        for (let i = 0; i < ipCount; i++) {
+          for (const logicCluster of logicClusters) {
             const ipv4 = this.generateRandomIp('IPv4');
-            group.ips.push({
+            ipv4Group.ips.push({
               ip: ipv4,
               type: 'IPv4',
               logicClusterId: logicCluster.id,
@@ -356,11 +358,25 @@ export default {
               status: 'active'
             });
           }
-          
-          if (addressType === 'IPv6' || addressType === 'dual') {
-            // 分配IPv6
+        }
+        
+        protectionIpGroups.push(ipv4Group);
+      }
+      
+      if (addressType === 'IPv6' || addressType === 'dual') {
+        // 创建IPv6组
+        const ipv6Group = {
+          groupId: generateUUID(),
+          addressType: 'IPv6',
+          displayName: `IPv6组 #1（${clusterGroup.name}，${logicClusters.length * ipCount}个IP）`,
+          ips: []
+        };
+        
+        // 为每个逻辑集群分配IPv6
+        for (let i = 0; i < ipCount; i++) {
+          for (const logicCluster of logicClusters) {
             const ipv6 = this.generateRandomIp('IPv6');
-            group.ips.push({
+            ipv6Group.ips.push({
               ip: ipv6,
               type: 'IPv6',
               logicClusterId: logicCluster.id,
@@ -370,7 +386,7 @@ export default {
           }
         }
         
-        protectionIpGroups.push(group);
+        protectionIpGroups.push(ipv6Group);
       }
       
       return protectionIpGroups;

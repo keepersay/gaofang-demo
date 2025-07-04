@@ -8,6 +8,13 @@
         <el-form-item label="业务实例">
           <el-input v-model="searchForm.instanceName" placeholder="请输入业务实例名称" clearable />
         </el-form-item>
+        <el-form-item label="地址类型">
+          <el-select v-model="searchForm.addressType" placeholder="请选择地址类型" clearable>
+            <el-option label="全部" value="" />
+            <el-option label="IPv4" value="IPv4" />
+            <el-option label="IPv6" value="IPv6" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -30,8 +37,18 @@
       <el-table-column type="selection" width="55" />
       <el-table-column prop="customerName" label="客户名称" min-width="150" />
       <el-table-column prop="instanceName" label="业务实例" min-width="120" />
-      <el-table-column prop="addressType" label="地址类型" width="100" />
-      <el-table-column prop="publicIp" label="防护公网IP" min-width="180" />
+      <el-table-column label="IP组" min-width="250">
+        <template #default="{ row }">
+          {{ row.protectionIpGroupInfo }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="addressType" label="地址类型" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.addressType === 'IPv4' ? 'success' : 'warning'">
+            {{ row.addressType }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="防护带宽(Mbps)" width="150">
         <template #default="{ row }">
           {{ getBandwidthDisplay(row.protectionBandwidthType, row.dedicatedProtectionBandwidth, row.instanceProtectionBandwidth) }}
@@ -42,7 +59,6 @@
           {{ getBandwidthDisplay(row.businessBandwidthType, row.dedicatedBusinessBandwidth, row.instanceBusinessBandwidth) }}
         </template>
       </el-table-column>
-      <!-- 移除业务QPS列 -->
       <el-table-column label="七层防护" width="100">
         <template #default="{ row }">
           <el-tag :type="row.layer7Protection ? 'success' : 'info'">
@@ -172,6 +188,7 @@ const currentEditData = ref(null)
 const searchForm = reactive({
   publicIp: '',
   instanceName: '',
+  addressType: '',
   status: ''
 })
 
@@ -236,6 +253,7 @@ const handleSearch = () => {
 const resetSearch = () => {
   searchForm.publicIp = ''
   searchForm.instanceName = ''
+  searchForm.addressType = ''
   handleSearch()
 }
 
@@ -250,8 +268,8 @@ const handleSizeChange = (size) => {
   fetchIpProtectionList()
 }
 
-const handleCurrentChange = (page) => {
-  pagination.pageNum = page
+const handleCurrentChange = (current) => {
+  pagination.pageNum = current
   fetchIpProtectionList()
 }
 
@@ -259,6 +277,95 @@ const handleCurrentChange = (page) => {
 const handleAdd = () => {
   currentEditData.value = null
   modalVisible.value = true
+}
+
+// 编辑IP防护对象
+const handleEdit = (row) => {
+  currentEditData.value = { ...row }
+  modalVisible.value = true
+}
+
+// 删除IP防护对象
+const handleDelete = (row) => {
+  ElMessageBox.confirm('确认删除此IP防护对象吗？', '确认删除', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await deleteIpProtection(row.id)
+      if (res.code === 200) {
+        ElMessage.success('删除成功')
+        fetchIpProtectionList()
+      } else {
+        ElMessage.error(res.message || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除IP防护对象失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {})
+}
+
+// 批量删除IP防护对象
+const handleBatchDelete = () => {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请选择要删除的记录')
+    return
+  }
+  
+  const ids = selectedRows.value.map(row => row.id)
+  
+  ElMessageBox.confirm(`确认删除选中的 ${ids.length} 条记录吗？`, '确认删除', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await batchDeleteIpProtection(ids)
+      if (res.code === 200) {
+        ElMessage.success('批量删除成功')
+        fetchIpProtectionList()
+      } else {
+        ElMessage.error(res.message || '批量删除失败')
+      }
+    } catch (error) {
+      console.error('批量删除IP防护对象失败:', error)
+      ElMessage.error('批量删除失败')
+    }
+  }).catch(() => {})
+}
+
+// 启用IP防护对象
+const handleEnable = async (row) => {
+  try {
+    const res = await enableIpProtection(row.id)
+    if (res.code === 200) {
+      ElMessage.success('启用成功')
+      fetchIpProtectionList()
+    } else {
+      ElMessage.error(res.message || '启用失败')
+    }
+  } catch (error) {
+    console.error('启用IP防护对象失败:', error)
+    ElMessage.error('启用失败')
+  }
+}
+
+// 禁用IP防护对象
+const handleDisable = async (row) => {
+  try {
+    const res = await disableIpProtection(row.id)
+    if (res.code === 200) {
+      ElMessage.success('禁用成功')
+      fetchIpProtectionList()
+    } else {
+      ElMessage.error(res.message || '禁用失败')
+    }
+  } catch (error) {
+    console.error('禁用IP防护对象失败:', error)
+    ElMessage.error('禁用失败')
+  }
 }
 
 // 配置IP防护对象
@@ -273,163 +380,58 @@ const handleSecurityConfig = (row) => {
   securityDrawerVisible.value = true
 }
 
-// 启用IP防护对象
-const handleEnable = (row) => {
-  ElMessageBox.confirm(
-    `确定要启用IP防护对象 ${row.publicIp} 吗？`,
-    '确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'info',
-    }
-  ).then(async () => {
-    try {
-      const res = await enableIpProtection(row.id)
-      if (res.code === 200) {
-        ElMessage.success(`启用IP防护对象 ${row.publicIp} 成功`)
-        fetchIpProtectionList()
-      } else {
-        ElMessage.error(res.message || '启用失败')
-      }
-    } catch (error) {
-      console.error('启用IP防护对象失败:', error)
-      ElMessage.error('启用失败')
-    }
-  }).catch(() => {})
-}
-
-// 禁用IP防护对象
-const handleDisable = (row) => {
-  ElMessageBox.confirm(
-    `确定要禁用IP防护对象 ${row.publicIp} 吗？`,
-    '确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'info',
-    }
-  ).then(async () => {
-    try {
-      const res = await disableIpProtection(row.id)
-      if (res.code === 200) {
-        ElMessage.success(`禁用IP防护对象 ${row.publicIp} 成功`)
-        fetchIpProtectionList()
-      } else {
-        ElMessage.error(res.message || '禁用失败')
-      }
-    } catch (error) {
-      console.error('禁用IP防护对象失败:', error)
-      ElMessage.error('禁用失败')
-    }
-  }).catch(() => {})
-}
-
-// 删除IP防护对象
-const handleDelete = (row) => {
-  ElMessageBox.confirm(
-    `确定要删除IP防护对象 ${row.publicIp} 吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(async () => {
-    try {
-      const res = await deleteIpProtection(row.id)
-      if (res.code === 200) {
-        ElMessage.success(`删除IP防护对象 ${row.publicIp} 成功`)
-        fetchIpProtectionList()
-      } else {
-        ElMessage.error(res.message || '删除失败')
-      }
-    } catch (error) {
-      console.error('删除IP防护对象失败:', error)
-      ElMessage.error('删除失败')
-    }
-  }).catch(() => {})
-}
-
-// 批量删除
-const handleBatchDelete = () => {
-  if (selectedRows.value.length === 0) {
-    ElMessage.warning('请至少选择一条记录')
-    return
-  }
-  
-  ElMessageBox.confirm(
-    `确定要删除选中的 ${selectedRows.value.length} 条记录吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(async () => {
-    try {
-      const ids = selectedRows.value.map(item => item.id)
-      const res = await batchDeleteIpProtection(ids)
-      if (res.code === 200) {
-        ElMessage.success(`批量删除 ${selectedRows.value.length} 条记录成功`)
-        fetchIpProtectionList()
-      } else {
-        ElMessage.error(res.message || '批量删除失败')
-      }
-    } catch (error) {
-      console.error('批量删除IP防护对象失败:', error)
-      ElMessage.error('批量删除失败')
-    }
-  }).catch(() => {})
-}
-
-// 处理模态框成功
+// 表单提交成功回调
 const handleModalSuccess = () => {
   fetchIpProtectionList()
 }
 
-// 处理配置成功
+// 配置成功回调
 const handleConfigSuccess = () => {
   fetchIpProtectionList()
 }
 
-// 处理安全防护配置成功
+// 安全防护配置成功回调
 const handleSecurityConfigSuccess = () => {
   fetchIpProtectionList()
 }
 
-// 格式化带宽显示
-const getBandwidthDisplay = (type, dedicated, total) => {
-  if (type === 'shared') {
-    return `共享(${total})`
+// 获取带宽显示
+const getBandwidthDisplay = (type, dedicatedValue, instanceValue) => {
+  if (type === 'dedicated') {
+    return `${dedicatedValue} Mbps (独享)`
   } else {
-    return `${dedicated}/${total}`
+    return `${instanceValue} Mbps (共享)`
   }
 }
 
-// 工具函数 - 状态
+// 获取状态类型
 const getStatusType = (status) => {
-  const map = {
+  const types = {
     active: 'success',
     inactive: 'info'
   }
-  return map[status] || 'info'
+  return types[status] || 'info'
 }
 
+// 获取状态标签
 const getStatusLabel = (status) => {
-  const map = {
+  const labels = {
     active: '已启用',
     inactive: '已禁用'
   }
-  return map[status] || status
+  return labels[status] || '未知'
 }
 
-// 在<script setup>中添加：
+// 状态过滤选项
 const statusFilters = [
   { text: '已启用', value: 'active' },
   { text: '已禁用', value: 'inactive' }
 ]
-const filterStatus = (value, row) => row.status === value
+
+// 状态过滤方法
+const filterStatus = (value, row) => {
+  return row.status === value
+}
 
 // 初始化
 onMounted(() => {
@@ -440,39 +442,26 @@ onMounted(() => {
 
 <style scoped>
 .ip-protection {
-  width: 100%;
+  padding: 20px;
 }
 
 .search-area {
   margin-bottom: 20px;
-  background-color: #f5f7fa;
-  padding: 15px;
+  background-color: #fff;
+  padding: 20px;
   border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .table-operations {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: flex-start;
-  gap: 10px;
 }
 
 .pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-}
-
-.text-gray-400 {
-  color: #9ca3af;
-}
-
-.py-10 {
-  padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
-}
-
-.text-center {
-  text-align: center;
 }
 </style>

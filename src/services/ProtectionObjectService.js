@@ -73,6 +73,22 @@ export function updateIpProtectionConfig(data) {
   })
 }
 
+// 获取业务实例的IP组列表
+export function getInstanceIpGroups(instanceId) {
+  return request({
+    url: `/api/business-instance/${instanceId}/ip-groups`,
+    method: 'get'
+  })
+}
+
+// 获取IP组详情
+export function getIpGroupDetail(groupId) {
+  return request({
+    url: `/api/ip-group/${groupId}/detail`,
+    method: 'get'
+  })
+}
+
 // 域名防护对象相关接口
 export function getDomainProtectionList(params) {
   // 支持的参数：customerName, instanceName, publicIp, domain, status, pageNum, pageSize
