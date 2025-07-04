@@ -98,6 +98,79 @@ for (let i = 0; i < 30; i++) {
   })
 }
 
+// 生成随机IP地址
+function generateRandomIp(type) {
+  if (type === 'IPv4') {
+    // 生成随机IPv4
+    return `203.0.113.${Math.floor(Math.random() * 254) + 1}`;
+  } else {
+    // 生成随机IPv6
+    const segments = [];
+    for (let i = 0; i < 8; i++) {
+      segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
+    }
+    return segments.join(':');
+  }
+}
+
+// 生成IP组数据
+function generateProtectionIpGroups(instance, logicClusterMap) {
+  // 如果已经有IP组数据，直接返回
+  if (instance.protectionIpGroups && instance.protectionIpGroups.length > 0) {
+    return instance.protectionIpGroups;
+  }
+  
+  const protectionIpGroups = [];
+  const ipCount = instance.protectionIpCount || 3;
+  const addressType = instance.addressType || 'IPv4';
+  
+  // 模拟逻辑集群数据
+  const logicClusters = [
+    { id: 'LC202407250001', name: '华东-电信-高级版' },
+    { id: 'LC202407250002', name: '华南-联通-基础版' },
+    { id: 'LC202407250003', name: '北京-电信-标准版' }
+  ];
+  
+  // 为每组分配IP
+  for (let i = 0; i < ipCount; i++) {
+    const group = {
+      groupId: generateUUID(),
+      ips: []
+    };
+    
+    // 在每个逻辑集群上分配IP
+    for (const logicCluster of logicClusters) {
+      if (addressType === 'IPv4' || addressType === 'dual') {
+        // 分配IPv4
+        const ipv4 = generateRandomIp('IPv4');
+        group.ips.push({
+          ip: ipv4,
+          type: 'IPv4',
+          logicClusterId: logicCluster.id,
+          logicClusterName: logicCluster.name,
+          status: 'active'
+        });
+      }
+      
+      if (addressType === 'IPv6' || addressType === 'dual') {
+        // 分配IPv6
+        const ipv6 = generateRandomIp('IPv6');
+        group.ips.push({
+          ip: ipv6,
+          type: 'IPv6',
+          logicClusterId: logicCluster.id,
+          logicClusterName: logicCluster.name,
+          status: 'active'
+        });
+      }
+    }
+    
+    protectionIpGroups.push(group);
+  }
+  
+  return protectionIpGroups;
+}
+
 export default {
   businessInstances,
   
@@ -149,7 +222,17 @@ export default {
   
   // 获取单个业务实例详情
   getBusinessInstance(id) {
-    return businessInstances.find(item => item.instanceId === id) || null
+    const instance = businessInstances.find(item => item.instanceId === id);
+    
+    if (instance) {
+      // 如果没有IP组数据，生成模拟数据
+      if (!instance.protectionIpGroups || instance.protectionIpGroups.length === 0) {
+        instance.protectionIpGroups = generateProtectionIpGroups(instance);
+      }
+      return instance;
+    }
+    
+    return null;
   },
   
   // 创建业务实例
@@ -213,11 +296,20 @@ export default {
     return null
   },
   
-  // 分配防护IP组
-  allocateProtectionIpGroups(id, ipGroups) {
+  // 分配防护IP
+  allocateProtectionIps(id, ips) {
     const instance = businessInstances.find(item => item.instanceId === id)
     if (instance) {
-      instance.protectionIpGroups = ipGroups
+      // 如果传入了IPs参数，则使用传入的IP
+      if (ips && ips.length > 0) {
+        instance.protectionIps = ips
+      }
+      
+      // 如果没有IP组数据，生成模拟数据
+      if (!instance.protectionIpGroups || instance.protectionIpGroups.length === 0) {
+        instance.protectionIpGroups = generateProtectionIpGroups(instance);
+      }
+      
       instance.updateTime = new Date().toISOString()
       return instance
     }

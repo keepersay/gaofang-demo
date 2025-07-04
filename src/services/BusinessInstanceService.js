@@ -1,6 +1,7 @@
 import businessInstanceData from '../mock/data/businessInstance'
 import request from '@/utils/request'
 import ClusterService from './ClusterService'
+import { generateUUID } from '../utils/common'
 
 // 业务实例服务
 export default {
@@ -45,27 +46,127 @@ export default {
 
   // 创建业务实例
   async createBusinessInstance(data) {
-    return {
-      code: 200,
-      data: businessInstanceData.createBusinessInstance(data),
-      message: 'success'
+    // 如果选择了逻辑集群组，自动分配IP组
+    if (data.clusterGroupId) {
+      try {
+        // 检查资源充足性
+        const resourceCheck = await this.checkClusterGroupIpResource(
+          data.clusterGroupId,
+          data.addressType,
+          data.protectionIpCount
+        );
+        
+        if (!resourceCheck.code === 200 || !resourceCheck.data.sufficient) {
+          return {
+            code: 400,
+            message: '逻辑集群组资源不足，无法满足IP分配需求'
+          };
+        }
+        
+        // 创建业务实例
+        const instance = businessInstanceData.createBusinessInstance(data);
+        
+        // 自动分配IP组
+        const ipGroups = await this.generateProtectionIpGroups(
+          data.clusterGroupId,
+          data.addressType,
+          data.protectionIpCount
+        );
+        
+        // 更新业务实例的防护IP组
+        instance.protectionIpGroups = ipGroups;
+        businessInstanceData.updateBusinessInstance(instance.instanceId, { protectionIpGroups: ipGroups });
+        
+        return {
+          code: 200,
+          data: instance,
+          message: 'success'
+        };
+      } catch (error) {
+        console.error('创建业务实例失败:', error);
+        return {
+          code: 500,
+          message: '创建业务实例失败: ' + error.message
+        };
+      }
+    } else {
+      // 不需要分配IP的情况
+      return {
+        code: 200,
+        data: businessInstanceData.createBusinessInstance(data),
+        message: 'success'
+      };
     }
   },
 
   // 更新业务实例
   async updateBusinessInstance(id, data) {
-    const updatedData = businessInstanceData.updateBusinessInstance(id, data)
-    
-    if (updatedData) {
-      return {
-        code: 200,
-        data: updatedData,
-        message: 'success'
-      }
-    } else {
+    const oldInstance = businessInstanceData.getBusinessInstance(id);
+    if (!oldInstance) {
       return {
         code: 404,
         message: '业务实例不存在'
+      };
+    }
+    
+    // 检查是否修改了逻辑集群组
+    if (data.clusterGroupId && data.clusterGroupId !== oldInstance.clusterGroupId) {
+      try {
+        // 检查资源充足性
+        const resourceCheck = await this.checkClusterGroupIpResource(
+          data.clusterGroupId,
+          data.addressType || oldInstance.addressType,
+          data.protectionIpCount || oldInstance.protectionIpCount
+        );
+        
+        if (!resourceCheck.code === 200 || !resourceCheck.data.sufficient) {
+          return {
+            code: 400,
+            message: '新逻辑集群组资源不足，无法满足IP分配需求'
+          };
+        }
+        
+        // 先更新基本信息
+        const updatedData = businessInstanceData.updateBusinessInstance(id, data);
+        
+        // 自动分配新的IP组
+        const ipGroups = await this.generateProtectionIpGroups(
+          data.clusterGroupId,
+          data.addressType || oldInstance.addressType,
+          data.protectionIpCount || oldInstance.protectionIpCount
+        );
+        
+        // 更新业务实例的防护IP组
+        updatedData.protectionIpGroups = ipGroups;
+        businessInstanceData.updateBusinessInstance(id, { protectionIpGroups: ipGroups });
+        
+        return {
+          code: 200,
+          data: updatedData,
+          message: 'success'
+        };
+      } catch (error) {
+        console.error('更新业务实例失败:', error);
+        return {
+          code: 500,
+          message: '更新业务实例失败: ' + error.message
+        };
+      }
+    } else {
+      // 不需要重新分配IP的情况
+      const updatedData = businessInstanceData.updateBusinessInstance(id, data);
+      
+      if (updatedData) {
+        return {
+          code: 200,
+          data: updatedData,
+          message: 'success'
+        };
+      } else {
+        return {
+          code: 404,
+          message: '业务实例不存在'
+        };
       }
     }
   },
@@ -125,29 +226,21 @@ export default {
 
   // 分配防护IP
   async allocateProtectionIps(id, ips) {
-    // 检查资源充足性
-    const resourceCheck = this.checkResourceSufficiency(id, ips);
-    if (!resourceCheck.success) {
-      return {
-        code: 400,
-        message: '检查资源充足性失败: ' + resourceCheck.message
-      }
-    }
-    
-    const data = businessInstanceData.allocateProtectionIps(id, ips)
-    
-    if (data) {
-      return {
-        code: 200,
-        data,
-        message: '分配成功'
-      }
-    } else {
+    // 这个方法现在只用于展示已分配的IP组，不再支持手动分配IP
+    // 获取实例信息
+    const instance = businessInstanceData.getBusinessInstance(id);
+    if (!instance) {
       return {
         code: 404,
         message: '业务实例不存在'
-      }
+      };
     }
+    
+    return {
+      code: 200,
+      data: instance,
+      message: '获取防护IP组成功'
+    };
   },
 
   // 检查资源充足性
@@ -162,16 +255,143 @@ export default {
 
   // 检查逻辑集群组IP资源充足性
   async checkClusterGroupIpResource(clusterGroupId, addressType, ipCount) {
-    // 这里应该实现真正的逻辑集群组IP资源充足性检查逻辑
-    // 为了解决当前问题，我们暂时返回成功
-    return {
-      code: 200,
-      data: {
-        sufficient: true,
-        availableCount: ipCount + 10, // 假设有足够的可用IP
-        requiredCount: ipCount
-      },
-      message: 'success'
+    try {
+      // 1. 获取逻辑集群组详情
+      const clusterGroup = await ClusterService.getClusterGroupById(clusterGroupId);
+      if (!clusterGroup) {
+        return {
+          code: 404,
+          message: '逻辑集群组不存在'
+        };
+      }
+      
+      // 2. 获取该集群组下所有逻辑集群
+      const logicClusterIds = [...(clusterGroup.primaryClusters || []), ...(clusterGroup.standbyClusters || [])];
+      
+      if (logicClusterIds.length === 0) {
+        return {
+          code: 400,
+          message: '逻辑集群组中没有逻辑集群'
+        };
+      }
+      
+      // 3. 检查每个逻辑集群的IP资源是否足够
+      // 这里模拟检查，实际项目中应该调用API获取每个逻辑集群的可用IP数量
+      // 为了简化，我们假设每个逻辑集群都有足够的IP
+      
+      // 计算每个逻辑集群需要的IP数量
+      const requiredIpCount = ipCount;
+      
+      // 模拟可用IP数量
+      const availableIpCount = Math.max(ipCount + 10, 20); // 假设有足够的IP
+      
+      return {
+        code: 200,
+        data: {
+          sufficient: true,
+          availableCount: availableIpCount,
+          requiredCount: requiredIpCount,
+          clusterGroup: clusterGroup
+        },
+        message: 'success'
+      };
+    } catch (error) {
+      console.error('检查逻辑集群组IP资源充足性失败:', error);
+      return {
+        code: 500,
+        message: '检查逻辑集群组IP资源充足性失败: ' + error.message
+      };
+    }
+  },
+  
+  // 生成防护IP组
+  async generateProtectionIpGroups(clusterGroupId, addressType, ipCount) {
+    try {
+      // 1. 获取逻辑集群组详情
+      const clusterGroup = await ClusterService.getClusterGroupById(clusterGroupId);
+      if (!clusterGroup) {
+        throw new Error('逻辑集群组不存在');
+      }
+      
+      // 2. 获取该集群组下所有逻辑集群
+      const logicClusterIds = [...(clusterGroup.primaryClusters || []), ...(clusterGroup.standbyClusters || [])];
+      const logicClusters = [];
+      
+      // 获取每个逻辑集群的详情
+      for (const clusterId of logicClusterIds) {
+        try {
+          const cluster = await ClusterService.getClusterById(clusterId);
+          if (cluster) {
+            logicClusters.push(cluster);
+          }
+        } catch (error) {
+          console.error(`获取逻辑集群 ${clusterId} 详情失败:`, error);
+        }
+      }
+      
+      if (logicClusters.length === 0) {
+        throw new Error('逻辑集群组中没有可用的逻辑集群');
+      }
+      
+      // 3. 创建IP组
+      const protectionIpGroups = [];
+      
+      // 4. 为每组分配IP
+      for (let i = 0; i < ipCount; i++) {
+        const group = {
+          groupId: generateUUID(),
+          ips: []
+        };
+        
+        // 5. 在每个逻辑集群上分配IP
+        for (const logicCluster of logicClusters) {
+          if (addressType === 'IPv4' || addressType === 'dual') {
+            // 分配IPv4
+            const ipv4 = this.generateRandomIp('IPv4');
+            group.ips.push({
+              ip: ipv4,
+              type: 'IPv4',
+              logicClusterId: logicCluster.id,
+              logicClusterName: logicCluster.name || logicCluster.displayName,
+              status: 'active'
+            });
+          }
+          
+          if (addressType === 'IPv6' || addressType === 'dual') {
+            // 分配IPv6
+            const ipv6 = this.generateRandomIp('IPv6');
+            group.ips.push({
+              ip: ipv6,
+              type: 'IPv6',
+              logicClusterId: logicCluster.id,
+              logicClusterName: logicCluster.name || logicCluster.displayName,
+              status: 'active'
+            });
+          }
+        }
+        
+        protectionIpGroups.push(group);
+      }
+      
+      return protectionIpGroups;
+    } catch (error) {
+      console.error('生成防护IP组失败:', error);
+      throw error;
+    }
+  },
+  
+  // 生成随机IP地址
+  generateRandomIp(type) {
+    if (type === 'IPv4') {
+      // 生成随机IPv4
+      return `203.0.113.${Math.floor(Math.random() * 254) + 1}`;
+    } else {
+      // 生成随机IPv6
+      const segments = [];
+      for (let i = 0; i < 8; i++) {
+        segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
+      }
+      return segments.join(':');
     }
   },
 
