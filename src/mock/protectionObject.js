@@ -402,6 +402,44 @@ Mock.mock(/\/api\/ip-group\/.*\/detail/, 'get', (options) => {
   };
 });
 
+// 获取IP防护对象详情
+Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/ip\/detail\/(\d+)/)[1])
+  console.log(`获取IP防护对象详情，ID: ${id}`);
+  
+  // 查找对象
+  const item = ipProtectionData.find(item => item.id === id)
+  if (!item) {
+    console.error(`IP防护对象不存在，ID: ${id}`);
+    return {
+      code: 404,
+      message: 'IP防护对象不存在'
+    }
+  }
+  
+  console.log(`找到IP防护对象，ID: ${id}，业务实例ID: ${item.instanceId}`);
+  
+  // 确保实例ID为BI10002（为了测试）
+  const instanceId = 'BI10002';
+  
+  // 添加instanceId字段，用于获取防护IP组列表
+  const detailData = {
+    ...item,
+    // 确保有instanceId字段
+    instanceId: instanceId,
+    // 将原来的publicIp字段改为protectionIpGroupId
+    protectionIpGroupId: item.protectionIpGroupId || item.publicIp
+  }
+  
+  console.log(`返回IP防护对象详情，业务实例ID: ${detailData.instanceId}`);
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: detailData
+  }
+})
+
 // 添加IP防护对象
 Mock.mock('/api/protection/ip/add', 'post', (options) => {
   const body = JSON.parse(options.body)
@@ -541,33 +579,6 @@ Mock.mock(/\/api\/protection\/ip\/disable\/\d+/, 'put', (options) => {
     code: 200,
     message: 'success',
     data: ipProtectionData[index]
-  }
-})
-
-// 获取IP防护对象详情
-Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
-  const id = parseInt(options.url.match(/\/api\/protection\/ip\/detail\/(\d+)/)[1])
-  
-  // 查找对象
-  const item = ipProtectionData.find(item => item.id === id)
-  if (!item) {
-    return {
-      code: 404,
-      message: 'IP防护对象不存在'
-    }
-  }
-  
-  // 添加instanceId字段，用于获取防护IP组列表
-  const detailData = {
-    ...item,
-    // 将原来的publicIp字段改为protectionIpGroupId
-    protectionIpGroupId: item.protectionIpGroupId || item.publicIp
-  }
-  
-  return {
-    code: 200,
-    message: 'success',
-    data: detailData
   }
 })
 
@@ -786,17 +797,84 @@ if (mock) {
 if (mock) {
   Mock.mock(new RegExp('/api/business-instance/\\w+/allocated-ip-groups'), 'get', (options) => {
     const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/allocated-ip-groups/)[1]
+    console.log('获取业务实例已分配的防护IP组，业务实例ID:', instanceId);
+    
+    // 如果是BI10002，直接返回固定的IP组数据
+    if (instanceId === 'BI10002') {
+      console.log('返回BI10002的固定IP组数据');
+      const fixedGroups = [
+        {
+          groupId: '8f7e6d5c-4b3a-2c1d-0e9f-8a7b6c5d4e3f',
+          addressType: 'IPv4',
+          displayName: 'IPv4防护组 #1（业务实例-特殊测试）',
+          ips: [
+            {
+              ip: '203.0.113.10',
+              type: 'IPv4',
+              logicClusterId: 'LC202407250001',
+              logicClusterName: '华东-电信-高级版',
+              status: 'active'
+            }
+          ]
+        },
+        {
+          groupId: '1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p',
+          addressType: 'IPv6',
+          displayName: 'IPv6防护组 #1（业务实例-特殊测试）',
+          ips: [
+            {
+              ip: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+              type: 'IPv6',
+              logicClusterId: 'LC202407250001',
+              logicClusterName: '华东-电信-高级版',
+              status: 'active'
+            }
+          ]
+        }
+      ];
+      
+      return {
+        code: 200,
+        data: fixedGroups,
+        message: 'success'
+      };
+    }
     
     // 获取业务实例
     const instance = businessInstanceData.getBusinessInstance(instanceId)
     if (!instance) {
+      console.error(`业务实例不存在: ${instanceId}`);
       return {
         code: 404,
         message: '业务实例不存在'
       }
     }
     
+    // 确保有防护IP组数据
+    if (!instance.protectionIpGroups || instance.protectionIpGroups.length === 0) {
+      // 生成一些默认的IP组数据
+      const defaultGroups = [];
+      const addressTypes = ['IPv4', 'IPv6'];
+      
+      addressTypes.forEach((type, index) => {
+        defaultGroups.push({
+          groupId: generateUUID(),
+          addressType: type,
+          displayName: `${type}防护组 #${index + 1}（${instance.instanceName}）`,
+          ips: []
+        });
+      });
+      
+      console.log(`为业务实例 ${instanceId} 生成了默认IP组数据`);
+      return {
+        code: 200,
+        data: defaultGroups,
+        message: 'success'
+      }
+    }
+    
     // 返回已分配的IP组数据
+    console.log(`成功获取业务实例 ${instanceId} 的IP组数据，共 ${instance.protectionIpGroups.length} 条`);
     return {
       code: 200,
       data: instance.protectionIpGroups || [],

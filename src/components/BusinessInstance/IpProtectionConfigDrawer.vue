@@ -34,8 +34,8 @@
               
               <el-form-item label="防护带宽" prop="protectionBandwidthType">
                 <el-radio-group v-model="basicForm.protectionBandwidthType" @change="handleProtectionBandwidthTypeChange">
-                  <el-radio :label="'shared'">共享</el-radio>
-                  <el-radio :label="'dedicated'">独享</el-radio>
+                  <el-radio value="shared">共享</el-radio>
+                  <el-radio value="dedicated">独享</el-radio>
                 </el-radio-group>
               </el-form-item>
               
@@ -58,8 +58,8 @@
               
               <el-form-item label="业务带宽" prop="businessBandwidthType">
                 <el-radio-group v-model="basicForm.businessBandwidthType" @change="handleBusinessBandwidthTypeChange">
-                  <el-radio :label="'shared'">共享</el-radio>
-                  <el-radio :label="'dedicated'">独享</el-radio>
+                  <el-radio value="shared">共享</el-radio>
+                  <el-radio value="dedicated">独享</el-radio>
                 </el-radio-group>
               </el-form-item>
               
@@ -471,6 +471,7 @@ const fetchProtectionDetail = async () => {
       
       // 获取业务实例已分配的防护IP组
       if (data.instanceId) {
+        console.log('获取业务实例的防护IP组，业务实例ID:', data.instanceId);
         try {
           const ipGroupsRes = await getInstanceAllocatedIpGroups(data.instanceId)
           if (ipGroupsRes.code === 200) {
@@ -485,13 +486,20 @@ const fetchProtectionDetail = async () => {
               // 如果当前选中的IP组不在列表中，添加一个临时选项
               protectionIpGroupOptions.value.push({
                 groupId: data.protectionIpGroupId,
-                displayName: `IP组 #${protectionIpGroupOptions.value.length + 1}`
+                displayName: `防护IP组 #${data.protectionIpGroupId.slice(-5)}`
               })
             }
+          } else {
+            console.error('获取防护IP组列表失败:', ipGroupsRes.message);
+            ElMessage.error(ipGroupsRes.message || '获取防护IP组列表失败');
           }
         } catch (error) {
           console.error('获取防护IP组列表失败:', error)
+          ElMessage.error('获取防护IP组列表失败: ' + (error.message || error))
         }
+      } else {
+        console.error('业务实例ID不存在');
+        ElMessage.error('业务实例ID不存在');
       }
       
       // 填充负载均衡配置
@@ -512,7 +520,7 @@ const fetchProtectionDetail = async () => {
     }
   } catch (error) {
     console.error('获取IP防护对象详情失败:', error)
-    ElMessage.error('获取IP防护对象详情失败')
+    ElMessage.error('获取IP防护对象详情失败: ' + (error.message || error))
   } finally {
     loading.value = false
   }

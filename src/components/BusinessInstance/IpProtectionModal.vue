@@ -35,9 +35,9 @@
       
       <el-form-item label="地址类型" prop="addressType">
         <el-radio-group v-model="form.addressType" @change="handleAddressTypeChange">
-          <el-radio label="all">全部</el-radio>
-          <el-radio label="IPv4">IPv4</el-radio>
-          <el-radio label="IPv6">IPv6</el-radio>
+          <el-radio value="all">全部</el-radio>
+          <el-radio value="IPv4">IPv4</el-radio>
+          <el-radio value="IPv6">IPv6</el-radio>
         </el-radio-group>
       </el-form-item>
       
@@ -72,8 +72,8 @@
       
       <el-form-item label="防护带宽" prop="protectionBandwidthType">
         <el-radio-group v-model="form.protectionBandwidthType" @change="handleProtectionBandwidthTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
+          <el-radio value="shared">共享</el-radio>
+          <el-radio value="dedicated">独享</el-radio>
         </el-radio-group>
       </el-form-item>
       
@@ -96,8 +96,8 @@
       
       <el-form-item label="业务带宽" prop="businessBandwidthType">
         <el-radio-group v-model="form.businessBandwidthType" @change="handleBusinessBandwidthTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
+          <el-radio value="shared">共享</el-radio>
+          <el-radio value="dedicated">独享</el-radio>
         </el-radio-group>
       </el-form-item>
       

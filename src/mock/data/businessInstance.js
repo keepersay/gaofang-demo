@@ -98,6 +98,72 @@ for (let i = 0; i < 30; i++) {
   })
 }
 
+// 确保存在特定ID的业务实例
+function ensureRequiredInstances() {
+  // 检查是否存在ID为BI10002的业务实例
+  const hasBI10002 = businessInstances.some(instance => instance.instanceId === 'BI10002');
+  
+  if (!hasBI10002) {
+    console.log('添加ID为BI10002的业务实例');
+    // 添加一个ID为BI10002的业务实例
+    businessInstances.push({
+      instanceId: 'BI10002',
+      instanceName: '业务实例-特殊测试',
+      customerId: 'CUST1002',
+      customerName: '测试科技有限公司',
+      orderId: 'ORD12345',
+      packageId: 'PKG123',
+      packageName: 'DDOS防护',
+      clusterType: 'standby',
+      addressType: 'IPv4',
+      regionId: 'cn-beijing',
+      bandwidth: 1000,
+      businessBandwidth: 500,
+      qps: 10000,
+      protectionIpCount: 3,
+      protectionIpGroups: [
+        {
+          groupId: generateUUID(),
+          addressType: 'IPv4',
+          displayName: 'IPv4防护组 #1（业务实例-特殊测试）',
+          ips: [
+            {
+              ip: '203.0.113.10',
+              type: 'IPv4',
+              logicClusterId: 'LC202407250001',
+              logicClusterName: '华东-电信-高级版',
+              status: 'active'
+            }
+          ]
+        },
+        {
+          groupId: generateUUID(),
+          addressType: 'IPv6',
+          displayName: 'IPv6防护组 #1（业务实例-特殊测试）',
+          ips: [
+            {
+              ip: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+              type: 'IPv6',
+              logicClusterId: 'LC202407250001',
+              logicClusterName: '华东-电信-高级版',
+              status: 'active'
+            }
+          ]
+        }
+      ],
+      domainCount: 10,
+      portCount: 20,
+      status: 'active',
+      createTime: '2023-01-01 00:00:00',
+      updateTime: '2023-01-01 00:00:00',
+      clusterGroupId: 'LCG7503281108201961885'
+    });
+  }
+}
+
+// 调用确保函数
+ensureRequiredInstances();
+
 // 生成随机IP地址
 function generateRandomIp(type) {
   if (type === 'IPv4') {
@@ -236,9 +302,20 @@ export default {
   
   // 获取单个业务实例详情
   getBusinessInstance(id) {
-    const instance = businessInstances.find(item => item.instanceId === id);
+    if (!id) {
+      console.error('业务实例ID为空');
+      return null;
+    }
+    
+    // 确保ID是字符串类型
+    const instanceId = String(id);
+    console.log(`正在查找业务实例: ${instanceId}`);
+    
+    // 查找实例
+    const instance = businessInstances.find(item => String(item.instanceId) === instanceId);
     
     if (instance) {
+      console.log(`找到业务实例: ${instanceId}`, instance.instanceName);
       // 如果没有IP组数据，生成模拟数据
       if (!instance.protectionIpGroups || instance.protectionIpGroups.length === 0) {
         instance.protectionIpGroups = generateProtectionIpGroups(instance);
@@ -246,6 +323,7 @@ export default {
       return instance;
     }
     
+    console.error(`找不到业务实例: ${instanceId}，当前实例列表:`, businessInstances.map(i => i.instanceId).join(', '));
     return null;
   },
   
