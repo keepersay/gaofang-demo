@@ -22,10 +22,10 @@
     >
       <!-- 步骤1：基本信息 -->
       <div v-show="active === 0">
-        <el-form-item label="业务实例名称" prop="instanceName">
+        <el-form-item value="业务实例名称" prop="instanceName">
           <el-input v-model="form.instanceName" placeholder="请输入业务实例名称" />
         </el-form-item>
-        <el-form-item label="客户" prop="customerId">
+        <el-form-item value="客户" prop="customerId">
           <el-select 
             v-model="form.customerId" 
             placeholder="请选择客户" 
@@ -36,12 +36,12 @@
             <el-option
               v-for="item in customerOptions"
               :key="item.customerId"
-              :label="item.customerName"
+              :value="item.customerName"
               :value="item.customerId"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="关联订单" prop="orderId">
+        <el-form-item value="关联订单" prop="orderId">
           <el-select 
             v-model="form.orderId" 
             placeholder="请选择关联订单" 
@@ -53,7 +53,7 @@
             <el-option
               v-for="item in orderOptions"
               :key="item.orderId"
-              :label="item.orderId"
+              :value="item.orderId"
               :value="item.orderId"
             >
               <div>
@@ -67,31 +67,31 @@
 
       <!-- 步骤2：部署配置 -->
       <div v-show="active === 1">
-        <el-form-item label="集群类型" prop="clusterType">
+        <el-form-item value="集群类型" prop="clusterType">
           <el-radio-group v-model="form.clusterType" @change="handleClusterTypeChange">
             <el-radio value="standby">主备</el-radio>
             <el-radio value="distributed">分布式</el-radio>
             <el-radio value="anycast">Anycast</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="地址类型" prop="addressType">
+        <el-form-item value="地址类型" prop="addressType">
           <el-radio-group v-model="form.addressType">
             <el-radio value="IPv4">IPv4</el-radio>
             <el-radio value="IPv6">IPv6</el-radio>
             <el-radio value="dual">双栈</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="地域" prop="regionId" v-if="form.clusterType === 'standby'">
+        <el-form-item value="地域" prop="regionId" v-if="form.clusterType === 'standby'">
           <el-select v-model="form.regionId" placeholder="请选择地域" style="width: 100%" @change="handleRegionChange">
             <el-option
               v-for="item in regionOptions"
               :key="item.regionId"
-              :label="item.regionName"
+              :value="item.regionName"
               :value="item.regionId"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="逻辑集群组" prop="clusterGroupId">
+        <el-form-item value="逻辑集群组" prop="clusterGroupId">
           <el-select 
             v-model="form.clusterGroupId" 
             placeholder="请选择逻辑集群组" 
@@ -103,7 +103,7 @@
             <el-option
               v-for="item in filteredClusterGroupOptions"
               :key="item.id"
-              :label="item.name"
+              :value="item.name"
               :value="item.id"
               :disabled="clusterGroupResourceStatus[item.id] === 'insufficient'"
             >
@@ -139,15 +139,15 @@
           style="margin-bottom: 20px;"
         />
 
-        <el-form-item label="套餐选择" prop="packageType">
+        <el-form-item value="套餐选择" prop="packageType">
           <el-radio-group v-model="form.packageType" @change="handlePackageTypeChange">
-            <el-radio :label="1">DDOS防护（仅ADS防护）</el-radio>
-            <el-radio :label="2">WAF标准防护（ADS+CC防护）</el-radio>
-            <el-radio :label="3">WAF增强防护（ADS+CC+WAF防护）</el-radio>
+            <el-radio :value="1">DDOS防护（仅ADS防护）</el-radio>
+            <el-radio :value="2">WAF标准防护（ADS+CC防护）</el-radio>
+            <el-radio :value="3">WAF增强防护（ADS+CC+WAF防护）</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="防护内容">
+        <el-form-item value="防护内容">
           <el-tag v-if="form.adsProtection" type="success" style="margin-right: 5px">ADS防护</el-tag>
           <el-tag v-if="form.ccProtection" type="warning" style="margin-right: 5px">CC防护</el-tag>
           <el-tag v-if="form.wafProtection" type="danger">WAF防护</el-tag>
@@ -156,35 +156,35 @@
 
       <!-- 步骤4：资源配置 -->
       <div v-show="active === 3">
-        <el-form-item label="防护带宽(Mbps)" prop="bandwidth">
+        <el-form-item value="防护带宽(Mbps)" prop="bandwidth">
           <el-input-number v-model="form.bandwidth" :min="1" :max="10000" />
         </el-form-item>
-        <el-form-item label="业务带宽(Mbps)" prop="businessBandwidth">
+        <el-form-item value="业务带宽(Mbps)" prop="businessBandwidth">
           <el-input-number v-model="form.businessBandwidth" :min="1" :max="5000" />
         </el-form-item>
-        <el-form-item label="业务QPS" prop="qps">
+        <el-form-item value="业务QPS" prop="qps">
           <el-input-number v-model="form.qps" :min="1" :max="100000" />
         </el-form-item>
-        <el-form-item label="防护IP数" prop="protectionIpCount">
+        <el-form-item value="防护IP数" prop="protectionIpCount">
           <el-input-number v-model="form.protectionIpCount" :min="1" :max="100" />
         </el-form-item>
-        <el-form-item label="防护域名数" prop="domainCount">
+        <el-form-item value="防护域名数" prop="domainCount">
           <el-input-number v-model="form.domainCount" :min="1" :max="1000" />
         </el-form-item>
-        <el-form-item label="端口数量" prop="portCount">
+        <el-form-item value="端口数量" prop="portCount">
           <el-input-number v-model="form.portCount" :min="1" :max="100" />
         </el-form-item>
       </div>
 
       <!-- 步骤5：状态与备注 -->
       <div v-show="active === 4">
-        <el-form-item label="实例状态" prop="status">
+        <el-form-item value="实例状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio label="active">启用</el-radio>
-            <el-radio label="inactive">禁用</el-radio>
+            <el-radio value="active">启用</el-radio>
+            <el-radio value="inactive">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
+        <el-form-item value="备注" prop="remark">
           <el-input
             v-model="form.remark"
             type="textarea"

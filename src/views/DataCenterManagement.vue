@@ -63,8 +63,8 @@
             >
               <div>
                 <el-checkbox-group v-model="statusFilterValue">
-                  <el-checkbox label="active">启用</el-checkbox>
-                  <el-checkbox label="disabled">禁用</el-checkbox>
+                  <el-checkbox value="active">启用</el-checkbox>
+                  <el-checkbox value="disabled">禁用</el-checkbox>
                 </el-checkbox-group>
                 <div class="mt-2 flex justify-end">
                   <el-button size="small" @click="resetStatusFilter">重置</el-button>
@@ -203,8 +203,8 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio label="active">启用</el-radio>
-            <el-radio label="disabled">禁用</el-radio>
+            <el-radio value="active">启用</el-radio>
+            <el-radio value="disabled">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="联系人" prop="contactPerson">

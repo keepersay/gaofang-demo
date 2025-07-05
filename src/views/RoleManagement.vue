@@ -10,7 +10,7 @@
       <!-- 搜索区域 -->
       <div class="search-area">
         <el-form :inline="true" :model="searchForm">
-          <el-form-item label="角色名称">
+          <el-form-item value="角色名称">
             <el-input
               v-model="searchForm.name"
               placeholder="请输入角色名称"
@@ -37,22 +37,22 @@
         row-class-name="dense-row"
         @sort-change="handleSortChange"
       >
-        <el-table-column prop="name" label="角色名称" width="140" fixed="left">
+        <el-table-column prop="name" value="角色名称" width="140" fixed="left">
           <template #default="scope">
             <el-tooltip effect="dark" :content="scope.row.name" placement="top">
               <span class="ellipsis-cell">{{ scope.row.name }}</span>
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="key" label="角色标识" width="120">
+        <el-table-column prop="key" value="角色标识" width="120">
           <template #default="scope">
             <el-tooltip effect="dark" :content="scope.row.key" placement="top">
               <span class="ellipsis-cell">{{ scope.row.key }}</span>
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="描述" width="200" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="remark" value="描述" width="200" show-overflow-tooltip />
+        <el-table-column prop="status" value="状态" width="100">
           <template #header>
             <span>状态</span>
             <el-popover
@@ -63,8 +63,8 @@
             >
               <div>
                 <el-checkbox-group v-model="statusFilterValue">
-                  <el-checkbox label="active">启用</el-checkbox>
-                  <el-checkbox label="disabled">禁用</el-checkbox>
+                  <el-checkbox value="active">启用</el-checkbox>
+                  <el-checkbox value="disabled">禁用</el-checkbox>
                 </el-checkbox-group>
                 <div class="mt-2 flex justify-end">
                   <el-button size="small" @click="resetStatusFilter">重置</el-button>
@@ -82,11 +82,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" sortable />
-        <el-table-column prop="createAccount" label="创建人" width="120" />
-        <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
-        <el-table-column prop="updateAccount" label="修改人" width="120" />
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column prop="createTime" value="创建时间" width="160" sortable />
+        <el-table-column prop="createAccount" value="创建人" width="120" />
+        <el-table-column prop="updateTime" value="修改时间" width="160" sortable />
+        <el-table-column prop="updateAccount" value="修改人" width="120" />
+        <el-table-column value="操作" width="260" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button type="info" link size="small" @click="handleAssign(scope.row)">分配资源</el-button>
@@ -117,19 +117,19 @@
     <!-- 新增/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @close="handleDialogClose">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
-        <el-form-item label="角色名称" prop="name">
+        <el-form-item value="角色名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入角色名称" />
         </el-form-item>
-        <el-form-item label="角色标识" prop="key">
+        <el-form-item value="角色标识" prop="key">
           <el-input v-model="form.key" placeholder="如 admin、user" />
         </el-form-item>
-        <el-form-item label="描述" prop="remark">
+        <el-form-item value="描述" prop="remark">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入描述" />
         </el-form-item>
-        <el-form-item label="状态" prop="status">
+        <el-form-item value="状态" prop="status">
           <el-radio-group v-model="form.status">
-            <el-radio label="active">启用</el-radio>
-            <el-radio label="disabled">禁用</el-radio>
+            <el-radio value="active">启用</el-radio>
+            <el-radio value="disabled">禁用</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>

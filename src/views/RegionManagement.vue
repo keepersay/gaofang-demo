@@ -58,8 +58,8 @@
             >
               <div>
                 <el-checkbox-group v-model="statusFilterValue">
-                  <el-checkbox label="active">启用</el-checkbox>
-                  <el-checkbox label="disabled">禁用</el-checkbox>
+                  <el-checkbox value="active">启用</el-checkbox>
+                  <el-checkbox value="disabled">禁用</el-checkbox>
                 </el-checkbox-group>
                 <div class="mt-2 flex justify-end">
                   <el-button size="small" @click="resetStatusFilter">重置</el-button>

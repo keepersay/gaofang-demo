@@ -10,7 +10,7 @@
       <!-- 搜索区域，仅保留网池名称 -->
       <div class="search-area">
         <el-form :inline="true" :model="filters">
-          <el-form-item label="网池名称">
+          <el-form-item value="网池名称">
             <el-input v-model="filters.name" placeholder="请输入网池名称" clearable style="max-width: 220px;" />
           </el-form-item>
           <el-form-item>
@@ -29,8 +29,8 @@
         :header-cell-style="{ position: 'sticky', top: 0, background: '#fff', zIndex: 2 }"
         row-class-name="dense-row"
       >
-        <el-table-column prop="id" label="ID" width="180" fixed="left" />
-        <el-table-column prop="name" label="网池名称" width="150">
+        <el-table-column prop="id" value="ID" width="180" fixed="left" />
+        <el-table-column prop="name" value="网池名称" width="150">
           <template #default="scope">
             <el-tooltip effect="dark" :content="scope.row.name" placement="top">
               <span class="ellipsis-cell">{{ scope.row.name }}</span>
@@ -38,7 +38,7 @@
           </template>
         </el-table-column>
         <!-- 协议族表头单选过滤器 -->
-        <el-table-column prop="protocol" label="协议族" width="120">
+        <el-table-column prop="protocol" value="协议族" width="120">
           <template #header>
             <span>协议族</span>
             <el-popover
@@ -48,9 +48,9 @@
               v-model:visible="protocolPopoverVisible"
             >
               <el-radio-group v-model="protocolFilterValue" @change="onProtocolFilterChange">
-                <el-radio label="">全部</el-radio>
-                <el-radio label="IPV4">IPv4</el-radio>
-                <el-radio label="IPV6">IPv6</el-radio>
+                <el-radio value="">全部</el-radio>
+                <el-radio value="IPV4">IPv4</el-radio>
+                <el-radio value="IPV6">IPv6</el-radio>
               </el-radio-group>
               <template #reference>
                 <el-icon :color="protocolFilterValue ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
@@ -62,7 +62,7 @@
           </template>
         </el-table-column>
         <!-- 机房表头多选过滤器 -->
-        <el-table-column prop="dataCenterId" label="机房" width="140">
+        <el-table-column prop="dataCenterId" value="机房" width="140">
           <template #header>
             <span>机房</span>
             <el-popover
@@ -72,7 +72,7 @@
               v-model:visible="dataCenterPopoverVisible"
             >
               <el-checkbox-group v-model="dataCenterFilterValue" @change="onDataCenterFilterChange">
-                <el-checkbox v-for="dc in dataCenters" :key="dc.id" :label="dc.id">{{ dc.name }}</el-checkbox>
+                <el-checkbox v-for="dc in dataCenters" :key="dc.id" :value="dc.id">{{ dc.name }}</el-checkbox>
               </el-checkbox-group>
               <div class="mt-2 flex justify-end">
                 <el-button size="small" @click="resetDataCenterFilter">重置</el-button>
@@ -88,7 +88,7 @@
           </template>
         </el-table-column>
         <!-- 状态表头多选过滤器 -->
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" value="状态" width="100">
           <template #header>
             <span>状态</span>
             <el-popover
@@ -98,8 +98,8 @@
               v-model:visible="statusPopoverVisible"
             >
               <el-checkbox-group v-model="statusFilterValue" @change="onStatusFilterChange">
-                <el-checkbox label="ENABLED">启用</el-checkbox>
-                <el-checkbox label="DISABLED">禁用</el-checkbox>
+                <el-checkbox value="ENABLED">启用</el-checkbox>
+                <el-checkbox value="DISABLED">禁用</el-checkbox>
               </el-checkbox-group>
               <div class="mt-2 flex justify-end">
                 <el-button size="small" @click="resetStatusFilter">重置</el-button>
@@ -116,10 +116,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="区间数量" width="100">
+        <el-table-column value="区间数量" width="100">
           <template #default="scope">{{ scope.row.ranges.length }}</template>
         </el-table-column>
-        <el-table-column label="网段列表" min-width="200">
+        <el-table-column value="网段列表" min-width="200">
           <template #default="scope">
             <el-popover
               placement="right"
@@ -144,10 +144,10 @@
             </el-popover>
           </template>
         </el-table-column>
-        <el-table-column label="已用/剩余IP" width="120">
+        <el-table-column value="已用/剩余IP" width="120">
           <template #default="scope">{{ scope.row.usedCount }}/{{ scope.row.availableCount }}</template>
         </el-table-column>
-        <el-table-column prop="isAnycast" label="Anycast" width="80">
+        <el-table-column prop="isAnycast" value="Anycast" width="80">
           <template #header>
             <span>Anycast</span>
             <el-popover
@@ -157,9 +157,9 @@
               v-model:visible="anycastPopoverVisible"
             >
               <el-radio-group v-model="anycastFilterValue" @change="onAnycastFilterChange">
-                <el-radio label="">全部</el-radio>
-                <el-radio :label="true">是</el-radio>
-                <el-radio :label="false">否</el-radio>
+                <el-radio value="">全部</el-radio>
+                <el-radio :value="true">是</el-radio>
+                <el-radio :value="false">否</el-radio>
               </el-radio-group>
               <template #reference>
                 <el-icon :color="anycastFilterValue !== '' ? '#409EFF' : '#909399'" class="ml-1 cursor-pointer"><Filter /></el-icon>
@@ -170,14 +170,14 @@
             <el-tag :type="scope.row.isAnycast ? 'success' : 'info'">{{ scope.row.isAnycast ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
-        <el-table-column label="添加/修改信息" min-width="180">
+        <el-table-column prop="remark" value="备注" min-width="120" show-overflow-tooltip />
+        <el-table-column value="添加/修改信息" min-width="180">
           <template #default="scope">
             <div>添加: {{ scope.row.createdAt }} / {{ scope.row.createdBy }}</div>
             <div>修改: {{ scope.row.updatedAt }} / {{ scope.row.updatedBy }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column value="操作" width="180" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="openModal(scope.row)">编辑</el-button>
             <el-button type="danger" link size="small" @click="deletePool(scope.row)">删除</el-button>

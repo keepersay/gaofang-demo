@@ -1,16 +1,16 @@
 <template>
   <el-drawer :model-value="visible" :title="editData ? '编辑网池' : '新建网池'" size="50%" @close="$emit('close')">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-      <el-form-item label="网池名称" prop="name">
+      <el-form-item value="网池名称" prop="name">
         <el-input v-model="form.name" maxlength="32" />
       </el-form-item>
-      <el-form-item label="协议族" prop="protocol">
+      <el-form-item value="协议族" prop="protocol">
         <el-radio-group v-model="form.protocol" @change="onProtocolChange">
-          <el-radio label="IPV4">IPv4</el-radio>
-          <el-radio label="IPV6">IPv6</el-radio>
+          <el-radio value="IPV4">IPv4</el-radio>
+          <el-radio value="IPV6">IPv6</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="区间列表" prop="ranges">
+      <el-form-item value="区间列表" prop="ranges">
         <div class="ranges-container">
           <div v-for="(range, idx) in form.ranges" :key="idx" class="range-item">
             <el-input v-model="form.ranges[idx]" :placeholder="rangePlaceholder" />
@@ -27,21 +27,21 @@
           <div class="range-tips">支持单IP、IP区间、CIDR格式，例：192.168.1.1、192.168.1.1-192.168.1.100、192.168.1.0/24</div>
         </div>
       </el-form-item>
-      <el-form-item label="Anycast">
+      <el-form-item value="Anycast">
         <el-switch v-model="form.isAnycast" @change="onAnycastChange" />
       </el-form-item>
-      <el-form-item label="所属机房" prop="dataCenterId" v-if="!form.isAnycast">
+      <el-form-item value="所属机房" prop="dataCenterId" v-if="!form.isAnycast">
         <el-select v-model="form.dataCenterId" placeholder="请选择机房">
-          <el-option v-for="dc in dataCenters" :key="dc.id" :label="dc.name" :value="dc.id" />
+          <el-option v-for="dc in dataCenters" :key="dc.id" :value="dc.name" :value="dc.id" />
         </el-select>
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item value="状态" prop="status">
         <el-radio-group v-model="form.status">
-          <el-radio label="ENABLED">启用</el-radio>
-          <el-radio label="DISABLED">禁用</el-radio>
+          <el-radio value="ENABLED">启用</el-radio>
+          <el-radio value="DISABLED">禁用</el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="备注" prop="remark">
+      <el-form-item value="备注" prop="remark">
         <el-input v-model="form.remark" type="textarea" maxlength="128" />
       </el-form-item>
     </el-form>

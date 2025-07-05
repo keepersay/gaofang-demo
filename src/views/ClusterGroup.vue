@@ -10,7 +10,7 @@
 
       <div class="search-area">
         <el-form :inline="true" :model="searchForm">
-          <el-form-item label="名称">
+          <el-form-item value="名称">
             <el-input
               v-model="searchForm.name"
               placeholder="请输入集群名称"
@@ -35,9 +35,9 @@
         :header-cell-style="{ background: '#fff', zIndex: 2 }"
         row-class-name="dense-row"
       >
-        <el-table-column prop="id" label="ID" width="220" fixed="left" />
-        <el-table-column prop="name" label="名称" width="180" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="id" value="ID" width="220" fixed="left" />
+        <el-table-column prop="name" value="名称" width="180" />
+        <el-table-column prop="status" value="状态" width="100">
           <template #header>
             <span>状态</span>
             <el-popover placement="bottom" width="160" trigger="click" v-model:visible="statusPopoverVisible">
@@ -61,28 +61,28 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="集群类型" width="100">
+        <el-table-column value="集群类型" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.enableL7 ? 'warning' : 'info'">
               {{ scope.row.enableL7 ? 'L7' : 'L4' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="addressType" label="地址类型" width="100">
+        <el-table-column prop="addressType" value="地址类型" width="100">
           <template #default="scope">
             <el-tag v-if="scope.row.addressType === 'ipv4'" type="info">IPv4</el-tag>
             <el-tag v-else-if="scope.row.addressType === 'ipv6'" type="success">IPv6</el-tag>
             <el-tag v-else type="warning">双栈</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="bandwidth" label="承载带宽(Mbps)" width="120">
+        <el-table-column prop="bandwidth" value="承载带宽(Mbps)" width="120">
           <template #default="scope">
             <span>{{ scope.row.bandwidth }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="displayName" label="显示名称" width="180" />
-        <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
-        <el-table-column label="所属机房" width="180">
+        <el-table-column prop="displayName" value="显示名称" width="180" />
+        <el-table-column prop="remark" value="备注" min-width="200" show-overflow-tooltip />
+        <el-table-column value="所属机房" width="180">
           <template #header>
             <span>所属机房</span>
             <el-popover placement="bottom" width="240" trigger="click" v-model:visible="dataCenterPopoverVisible">
@@ -97,7 +97,7 @@
                   <el-option
                     v-for="item in dataCenters"
                     :key="item.id"
-                    :label="`${item.name} (${getRegionName(item.regionId)})`"
+                    :value="`${item.name} (${getRegionName(item.regionId)})`"
                     :value="item.id"
                   />
                 </el-select>
@@ -119,7 +119,7 @@
             <span v-else class="text-gray-400">未关联</span>
           </template>
         </el-table-column>
-        <el-table-column label="网元链路" min-width="220">
+        <el-table-column value="网元链路" min-width="220">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <div v-for="item in [
@@ -136,7 +136,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="IP资源池" min-width="260">
+        <el-table-column value="IP资源池" min-width="260">
           <template #default="scope">
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div v-if="scope.row.ipPools?.vip?.length">
@@ -171,11 +171,11 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" sortable />
-        <el-table-column prop="createAccount" label="创建人" width="120" />
-        <el-table-column prop="updateTime" label="修改时间" width="160" sortable />
-        <el-table-column prop="updateAccount" label="修改人" width="120" />
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column prop="createTime" value="创建时间" width="160" sortable />
+        <el-table-column prop="createAccount" value="创建人" width="120" />
+        <el-table-column prop="updateTime" value="修改时间" width="160" sortable />
+        <el-table-column prop="updateAccount" value="修改人" width="120" />
+        <el-table-column value="操作" width="140" fixed="right">
           <template #default="scope">
             <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button
@@ -216,48 +216,48 @@
       @close="handleDialogClose"
     >
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="名称" prop="name">
+        <el-form-item value="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入集群名称，例如：huadong-telecom-premium" />
         </el-form-item>
-        <el-form-item label="显示名称" prop="displayName">
+        <el-form-item value="显示名称" prop="displayName">
           <el-input v-model="form.displayName" placeholder="请输入显示名称，例如：华东-电信-高级版" />
         </el-form-item>
-        <el-form-item label="ADS" prop="slots.ADS">
+        <el-form-item value="ADS" prop="slots.ADS">
           <el-select v-model="form.slots.ADS" placeholder="请选择ADS集群" style="width: 100%">
-            <el-option v-for="item in slotOptions.ADS" :key="item.id" :label="item.displayName" :value="item.id" />
+            <el-option v-for="item in slotOptions.ADS" :key="item.id" :value="item.displayName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="SLB" prop="slots.SLB">
+        <el-form-item value="SLB" prop="slots.SLB">
           <el-select v-model="form.slots.SLB" placeholder="请选择SLB集群" style="width: 100%">
-            <el-option v-for="item in slotOptions.SLB" :key="item.id" :label="item.displayName" :value="item.id" />
+            <el-option v-for="item in slotOptions.SLB" :key="item.id" :value="item.displayName" :value="item.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="开启七层" prop="enableL7">
+        <el-form-item value="开启七层" prop="enableL7">
           <el-switch v-model="form.enableL7" @change="handleL7SwitchChange" />
         </el-form-item>
         <template v-if="form.enableL7">
-          <el-form-item label="WAF-CC" prop="slots.WAFCC">
+          <el-form-item value="WAF-CC" prop="slots.WAFCC">
             <el-select v-model="form.slots.WAFCC" placeholder="请选择WAF-CC集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.WAFCC" :key="item.id" :label="item.displayName" :value="item.id" />
+              <el-option v-for="item in slotOptions.WAFCC" :key="item.id" :value="item.displayName" :value="item.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="WAF" prop="slots.WAF">
+          <el-form-item value="WAF" prop="slots.WAF">
             <el-select v-model="form.slots.WAF" placeholder="请选择WAF集群" style="width: 100%">
-              <el-option v-for="item in slotOptions.WAF" :key="item.id" :label="item.displayName" :value="item.id" />
+              <el-option v-for="item in slotOptions.WAF" :key="item.id" :value="item.displayName" :value="item.id" />
             </el-select>
           </el-form-item>
         </template>
-        <el-form-item label="机房" prop="dataCenterId">
+        <el-form-item value="机房" prop="dataCenterId">
           <el-select v-model="form.dataCenterId" placeholder="请选择机房" style="width: 100%">
             <el-option
               v-for="item in dataCenters"
               :key="item.id"
-              :label="`${item.name} (${getRegionName(item.regionId)})`"
+              :value="`${item.name} (${getRegionName(item.regionId)})`"
               :value="item.id"
     />
           </el-select>
         </el-form-item>
-        <el-form-item label="VIP池">
+        <el-form-item value="VIP池">
           <el-tag
             v-for="(ip, idx) in form.ipPools.vip"
             :key="'vip-' + idx"
@@ -273,7 +273,7 @@
             style="width: 220px; margin-top: 4px;"
           />
         </el-form-item>
-        <el-form-item label="回源IP池">
+        <el-form-item value="回源IP池">
           <el-tag
             v-for="(ip, idx) in form.ipPools.origin"
             :key="'origin-' + idx"
@@ -289,7 +289,7 @@
             style="width: 220px; margin-top: 4px;"
           />
         </el-form-item>
-        <el-form-item label="SNAT地址池">
+        <el-form-item value="SNAT地址池">
           <el-tag
             v-for="(ip, idx) in form.ipPools.snat"
             :key="'snat-' + idx"
@@ -305,20 +305,20 @@
             style="width: 220px; margin-top: 4px;"
           />
         </el-form-item>
-        <el-form-item label="集群类型">
+        <el-form-item value="集群类型">
           <el-tag :type="form.enableL7 ? 'warning' : 'info'">{{ form.enableL7 ? 'L7' : 'L4' }}</el-tag>
         </el-form-item>
-        <el-form-item label="地址类型" prop="addressType">
+        <el-form-item value="地址类型" prop="addressType">
           <el-radio-group v-model="form.addressType">
-            <el-radio label="ipv4">IPv4</el-radio>
-            <el-radio label="ipv6">IPv6</el-radio>
-            <el-radio label="dual">双栈</el-radio>
+            <el-radio value="ipv4">IPv4</el-radio>
+            <el-radio value="ipv6">IPv6</el-radio>
+            <el-radio value="dual">双栈</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="承载带宽(Mbps)" prop="bandwidth">
+        <el-form-item value="承载带宽(Mbps)" prop="bandwidth">
           <el-input-number v-model="form.bandwidth" :min="1" :max="100000" :step="1" style="width: 180px;" />
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
+        <el-form-item value="备注" prop="remark">
           <el-input 
             v-model="form.remark" 
             type="textarea" 

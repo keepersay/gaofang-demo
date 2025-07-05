@@ -7,22 +7,22 @@
     @close="onClose"
   >
     <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
-      <el-form-item label="名称" prop="name">
+      <el-form-item value="名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入集群组名称" />
       </el-form-item>
 
-      <el-form-item label="类型" prop="type">
+      <el-form-item value="类型" prop="type">
         <el-radio-group v-model="form.type" @change="handleTypeChange">
-          <el-radio label="standby">主备</el-radio>
-          <el-radio label="distributed">分布式</el-radio>
-          <el-radio label="anycast">Anycast</el-radio>
+          <el-radio value="standby">主备</el-radio>
+          <el-radio value="distributed">分布式</el-radio>
+          <el-radio value="anycast">Anycast</el-radio>
         </el-radio-group>
         <div class="form-tip">
           {{ getTypeDescription }}
         </div>
       </el-form-item>
       
-      <el-form-item v-if="form.type === 'standby'" label="机房" prop="dataCenterId">
+      <el-form-item v-if="form.type === 'standby'" value="机房" prop="dataCenterId">
         <el-select 
           v-model="form.dataCenterId" 
           placeholder="请选择机房" 
@@ -34,7 +34,7 @@
           <el-option
             v-for="dc in activedataCenters"
             :key="dc.id"
-            :label="dc.name"
+            :value="dc.name"
             :value="dc.id"
           >
             <div style="display: flex; justify-content: space-between; align-items: center">
@@ -46,7 +46,7 @@
       </el-form-item>
       
       <el-form-item 
-        label="主集群" 
+        value="主集群" 
         prop="primaryClusters"
         :rules="[
           { required: true, message: '请选择主集群', trigger: 'change' },
@@ -64,7 +64,7 @@
           <el-option
             v-for="cluster in availablePrimaryClusters"
             :key="cluster.id"
-            :label="cluster.displayName"
+            :value="cluster.displayName"
             :value="cluster.id"
           >
             <div class="cluster-option">
@@ -80,7 +80,7 @@
       <!-- 默认集群选择，仅在分布式模式下显示 -->
       <el-form-item 
         v-if="form.type === 'distributed'" 
-        label="默认集群" 
+        value="默认集群" 
         prop="defaultClusterId"
         :rules="[
           { required: true, message: '请选择默认集群', trigger: 'change' }
@@ -96,7 +96,7 @@
           <el-option
             v-for="clusterId in form.primaryClusters"
             :key="clusterId"
-            :label="getClusterName(clusterId)"
+            :value="getClusterName(clusterId)"
             :value="clusterId"
           >
             <div class="cluster-option">
@@ -111,7 +111,7 @@
       
       <el-form-item 
         v-if="form.type !== 'anycast'"
-        label="备集群" 
+        value="备集群" 
         prop="standbyClusters"
         :rules="[{ validator: validateStandbyClusters, trigger: 'change' }]"
       >
@@ -126,7 +126,7 @@
           <el-option
             v-for="cluster in availableStandbyClusters"
             :key="cluster.id"
-            :label="cluster.displayName"
+            :value="cluster.displayName"
             :value="cluster.id"
             :disabled="form.primaryClusters.includes(cluster.id)"
           >
@@ -138,22 +138,22 @@
         <div class="form-tip">备集群用于故障切换，最多选择1个</div>
       </el-form-item>
       
-      <el-form-item label="备注" prop="remark">
+      <el-form-item value="备注" prop="remark">
         <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="请输入备注信息" />
       </el-form-item>
       
-      <el-form-item label="地址类型" prop="addressType">
+      <el-form-item value="地址类型" prop="addressType">
         <el-radio-group v-model="form.addressType">
-          <el-radio label="ipv4">IPv4</el-radio>
-          <el-radio label="ipv6">IPv6</el-radio>
-          <el-radio label="dual">双栈</el-radio>
+          <el-radio value="ipv4">IPv4</el-radio>
+          <el-radio value="ipv6">IPv6</el-radio>
+          <el-radio value="dual">双栈</el-radio>
         </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="状态" prop="status">
+      <el-form-item value="状态" prop="status">
         <el-radio-group v-model="form.status">
-          <el-radio label="active">启用</el-radio>
-          <el-radio label="disabled">禁用</el-radio>
+          <el-radio value="active">启用</el-radio>
+          <el-radio value="disabled">禁用</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
