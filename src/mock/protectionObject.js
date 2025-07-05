@@ -1,5 +1,9 @@
 import Mock from 'mockjs'
 import { generateUUID } from '../utils/common'
+import businessInstanceData from '../mock/data/businessInstance'
+
+// 定义mock变量，用于控制是否启用模拟接口
+const mock = true;
 
 // IP防护对象列表
 const ipProtectionList = Mock.mock({
