@@ -21,6 +21,8 @@ build/
 
 # Dependency directories
 node_modules/
+node_modules
+node_modules/**/*
 jspm_packages/
 
 # Optional npm cache directory
@@ -44,6 +46,7 @@ Thumbs.db
 
 # Vite-specific
 .vite/
+node_modules/.vite/
 
 # TypeScript cache
 .tsbuildinfo
