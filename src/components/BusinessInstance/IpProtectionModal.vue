@@ -41,10 +41,10 @@
         </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="IP组" prop="protectionIpGroupId">
+      <el-form-item label="防护IP组" prop="protectionIpGroupId">
         <el-select 
           v-model="form.protectionIpGroupId" 
-          placeholder="请选择IP组" 
+          placeholder="请选择防护IP组" 
           style="width: 100%"
           :disabled="!form.instanceId"
           @change="handleIpGroupChange"
@@ -142,7 +142,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getBusinessInstanceOptions, getBusinessInstanceDetail } from '@/services/BusinessInstanceService'
-import { addIpProtection, updateIpProtection, getInstanceIpGroups, getIpGroupDetail } from '@/services/ProtectionObjectService'
+import { addIpProtection, updateIpProtection, getInstanceAllocatedIpGroups, getIpGroupDetail } from '@/services/ProtectionObjectService'
 
 const props = defineProps({
   visible: {
@@ -228,7 +228,7 @@ const rules = reactive({
     { required: true, message: '请选择地址类型', trigger: 'change' }
   ],
   protectionIpGroupId: [
-    { required: true, message: '请选择IP组', trigger: 'change' }
+    { required: true, message: '请选择防护IP组', trigger: 'change' }
   ],
   protectionBandwidthType: [
     { required: true, message: '请选择防护带宽类型', trigger: 'change' }
@@ -380,7 +380,7 @@ const fetchIpGroups = async (instanceId) => {
   if (!instanceId) return
   
   try {
-    const res = await getInstanceIpGroups(instanceId)
+    const res = await getInstanceAllocatedIpGroups(instanceId)
     if (res.code === 200) {
       ipGroupOptions.value = res.data
       
@@ -391,8 +391,8 @@ const fetchIpGroups = async (instanceId) => {
       }
     }
   } catch (error) {
-    console.error('获取IP组列表失败:', error)
-    ElMessage.error('获取IP组列表失败')
+    console.error('获取防护IP组列表失败:', error)
+    ElMessage.error('获取防护IP组列表失败')
   }
 }
 

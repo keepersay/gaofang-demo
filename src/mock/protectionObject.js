@@ -736,4 +736,55 @@ Mock.mock('/api/business-instance/options', 'get', () => {
     message: 'success',
     data: businessInstanceOptions.data
   }
-}) 
+})
+
+// 模拟接口：获取业务实例的IP组列表
+if (mock) {
+  Mock.mock(new RegExp('/api/business-instance/\\w+/ip-groups'), 'get', (options) => {
+    const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/ip-groups/)[1]
+    
+    // 获取业务实例
+    const instance = businessInstanceData.getBusinessInstance(instanceId)
+    if (!instance) {
+      return {
+        code: 404,
+        message: '业务实例不存在'
+      }
+    }
+    
+    // 返回IP组数据
+    return {
+      code: 200,
+      data: instance.protectionIpGroups || [],
+      message: 'success'
+    }
+  })
+}
+
+// 模拟接口：获取业务实例已分配的防护IP组
+if (mock) {
+  Mock.mock(new RegExp('/api/business-instance/\\w+/allocated-ip-groups'), 'get', (options) => {
+    const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/allocated-ip-groups/)[1]
+    
+    // 获取业务实例
+    const instance = businessInstanceData.getBusinessInstance(instanceId)
+    if (!instance) {
+      return {
+        code: 404,
+        message: '业务实例不存在'
+      }
+    }
+    
+    // 返回已分配的IP组数据
+    return {
+      code: 200,
+      data: instance.protectionIpGroups || [],
+      message: 'success'
+    }
+  })
+}
+
+// 模拟接口：获取IP组详情
+if (mock) {
+  // ... existing code ...
+} 

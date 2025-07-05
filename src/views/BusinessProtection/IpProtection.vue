@@ -37,7 +37,7 @@
       <el-table-column type="selection" width="55" />
       <el-table-column prop="customerName" label="客户名称" min-width="150" />
       <el-table-column prop="instanceName" label="业务实例" min-width="120" />
-      <el-table-column label="IP组" min-width="250">
+      <el-table-column label="防护IP组" min-width="250">
         <template #default="{ row }">
           {{ row.protectionIpGroupInfo }}
         </template>

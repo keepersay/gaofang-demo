@@ -81,6 +81,14 @@ export function getInstanceIpGroups(instanceId) {
   })
 }
 
+// 获取业务实例已分配的防护IP组
+export function getInstanceAllocatedIpGroups(instanceId) {
+  return request({
+    url: `/api/business-instance/${instanceId}/allocated-ip-groups`,
+    method: 'get'
+  })
+}
+
 // 获取IP组详情
 export function getIpGroupDetail(groupId) {
   return request({
