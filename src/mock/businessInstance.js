@@ -222,12 +222,17 @@ Mock.mock(/\/api\/protection-ips\/available(\?.+)?$/, 'get', () => {
 })
 
 // 获取业务实例详情
-Mock.mock(/\/api\/business-instance\/detail\/\d+/, 'get', (options) => {
-  const id = parseInt(options.url.match(/\/api\/business-instance\/detail\/(\d+)/)[1])
+Mock.mock(/\/api\/business-instance\/detail\/([^/]+)/, 'get', (options) => {
+  // 从URL中提取ID，支持带有BI前缀的ID
+  const idMatch = options.url.match(/\/api\/business-instance\/detail\/([^/]+)/);
+  const idStr = idMatch[1];
+  
+  // 处理ID，如果有BI前缀则去掉
+  const id = idStr.startsWith('BI') ? parseInt(idStr.substring(2)) : parseInt(idStr);
   
   // 模拟业务实例详情数据
   const data = {
-    id: id,
+    id: idStr,  // 保留原始ID格式
     customerName: `客户${id % 10 + 1}科技有限公司`,
     instanceName: `业务实例-${id % 10 + 1}`,
     addressType: id % 2 === 0 ? 'IPv4' : 'IPv6',
@@ -264,7 +269,7 @@ Mock.mock(/\/api\/business-instance\/detail\/\d+/, 'get', (options) => {
 // 业务实例选项接口
 Mock.mock(/\/api\/business-instance\/options/, 'get', () => {
   const options = Array.from({ length: 8 }, (_, i) => ({
-    value: 10001 + i,
+    value: `BI${10001 + i}`,  // 添加BI前缀
     label: `业务实例-${i + 1}`
   }))
   

@@ -118,12 +118,14 @@ const domainProtectionList = Mock.mock({
 })
 
 // 业务实例选项
-const businessInstanceOptions = Mock.mock({
-  'data|5-10': [{
-    'value|+1': 10001,
-    'label': '业务实例-@integer(1, 10)'
-  }]
-})
+const businessInstanceOptions = {
+  code: 200,
+  message: 'success',
+  data: Array.from({ length: 8 }, (_, i) => ({
+    value: `BI${10001 + i}`,  // 添加BI前缀
+    label: `业务实例-${i + 1}`
+  }))
+}
 
 // 存储实际数据的数组（持久化数据）
 let ipProtectionData = [...ipProtectionList.data]
@@ -352,18 +354,30 @@ Mock.mock(/\/api\/protection\/domain\/list/, 'get', (options) => {
 })
 
 // 获取业务实例的IP组列表
-Mock.mock(/\/api\/business-instance\/.*\/ip-groups/, 'get', (options) => {
-  const instanceId = options.url.match(/\/api\/business-instance\/(.+?)\/ip-groups/)[1];
+Mock.mock(new RegExp('/api/business-instance/\\w+/ip-groups'), 'get', (options) => {
+  const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/ip-groups/)[1]
   
-  // 生成该业务实例的IP组数据
-  const ipGroups = generateIpGroupData(instanceId);
+  // 确保instanceId格式正确
+  const formattedInstanceId = instanceId.toString().startsWith('BI') 
+    ? instanceId 
+    : `BI${instanceId}`;
   
+  // 获取业务实例
+  const instance = businessInstanceData.getBusinessInstance(formattedInstanceId)
+  if (!instance) {
+    return {
+      code: 404,
+      message: '业务实例不存在'
+    }
+  }
+  
+  // 返回IP组数据
   return {
     code: 200,
-    message: 'success',
-    data: ipGroups
-  };
-});
+    data: instance.protectionIpGroups || [],
+    message: 'success'
+  }
+})
 
 // 获取IP组详情
 Mock.mock(/\/api\/ip-group\/.*\/detail/, 'get', (options) => {
@@ -604,6 +618,31 @@ Mock.mock('/api/protection/ip/config', 'put', (options) => {
 Mock.mock('/api/protection/domain/add', 'post', (options) => {
   const body = JSON.parse(options.body)
   
+  // 验证必填字段
+  const requiredFields = ['instanceId', 'protectionIpGroupId', 'domain', 'businessQpsType', 'protectionPackage'];
+  const errors = {};
+  
+  requiredFields.forEach(field => {
+    if (!body[field]) {
+      errors[field] = [`${field}字段不能为空`];
+    }
+  });
+  
+  // 验证域名格式
+  if (body.domain && !/^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/.test(body.domain)) {
+    errors.domain = errors.domain || [];
+    errors.domain.push('域名格式不正确，请输入有效的域名格式，如example.com');
+  }
+  
+  // 如果有错误，返回错误信息
+  if (Object.keys(errors).length > 0) {
+    return {
+      code: 400,
+      message: '表单验证失败',
+      errors: errors
+    };
+  }
+  
   // 创建新对象
   const newId = getNewDomainProtectionId()
   
@@ -616,6 +655,7 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
     id: newId,
     ...body,
     instanceId: instanceId, // 使用格式化后的instanceId
+    status: 'active', // 设置默认状态为启用
     createTime: new Date().toISOString()
   }
   
@@ -633,17 +673,25 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
   
   // 添加防护IP组信息
   if (newItem.protectionIpGroupId) {
-    // 从业务实例中获取IP组信息
-    const instance = businessInstanceData.getBusinessInstance(newItem.instanceId)
-    if (instance && instance.protectionIpGroups) {
-      const ipGroup = instance.protectionIpGroups.find(group => group.groupId === newItem.protectionIpGroupId)
-      if (ipGroup) {
-        newItem.protectionIpGroupInfo = ipGroup.displayName
-      } else {
-        newItem.protectionIpGroupInfo = `防护IP组 #${newItem.protectionIpGroupId.slice(-5)}`
-      }
+    // 检查是否是来自业务实例选项的ID
+    const isFromOptions = businessInstanceOptions.data.some(option => option.value === instanceId);
+    
+    if (isFromOptions) {
+      // 对于来自业务实例选项的ID，直接使用IP组ID的后5位作为显示名称
+      newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`;
     } else {
-      newItem.protectionIpGroupInfo = `防护IP组 #${newItem.protectionIpGroupId.slice(-5)}`
+      // 从业务实例中获取IP组信息
+      const instance = businessInstanceData.getBusinessInstance(newItem.instanceId)
+      if (instance && instance.protectionIpGroups) {
+        const ipGroup = instance.protectionIpGroups.find(group => group.groupId === newItem.protectionIpGroupId)
+        if (ipGroup) {
+          newItem.protectionIpGroupInfo = ipGroup.displayName
+        } else {
+          newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`
+        }
+      } else {
+        newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`
+      }
     }
   }
   
@@ -680,18 +728,30 @@ Mock.mock('/api/protection/domain/update', 'put', (options) => {
   
   // 更新防护IP组信息
   if (body.protectionIpGroupId && body.protectionIpGroupId !== domainProtectionData[index].protectionIpGroupId) {
-    // 从业务实例中获取IP组信息
     const instanceId = body.instanceId || domainProtectionData[index].instanceId;
-    const instance = businessInstanceData.getBusinessInstance(instanceId)
-    if (instance && instance.protectionIpGroups) {
-      const ipGroup = instance.protectionIpGroups.find(group => group.groupId === body.protectionIpGroupId)
-      if (ipGroup) {
-        body.protectionIpGroupInfo = ipGroup.displayName
-      } else {
-        body.protectionIpGroupInfo = `防护IP组 #${body.protectionIpGroupId.slice(-5)}`
-      }
+    
+    // 检查是否是来自业务实例选项的ID
+    const isFromOptions = businessInstanceOptions.data.some(option => option.value === instanceId);
+    
+    if (isFromOptions) {
+      // 对于来自业务实例选项的ID，直接使用IP组ID的后5位作为显示名称
+      const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
+      body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`;
     } else {
-      body.protectionIpGroupInfo = `防护IP组 #${body.protectionIpGroupId.slice(-5)}`
+      // 从业务实例中获取IP组信息
+      const instance = businessInstanceData.getBusinessInstance(instanceId)
+      if (instance && instance.protectionIpGroups) {
+        const ipGroup = instance.protectionIpGroups.find(group => group.groupId === body.protectionIpGroupId)
+        if (ipGroup) {
+          body.protectionIpGroupInfo = ipGroup.displayName
+        } else {
+          const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
+          body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`
+        }
+      } else {
+        const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
+        body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`
+      }
     }
   }
   
@@ -798,29 +858,6 @@ Mock.mock('/api/business-instance/options', 'get', () => {
   }
 })
 
-// 模拟接口：获取业务实例的IP组列表
-if (mock) {
-  Mock.mock(new RegExp('/api/business-instance/\\w+/ip-groups'), 'get', (options) => {
-    const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/ip-groups/)[1]
-    
-    // 获取业务实例
-    const instance = businessInstanceData.getBusinessInstance(instanceId)
-    if (!instance) {
-      return {
-        code: 404,
-        message: '业务实例不存在'
-      }
-    }
-    
-    // 返回IP组数据
-    return {
-      code: 200,
-      data: instance.protectionIpGroups || [],
-      message: 'success'
-    }
-  })
-}
-
 // 模拟接口：获取业务实例已分配的防护IP组
 if (mock) {
   Mock.mock(new RegExp('/api/business-instance/\\w+/allocated-ip-groups'), 'get', (options) => {
@@ -831,6 +868,8 @@ if (mock) {
     const formattedInstanceId = instanceId.toString().startsWith('BI') 
       ? instanceId 
       : `BI${instanceId}`;
+    
+    console.log('格式化后的业务实例ID:', formattedInstanceId);
     
     // 如果是BI10002，直接返回固定的IP组数据
     if (formattedInstanceId === 'BI10002') {
@@ -869,6 +908,60 @@ if (mock) {
       return {
         code: 200,
         data: fixedGroups,
+        message: 'success'
+      };
+    }
+    
+    // 检查是否是来自业务实例选项的ID
+    const isFromOptions = businessInstanceOptions.data.some(option => option.value === formattedInstanceId);
+    
+    if (isFromOptions) {
+      console.log(`ID ${formattedInstanceId} 来自业务实例选项，生成模拟数据`);
+      // 为业务实例选项生成模拟数据
+      const mockGroups = [];
+      const instanceNumber = parseInt(formattedInstanceId.replace('BI', ''));
+      
+      // 生成IPv4组
+      mockGroups.push({
+        groupId: generateUUID(),
+        addressType: 'IPv4',
+        displayName: `IPv4防护组 #1（业务实例-${instanceNumber % 10 || 1}）`,
+        ips: [
+          {
+            ip: `203.0.113.${instanceNumber % 255 + 1}`,
+            type: 'IPv4',
+            logicClusterId: 'LC202407250001',
+            logicClusterName: '华东-电信-高级版',
+            status: 'active'
+          }
+        ]
+      });
+      
+      // 生成IPv6组
+      mockGroups.push({
+        groupId: generateUUID(),
+        addressType: 'IPv6',
+        displayName: `IPv6防护组 #1（业务实例-${instanceNumber % 10 || 1}）`,
+        ips: [
+          {
+            ip: (() => {
+              const segments = [];
+              for (let j = 0; j < 8; j++) {
+                segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
+              }
+              return segments.join(':');
+            })(),
+            type: 'IPv6',
+            logicClusterId: 'LC202407250001',
+            logicClusterName: '华东-电信-高级版',
+            status: 'active'
+          }
+        ]
+      });
+      
+      return {
+        code: 200,
+        data: mockGroups,
         message: 'success'
       };
     }

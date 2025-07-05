@@ -188,7 +188,11 @@ const rules = reactive({
   ],
   domain: [
     { required: true, message: '请输入防护域名', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/, message: '请输入有效的域名', trigger: 'blur' }
+    { 
+      pattern: /^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/, 
+      message: '请输入有效的域名格式，如example.com', 
+      trigger: 'blur' 
+    }
   ],
   businessQpsType: [
     { required: true, message: '请选择业务QPS类型', trigger: 'change' }
@@ -460,11 +464,33 @@ const handleSubmit = async () => {
       emit('success')
       dialogVisible.value = false
     } else {
-      ElMessage.error(res.message || (isEdit.value ? '编辑失败' : '添加失败'))
+      // 处理服务器返回的详细错误信息
+      if (res.errors) {
+        // 如果有详细的错误信息，显示第一个错误
+        const firstErrorField = Object.keys(res.errors)[0];
+        const firstError = res.errors[firstErrorField][0];
+        ElMessage.error(`${firstErrorField}: ${firstError}`);
+        
+        // 如果是表单字段的错误，标记对应字段为错误状态
+        if (formRef.value && formRef.value.fields[firstErrorField]) {
+          formRef.value.fields[firstErrorField].validateMessage = firstError;
+          formRef.value.fields[firstErrorField].validateState = 'error';
+        }
+      } else {
+        ElMessage.error(res.message || (isEdit.value ? '编辑失败' : '添加失败'));
+      }
     }
   } catch (error) {
-    console.error(isEdit.value ? '编辑域名防护对象失败:' : '添加域名防护对象失败:', error)
-    ElMessage.error('表单验证失败，请检查输入')
+    console.error(isEdit.value ? '编辑域名防护对象失败:' : '添加域名防护对象失败:', error);
+    
+    // 检查是否是表单验证错误
+    if (error.fields) {
+      // 表单验证失败，显示第一个错误
+      const firstField = Object.keys(error.fields)[0];
+      ElMessage.error(`表单验证失败: ${error.fields[firstField][0].message}`);
+    } else {
+      ElMessage.error('表单验证失败，请检查输入');
+    }
   } finally {
     loading.value = false
   }
