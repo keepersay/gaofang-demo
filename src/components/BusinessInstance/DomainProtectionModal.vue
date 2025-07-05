@@ -99,8 +99,8 @@
 
       <el-form-item label="防护套餐" prop="protectionPackage">
         <el-radio-group v-model="form.protectionPackage">
-          <el-radio :label="'standard'">WAF标准防护</el-radio>
-          <el-radio :label="'enhanced'">WAF增强防护</el-radio>
+          <el-radio value="standard">WAF标准防护</el-radio>
+          <el-radio value="enhanced">WAF增强防护</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>
