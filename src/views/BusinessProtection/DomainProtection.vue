@@ -8,8 +8,8 @@
         <el-form-item label="业务实例">
           <el-input v-model="searchForm.instanceName" placeholder="请输入业务实例名称" clearable />
         </el-form-item>
-        <el-form-item label="防护公网IP">
-          <el-input v-model="searchForm.publicIp" placeholder="请输入防护公网IP" clearable />
+        <el-form-item label="防护IP组">
+          <el-input v-model="searchForm.protectionIpGroupInfo" placeholder="请输入防护IP组" clearable />
         </el-form-item>
         <el-form-item label="防护域名">
           <el-input v-model="searchForm.domain" placeholder="请输入防护域名" clearable />
@@ -43,7 +43,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="publicIp" label="防护公网IP" min-width="140" />
+      <el-table-column prop="protectionIpGroupInfo" label="防护IP组" min-width="140" />
       <el-table-column prop="domain" label="防护域名" min-width="150" />
       <el-table-column prop="cname" label="防护CNAME" min-width="180" />
       <el-table-column label="业务QPS" min-width="150">
@@ -168,7 +168,7 @@ const filterStatus = (value, row) => {
 const searchForm = reactive({
   customerName: '',
   instanceName: '',
-  publicIp: '',
+  protectionIpGroupInfo: '',
   domain: '',
   status: ''
 })
@@ -214,7 +214,7 @@ const handleSearch = () => {
 const resetSearch = () => {
   searchForm.customerName = ''
   searchForm.instanceName = ''
-  searchForm.publicIp = ''
+  searchForm.protectionIpGroupInfo = ''
   searchForm.domain = ''
   searchForm.status = ''
   handleSearch()

@@ -86,21 +86,16 @@ const domainProtectionList = Mock.mock({
       const names = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
       return names[Math.floor(Math.random() * names.length)];
     },
-    'publicIp': function() {
-      if (this.id % 3 === 0) {
-        // IPv6
-        const segments = []
-        for (let j = 0; j < 8; j++) {
-          segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
-        }
-        return segments.join(':')
-      } else {
-        // IPv4
-        return `203.0.113.${this.id % 255 + 1}`
-      }
+    'protectionIpGroupId': function() {
+      return generateUUID();
+    },
+    'protectionIpGroupInfo': function() {
+      const addressTypes = ['IPv4', 'IPv6', 'dual'];
+      const ipCount = this.id % 5 + 2;
+      return `${this.addressType}防护组 #${this.id % 10 + 1}（${this.instanceName}，${ipCount}个IP）`;
     },
     'addressType': function() {
-      return this.publicIp.includes(':') ? 'IPv6' : 'IPv4'
+      return this.id % 3 === 0 ? 'IPv6' : 'IPv4';
     },
     'domain': function() {
       return `example${this.id}.com`
@@ -108,20 +103,6 @@ const domainProtectionList = Mock.mock({
     'cname': function() {
       return `${this.domain}.vmdat.com`
     },
-    'protectionBandwidthType': function() {
-      return this.id % 2 === 0 ? 'shared' : 'dedicated'
-    },
-    'dedicatedProtectionBandwidth': function() {
-      return this.protectionBandwidthType === 'dedicated' ? (this.id % 5 + 1) * 50 : 0
-    },
-    'instanceProtectionBandwidth': 500,
-    'businessBandwidthType': function() {
-      return this.id % 3 === 0 ? 'shared' : 'dedicated'
-    },
-    'dedicatedBusinessBandwidth': function() {
-      return this.businessBandwidthType === 'dedicated' ? (this.id % 3 + 1) * 30 : 0
-    },
-    'instanceBusinessBandwidth': 200,
     'businessQpsType': function() {
       return this.id % 2 === 0 ? 'shared' : 'dedicated'
     },
@@ -336,9 +317,9 @@ Mock.mock(/\/api\/protection\/domain\/list/, 'get', (options) => {
     )
   }
   
-  if (params.publicIp) {
+  if (params.protectionIpGroupInfo) {
     filteredData = filteredData.filter(item => 
-      item.publicIp && item.publicIp.toLowerCase().includes(params.publicIp.toLowerCase())
+      item.protectionIpGroupInfo && item.protectionIpGroupInfo.toLowerCase().includes(params.protectionIpGroupInfo.toLowerCase())
     )
   }
   
@@ -643,6 +624,22 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
     newItem.instanceName = getInstanceNameById(newItem.instanceId)
   }
   
+  // 添加防护IP组信息
+  if (newItem.protectionIpGroupId) {
+    // 从业务实例中获取IP组信息
+    const instance = businessInstanceData.getBusinessInstance(newItem.instanceId)
+    if (instance && instance.protectionIpGroups) {
+      const ipGroup = instance.protectionIpGroups.find(group => group.groupId === newItem.protectionIpGroupId)
+      if (ipGroup) {
+        newItem.protectionIpGroupInfo = ipGroup.displayName
+      } else {
+        newItem.protectionIpGroupInfo = `防护IP组 #${newItem.protectionIpGroupId.slice(-5)}`
+      }
+    } else {
+      newItem.protectionIpGroupInfo = `防护IP组 #${newItem.protectionIpGroupId.slice(-5)}`
+    }
+  }
+  
   // 添加到数据列表
   domainProtectionData.unshift(newItem)
   
@@ -664,6 +661,22 @@ Mock.mock('/api/protection/domain/update', 'put', (options) => {
     return {
       code: 404,
       message: '域名防护对象不存在'
+    }
+  }
+  
+  // 更新防护IP组信息
+  if (body.protectionIpGroupId && body.protectionIpGroupId !== domainProtectionData[index].protectionIpGroupId) {
+    // 从业务实例中获取IP组信息
+    const instance = businessInstanceData.getBusinessInstance(body.instanceId || domainProtectionData[index].instanceId)
+    if (instance && instance.protectionIpGroups) {
+      const ipGroup = instance.protectionIpGroups.find(group => group.groupId === body.protectionIpGroupId)
+      if (ipGroup) {
+        body.protectionIpGroupInfo = ipGroup.displayName
+      } else {
+        body.protectionIpGroupInfo = `防护IP组 #${body.protectionIpGroupId.slice(-5)}`
+      }
+    } else {
+      body.protectionIpGroupInfo = `防护IP组 #${body.protectionIpGroupId.slice(-5)}`
     }
   }
   

@@ -35,24 +35,24 @@
       
       <el-form-item label="接入方式" prop="accessType">
         <el-radio-group v-model="form.accessType">
-          <el-radio label="domain">域名接入</el-radio>
-          <el-radio label="port">端口接入</el-radio>
+          <el-radio value="domain">域名接入</el-radio>
+          <el-radio value="port">端口接入</el-radio>
         </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="防护公网IP" prop="publicIp">
+      <el-form-item label="防护IP组" prop="protectionIpGroupId">
         <el-select 
-          v-model="form.publicIp" 
-          placeholder="请选择防护公网IP" 
+          v-model="form.protectionIpGroupId" 
+          placeholder="请选择防护IP组" 
           style="width: 100%"
           :disabled="!form.instanceId"
-          @change="handlePublicIpChange"
+          @change="handleIpGroupChange"
         >
           <el-option
-            v-for="item in publicIpOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in protectionIpGroupOptions"
+            :key="item.groupId"
+            :label="item.displayName"
+            :value="item.groupId"
           />
         </el-select>
       </el-form-item>
@@ -75,8 +75,8 @@
       
       <el-form-item label="业务QPS" prop="businessQpsType">
         <el-radio-group v-model="form.businessQpsType" @change="handleBusinessQpsTypeChange">
-          <el-radio :label="'shared'">共享</el-radio>
-          <el-radio :label="'dedicated'">独享</el-radio>
+          <el-radio value="shared">共享</el-radio>
+          <el-radio value="dedicated">独享</el-radio>
         </el-radio-group>
       </el-form-item>
       
@@ -118,7 +118,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getBusinessInstanceOptions, getBusinessInstanceDetail } from '@/services/BusinessInstanceService'
-import { addDomainProtection, updateDomainProtection } from '@/services/ProtectionObjectService'
+import { addDomainProtection, updateDomainProtection, getInstanceAllocatedIpGroups, getIpGroupDetail } from '@/services/ProtectionObjectService'
 
 const props = defineProps({
   visible: {
@@ -147,8 +147,8 @@ const isEdit = computed(() => !!props.editData)
 // 业务实例选项
 const instanceOptions = ref([])
 
-// 防护公网IP选项
-const publicIpOptions = ref([])
+// 防护IP组选项
+const protectionIpGroupOptions = ref([])
 
 // 业务实例信息
 const instanceInfo = reactive({
@@ -166,7 +166,7 @@ const remainingBusinessQps = computed(() => {
 const form = reactive({
   instanceId: '',
   accessType: 'domain',
-  publicIp: '',
+  protectionIpGroupId: '',
   addressType: '',
   domain: '',
   cname: '',
@@ -183,8 +183,8 @@ const rules = reactive({
   accessType: [
     { required: true, message: '请选择接入方式', trigger: 'change' }
   ],
-  publicIp: [
-    { required: true, message: '请选择防护公网IP', trigger: 'change' }
+  protectionIpGroupId: [
+    { required: true, message: '请选择防护IP组', trigger: 'change' }
   ],
   domain: [
     { required: true, message: '请输入防护域名', trigger: 'blur' },
@@ -222,7 +222,7 @@ const initFormData = () => {
   Object.assign(form, {
     instanceId: '',
     accessType: 'domain',
-    publicIp: '',
+    protectionIpGroupId: '',
     addressType: '',
     domain: '',
     cname: '',
@@ -238,7 +238,7 @@ const initFormData = () => {
     allocatedBusinessQps: 0
   })
 
-  publicIpOptions.value = []
+  protectionIpGroupOptions.value = []
 
   // 如果是编辑模式，填充表单数据
   if (isEdit.value && props.editData) {
@@ -248,7 +248,7 @@ const initFormData = () => {
     Object.assign(form, {
       instanceId: editData.instanceId,
       accessType: editData.accessType || 'domain',
-      publicIp: editData.publicIp,
+      protectionIpGroupId: editData.protectionIpGroupId,
       addressType: editData.addressType,
       domain: editData.domain,
       cname: editData.cname,
@@ -257,14 +257,6 @@ const initFormData = () => {
       protectionPackage: editData.protectionPackage || 'standard'
     })
     
-    // 先将当前使用的IP添加到选项中
-    if (editData.publicIp) {
-      publicIpOptions.value = [{
-        label: editData.publicIp,
-        value: editData.publicIp
-      }];
-    }
-
     // 获取业务实例详情
     handleInstanceChange(editData.instanceId)
   }
@@ -272,13 +264,10 @@ const initFormData = () => {
 
 // 处理业务实例变更
 const handleInstanceChange = async (instanceId) => {
-  // 保存当前选中的IP，以便在获取新的IP列表后能恢复选择
-  const currentIp = form.publicIp
-  
   // 重置相关字段
-  form.publicIp = ''
-  publicIpOptions.value = []
+  form.protectionIpGroupId = ''
   form.addressType = ''
+  protectionIpGroupOptions.value = []
   
   // 重置实例信息
   Object.assign(instanceInfo, {
@@ -290,10 +279,9 @@ const handleInstanceChange = async (instanceId) => {
   if (!instanceId) return
   
   try {
-    // 处理业务实例ID格式，如果是字符串格式（如BI10001），则提取数字部分
-    const numericId = instanceId.toString().replace(/\D/g, '')
-    
-    const res = await getBusinessInstanceDetail(numericId)
+    loading.value = true
+    // 获取业务实例详情
+    const res = await getBusinessInstanceDetail(instanceId)
     if (res.code === 200) {
       const data = res.data
       
@@ -304,29 +292,43 @@ const handleInstanceChange = async (instanceId) => {
         allocatedBusinessQps: data.allocatedBusinessQps || 0
       })
       
-      // 更新防护公网IP选项
-      publicIpOptions.value = (data.publicIpList || []).map(ip => ({
-        label: ip,
-        value: ip
-      }))
-      
-      // 如果是编辑模式，需要把当前IP也加入选项中
-      if (isEdit.value && props.editData && props.editData.publicIp) {
-        const exists = publicIpOptions.value.some(item => item.value === props.editData.publicIp)
-        if (!exists) {
-          publicIpOptions.value.push({
-            label: props.editData.publicIp,
-            value: props.editData.publicIp
-          })
+      // 获取业务实例已分配的防护IP组
+      try {
+        const ipGroupsRes = await getInstanceAllocatedIpGroups(instanceId)
+        if (ipGroupsRes.code === 200) {
+          protectionIpGroupOptions.value = ipGroupsRes.data
+          
+          // 如果是编辑模式且有protectionIpGroupId，确保该选项在列表中
+          if (isEdit.value && props.editData && props.editData.protectionIpGroupId) {
+            const exists = protectionIpGroupOptions.value.some(item => 
+              item.groupId === props.editData.protectionIpGroupId
+            )
+            
+            if (!exists && props.editData.protectionIpGroupId) {
+              // 如果当前选中的IP组不在列表中，添加一个临时选项
+              protectionIpGroupOptions.value.push({
+                groupId: props.editData.protectionIpGroupId,
+                displayName: `防护IP组 #${props.editData.protectionIpGroupId.slice(-5)}`
+              })
+            }
+            
+            // 设置当前IP组
+            form.protectionIpGroupId = props.editData.protectionIpGroupId
+            // 获取IP组详情
+            await handleIpGroupChange(form.protectionIpGroupId)
+          }
+          
+          // 如果只有一个IP组选项，自动选择
+          if (protectionIpGroupOptions.value.length === 1 && !form.protectionIpGroupId) {
+            form.protectionIpGroupId = protectionIpGroupOptions.value[0].groupId
+            await handleIpGroupChange(form.protectionIpGroupId)
+          }
+        } else {
+          ElMessage.error(ipGroupsRes.message || '获取防护IP组列表失败')
         }
-        
-        // 如果是编辑模式，设置当前IP为已有IP
-        form.publicIp = props.editData.publicIp
-        handlePublicIpChange(form.publicIp)
-      } else if (currentIp) {
-        // 如果有保存的当前IP，则恢复选择
-        form.publicIp = currentIp
-        handlePublicIpChange(form.publicIp)
+      } catch (error) {
+        console.error('获取防护IP组列表失败:', error)
+        ElMessage.error('获取防护IP组列表失败')
       }
       
       // 设置默认值
@@ -340,16 +342,6 @@ const handleInstanceChange = async (instanceId) => {
       if (isEdit.value && props.editData) {
         instanceInfo.customerName = props.editData.customerName || '未知客户';
         
-        // 为公网IP选项添加当前IP
-        if (props.editData.publicIp) {
-          publicIpOptions.value = [{
-            label: props.editData.publicIp,
-            value: props.editData.publicIp
-          }];
-          form.publicIp = props.editData.publicIp;
-          form.addressType = props.editData.addressType || (props.editData.publicIp.includes(':') ? 'IPv6' : 'IPv4');
-        }
-        
         // 设置一些默认值
         instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
       }
@@ -362,29 +354,40 @@ const handleInstanceChange = async (instanceId) => {
     if (isEdit.value && props.editData) {
       instanceInfo.customerName = props.editData.customerName || '未知客户';
       
-      // 为公网IP选项添加当前IP
-      if (props.editData.publicIp) {
-        publicIpOptions.value = [{
-          label: props.editData.publicIp,
-          value: props.editData.publicIp
-        }];
-        form.publicIp = props.editData.publicIp;
-        form.addressType = props.editData.addressType || (props.editData.publicIp.includes(':') ? 'IPv6' : 'IPv4');
-      }
-      
       // 设置一些默认值
       instanceInfo.businessQps = props.editData.instanceBusinessQps || 5000;
     }
+  } finally {
+    loading.value = false
   }
 }
 
-// 处理公网IP变更
-const handlePublicIpChange = (ip) => {
-  if (ip) {
-    // 根据IP判断地址类型
-    form.addressType = ip.includes(':') ? 'IPv6' : 'IPv4'
-  } else {
+// 处理IP组变更
+const handleIpGroupChange = async (groupId) => {
+  if (!groupId) {
     form.addressType = ''
+    return
+  }
+  
+  try {
+    // 先从选项中查找
+    const ipGroup = protectionIpGroupOptions.value.find(item => item.groupId === groupId)
+    
+    if (ipGroup) {
+      // 设置地址类型
+      form.addressType = ipGroup.addressType || 'IPv4'
+    } else {
+      // 如果没有找到，从服务器获取详情
+      const res = await getIpGroupDetail(groupId)
+      if (res.code === 200) {
+        form.addressType = res.data.addressType || 'IPv4'
+      } else {
+        form.addressType = 'IPv4' // 默认值
+      }
+    }
+  } catch (error) {
+    console.error('获取IP组详情失败:', error)
+    form.addressType = 'IPv4' // 出错时使用默认值
   }
 }
 
@@ -419,7 +422,7 @@ const handleSubmit = async () => {
     const submitData = {
       instanceId: form.instanceId,
       accessType: form.accessType,
-      publicIp: form.publicIp,
+      protectionIpGroupId: form.protectionIpGroupId,
       addressType: form.addressType,
       domain: form.domain,
       cname: form.cname,
