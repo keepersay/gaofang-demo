@@ -473,6 +473,19 @@ const filterStatus = (value, row) => {
   return row.status === value
 }
 
+// 处理表格排序
+const handleSortChange = ({ prop, order }) => {
+  if (!prop) return;
+  
+  const data = [...tableData.value];
+  if (order === 'ascending') {
+    data.sort((a, b) => a[prop] > b[prop] ? 1 : -1);
+  } else if (order === 'descending') {
+    data.sort((a, b) => a[prop] < b[prop] ? 1 : -1);
+  }
+  tableData.value = data;
+}
+
 const statusPopoverVisible = ref(false)
 const statusFilterValue = ref([])
 function resetStatusFilter() { statusFilterValue.value = [] }

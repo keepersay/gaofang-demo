@@ -47,8 +47,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">是</el-dropdown-item>
-                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                    <el-dropdown-item command="true">是</el-dropdown-item>
+                    <el-dropdown-item command="false">否</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -119,8 +119,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">启用</el-dropdown-item>
-                    <el-dropdown-item :command="false">禁用</el-dropdown-item>
+                    <el-dropdown-item command="true">启用</el-dropdown-item>
+                    <el-dropdown-item command="false">禁用</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -455,10 +455,15 @@ const statusFilter = ref(null)
 
 // 处理是否Anycast过滤
 const handleAnycastFilterChange = (value) => {
-  anycastFilter.value = value
+  if (value === "true") {
+    anycastFilter.value = true;
+  } else if (value === "false") {
+    anycastFilter.value = false;
+  } else {
+    anycastFilter.value = value; // null
+  }
   filterData()
 }
-
 // 处理地址类型过滤
 const handleAddressTypeFilterChange = (value) => {
   addressTypeFilter.value = value
@@ -467,10 +472,15 @@ const handleAddressTypeFilterChange = (value) => {
 
 // 处理状态过滤
 const handleStatusFilterChange = (value) => {
-  statusFilter.value = value
+  if (value === "true") {
+    statusFilter.value = true;
+  } else if (value === "false") {
+    statusFilter.value = false;
+  } else {
+    statusFilter.value = value; // null
+  }
   filterData()
 }
-
 // 过滤数据
 const filterData = () => {
   let filteredData = [...mockData]

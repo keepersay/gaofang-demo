@@ -180,8 +180,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">是</el-dropdown-item>
-                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                    <el-dropdown-item command="true">是</el-dropdown-item>
+                    <el-dropdown-item command="false">否</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -202,8 +202,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">是</el-dropdown-item>
-                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                    <el-dropdown-item command="true">是</el-dropdown-item>
+                    <el-dropdown-item command="false">否</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -224,8 +224,8 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="null">全部</el-dropdown-item>
-                    <el-dropdown-item :command="true">是</el-dropdown-item>
-                    <el-dropdown-item :command="false">否</el-dropdown-item>
+                    <el-dropdown-item command="true">是</el-dropdown-item>
+                    <el-dropdown-item command="false">否</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
