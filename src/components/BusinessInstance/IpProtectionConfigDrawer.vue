@@ -17,17 +17,17 @@
               label-width="140px"
               label-position="right"
             >
-              <el-form-item label="防护公网IP" prop="publicIp">
+              <el-form-item label="防护IP组" prop="protectionIpGroupId">
                 <el-select 
-                  v-model="basicForm.publicIp" 
-                  placeholder="请选择防护公网IP" 
+                  v-model="basicForm.protectionIpGroupId" 
+                  placeholder="请选择防护IP组" 
                   style="width: 100%"
                 >
                   <el-option
-                    v-for="item in publicIpOptions"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
+                    v-for="item in protectionIpGroupOptions"
+                    :key="item.groupId"
+                    :label="item.displayName"
+                    :value="item.groupId"
                   />
                 </el-select>
               </el-form-item>
@@ -235,7 +235,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getIpProtectionDetail, updateIpProtectionConfig } from '@/services/ProtectionObjectService'
+import { getIpProtectionDetail, updateIpProtectionConfig, getInstanceAllocatedIpGroups } from '@/services/ProtectionObjectService'
 
 const props = defineProps({
   visible: {
@@ -271,7 +271,7 @@ const memberFormRef = ref(null)
 // 基本信息表单
 const basicForm = reactive({
   id: null,
-  publicIp: '',
+  protectionIpGroupId: '',
   protectionBandwidthType: 'shared',
   dedicatedProtectionBandwidth: 0,
   instanceProtectionBandwidth: 0,
@@ -281,8 +281,8 @@ const basicForm = reactive({
   layer7Protection: false
 })
 
-// 防护公网IP选项
-const publicIpOptions = ref([])
+// 防护IP组选项
+const protectionIpGroupOptions = ref([])
 
 // 实例信息
 const instanceInfo = reactive({
@@ -305,8 +305,8 @@ const remainingBusinessBandwidth = computed(() => {
 
 // 表单验证规则
 const basicRules = reactive({
-  publicIp: [
-    { required: true, message: '请选择防护公网IP', trigger: 'change' }
+  protectionIpGroupId: [
+    { required: true, message: '请选择防护IP组', trigger: 'change' }
   ],
   protectionBandwidthType: [
     { required: true, message: '请选择防护带宽类型', trigger: 'change' }
@@ -447,7 +447,7 @@ const fetchProtectionDetail = async () => {
       // 更新基本信息表单
       Object.assign(basicForm, {
         id: data.id,
-        publicIp: data.publicIp,
+        protectionIpGroupId: data.protectionIpGroupId,
         protectionBandwidthType: data.protectionBandwidthType,
         dedicatedProtectionBandwidth: data.dedicatedProtectionBandwidth,
         instanceProtectionBandwidth: data.instanceProtectionBandwidth,
@@ -469,20 +469,28 @@ const fetchProtectionDetail = async () => {
         })
       }
       
-      // 填充公网IP选项
-      if (data.instanceInfo && data.instanceInfo.publicIpList) {
-        publicIpOptions.value = data.instanceInfo.publicIpList.map(ip => ({
-          label: ip,
-          value: ip
-        }))
-        
-        // 确保当前IP在选项中
-        const exists = publicIpOptions.value.some(item => item.value === data.publicIp)
-        if (!exists && data.publicIp) {
-          publicIpOptions.value.push({
-            label: data.publicIp,
-            value: data.publicIp
-          })
+      // 获取业务实例已分配的防护IP组
+      if (data.instanceId) {
+        try {
+          const ipGroupsRes = await getInstanceAllocatedIpGroups(data.instanceId)
+          if (ipGroupsRes.code === 200) {
+            protectionIpGroupOptions.value = ipGroupsRes.data.map(group => ({
+              groupId: group.groupId,
+              displayName: group.displayName
+            }))
+            
+            // 确保当前IP组在选项中
+            const exists = protectionIpGroupOptions.value.some(item => item.groupId === data.protectionIpGroupId)
+            if (!exists && data.protectionIpGroupId) {
+              // 如果当前选中的IP组不在列表中，添加一个临时选项
+              protectionIpGroupOptions.value.push({
+                groupId: data.protectionIpGroupId,
+                displayName: `IP组 #${protectionIpGroupOptions.value.length + 1}`
+              })
+            }
+          }
+        } catch (error) {
+          console.error('获取防护IP组列表失败:', error)
         }
       }
       
@@ -548,7 +556,7 @@ const handleSave = async () => {
     // 构建提交数据
     const submitData = {
       id: basicForm.id,
-      publicIp: basicForm.publicIp,
+      protectionIpGroupId: basicForm.protectionIpGroupId,
       protectionBandwidthType: basicForm.protectionBandwidthType,
       dedicatedProtectionBandwidth: basicForm.protectionBandwidthType === 'dedicated' ? basicForm.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: basicForm.businessBandwidthType,

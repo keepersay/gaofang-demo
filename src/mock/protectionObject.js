@@ -557,10 +557,17 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
     }
   }
   
+  // 添加instanceId字段，用于获取防护IP组列表
+  const detailData = {
+    ...item,
+    // 将原来的publicIp字段改为protectionIpGroupId
+    protectionIpGroupId: item.protectionIpGroupId || item.publicIp
+  }
+  
   return {
     code: 200,
     message: 'success',
-    data: item
+    data: detailData
   }
 })
 
@@ -576,6 +583,16 @@ Mock.mock('/api/protection/ip/config', 'put', (options) => {
       code: 404,
       message: 'IP防护对象不存在'
     }
+  }
+  
+  // 处理protectionIpGroupId字段
+  if (body.protectionIpGroupId) {
+    // 如果传入了protectionIpGroupId，则更新对应的字段
+    ipProtectionData[index].protectionIpGroupId = body.protectionIpGroupId
+    
+    // 同时更新protectionIpGroupInfo字段
+    const ipGroup = body.protectionIpGroupId
+    ipProtectionData[index].protectionIpGroupInfo = `防护IP组 #${ipGroup.slice(-5)}`
   }
   
   // 更新配置
