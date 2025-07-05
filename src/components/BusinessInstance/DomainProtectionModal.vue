@@ -244,9 +244,14 @@ const initFormData = () => {
   if (isEdit.value && props.editData) {
     const editData = props.editData
 
+    // 确保instanceId格式正确
+    const formattedInstanceId = editData.instanceId.toString().startsWith('BI') 
+      ? editData.instanceId 
+      : `BI${editData.instanceId}`;
+
     // 填充基础表单数据
     Object.assign(form, {
-      instanceId: editData.instanceId,
+      instanceId: formattedInstanceId,
       accessType: editData.accessType || 'domain',
       protectionIpGroupId: editData.protectionIpGroupId,
       addressType: editData.addressType,
@@ -256,9 +261,9 @@ const initFormData = () => {
       dedicatedBusinessQps: editData.dedicatedBusinessQps || 0,
       protectionPackage: editData.protectionPackage || 'standard'
     })
-    
+
     // 获取业务实例详情
-    handleInstanceChange(editData.instanceId)
+    handleInstanceChange(formattedInstanceId)
   }
 }
 
@@ -280,8 +285,17 @@ const handleInstanceChange = async (instanceId) => {
   
   try {
     loading.value = true
+    console.log(`处理业务实例变更，原始ID: ${instanceId}`);
+    
+    // 确保instanceId格式正确，如果是纯数字，则添加BI前缀
+    const formattedInstanceId = instanceId.toString().startsWith('BI') 
+      ? instanceId 
+      : `BI${instanceId}`;
+      
+    console.log(`格式化后的业务实例ID: ${formattedInstanceId}`);
+    
     // 获取业务实例详情
-    const res = await getBusinessInstanceDetail(instanceId)
+    const res = await getBusinessInstanceDetail(formattedInstanceId)
     if (res.code === 200) {
       const data = res.data
       
@@ -294,7 +308,7 @@ const handleInstanceChange = async (instanceId) => {
       
       // 获取业务实例已分配的防护IP组
       try {
-        const ipGroupsRes = await getInstanceAllocatedIpGroups(instanceId)
+        const ipGroupsRes = await getInstanceAllocatedIpGroups(formattedInstanceId)
         if (ipGroupsRes.code === 200) {
           protectionIpGroupOptions.value = ipGroupsRes.data
           

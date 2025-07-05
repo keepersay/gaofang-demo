@@ -606,9 +606,16 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
   
   // 创建新对象
   const newId = getNewDomainProtectionId()
+  
+  // 确保instanceId格式正确
+  const instanceId = body.instanceId.toString().startsWith('BI') 
+    ? body.instanceId 
+    : `BI${body.instanceId}`;
+  
   const newItem = {
     id: newId,
     ...body,
+    instanceId: instanceId, // 使用格式化后的instanceId
     createTime: new Date().toISOString()
   }
   
@@ -616,7 +623,7 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
   if (!newItem.customerName && newItem.instanceId) {
     // 模拟根据业务实例ID获取客户名称
     const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司']
-    newItem.customerName = customerNames[newItem.instanceId % customerNames.length]
+    newItem.customerName = customerNames[newItem.instanceId.replace('BI', '') % customerNames.length]
   }
   
   // 如果没有设置业务实例名称，根据业务实例ID设置
@@ -664,10 +671,18 @@ Mock.mock('/api/protection/domain/update', 'put', (options) => {
     }
   }
   
+  // 确保instanceId格式正确
+  if (body.instanceId) {
+    body.instanceId = body.instanceId.toString().startsWith('BI') 
+      ? body.instanceId 
+      : `BI${body.instanceId}`;
+  }
+  
   // 更新防护IP组信息
   if (body.protectionIpGroupId && body.protectionIpGroupId !== domainProtectionData[index].protectionIpGroupId) {
     // 从业务实例中获取IP组信息
-    const instance = businessInstanceData.getBusinessInstance(body.instanceId || domainProtectionData[index].instanceId)
+    const instanceId = body.instanceId || domainProtectionData[index].instanceId;
+    const instance = businessInstanceData.getBusinessInstance(instanceId)
     if (instance && instance.protectionIpGroups) {
       const ipGroup = instance.protectionIpGroups.find(group => group.groupId === body.protectionIpGroupId)
       if (ipGroup) {
@@ -812,8 +827,13 @@ if (mock) {
     const instanceId = options.url.match(/\/api\/business-instance\/(\w+)\/allocated-ip-groups/)[1]
     console.log('获取业务实例已分配的防护IP组，业务实例ID:', instanceId);
     
+    // 确保instanceId格式正确
+    const formattedInstanceId = instanceId.toString().startsWith('BI') 
+      ? instanceId 
+      : `BI${instanceId}`;
+    
     // 如果是BI10002，直接返回固定的IP组数据
-    if (instanceId === 'BI10002') {
+    if (formattedInstanceId === 'BI10002') {
       console.log('返回BI10002的固定IP组数据');
       const fixedGroups = [
         {
@@ -854,9 +874,9 @@ if (mock) {
     }
     
     // 获取业务实例
-    const instance = businessInstanceData.getBusinessInstance(instanceId)
+    const instance = businessInstanceData.getBusinessInstance(formattedInstanceId)
     if (!instance) {
-      console.error(`业务实例不存在: ${instanceId}`);
+      console.error(`业务实例不存在: ${formattedInstanceId}`);
       return {
         code: 404,
         message: '业务实例不存在'
@@ -878,7 +898,7 @@ if (mock) {
         });
       });
       
-      console.log(`为业务实例 ${instanceId} 生成了默认IP组数据`);
+      console.log(`为业务实例 ${formattedInstanceId} 生成了默认IP组数据`);
       return {
         code: 200,
         data: defaultGroups,
@@ -887,7 +907,7 @@ if (mock) {
     }
     
     // 返回已分配的IP组数据
-    console.log(`成功获取业务实例 ${instanceId} 的IP组数据，共 ${instance.protectionIpGroups.length} 条`);
+    console.log(`成功获取业务实例 ${formattedInstanceId} 的IP组数据，共 ${instance.protectionIpGroups.length} 条`);
     return {
       code: 200,
       data: instance.protectionIpGroups || [],
