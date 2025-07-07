@@ -2,7 +2,7 @@
   <div>
     <el-drawer
       v-model="drawerVisible"
-      title="安全防护配置"
+      title="安全防护"
       size="50%"
       :destroy-on-close="false"
       :before-close="handleClose"

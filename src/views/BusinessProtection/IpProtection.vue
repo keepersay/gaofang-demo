@@ -108,7 +108,7 @@
             link
             @click="handleSecurityConfig(row)"
           >
-            安全防护配置
+            安全防护
           </el-button>
           <el-button 
             type="danger" 
