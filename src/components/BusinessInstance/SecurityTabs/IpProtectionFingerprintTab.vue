@@ -531,4 +531,27 @@ const updateModelValue = () => {
   padding: 0;
   overflow: hidden;
 }
+
+/* 表格样式调整，使内容更紧凑 */
+:deep(.el-table) {
+  font-size: 12px;
+}
+
+:deep(.el-table .cell) {
+  padding: 6px 8px;
+  line-height: 1.3;
+}
+
+:deep(.el-table th) {
+  padding: 8px 0;
+}
+
+:deep(.el-table td) {
+  padding: 4px 0;
+}
+
+:deep(.el-button--text) {
+  padding: 2px 4px;
+  font-size: 12px;
+}
 </style> 

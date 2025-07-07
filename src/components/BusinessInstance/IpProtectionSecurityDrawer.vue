@@ -371,7 +371,7 @@ watch(
 
 .security-tabs :deep(.el-tabs__content) {
   flex: 1;
-  padding: 20px;
+  padding: 15px;
   overflow: auto;
 }
 
@@ -381,14 +381,15 @@ watch(
 }
 
 .security-tabs :deep(.el-tabs__nav) {
-  min-width: 150px;
+  min-width: 120px;
 }
 
 .security-tabs :deep(.el-tabs__item) {
-  height: 50px;
-  line-height: 50px;
+  height: 40px;
+  line-height: 40px;
   text-align: left;
-  padding-left: 20px;
+  padding-left: 12px;
+  font-size: 13px;
 }
 
 .tab-content {
