@@ -30,12 +30,9 @@
             </el-tab-pane>
             
             <el-tab-pane label="源限速" name="ratelimit">
-              <div class="tab-content">
-                <h3>源限速</h3>
-                <div class="placeholder-content">
-                  此功能模块待实现
-                </div>
-              </div>
+              <IpProtectionRateLimitTab
+                v-model:config="securityConfig.rateLimit"
+              />
             </el-tab-pane>
             
             <el-tab-pane label="反射攻击配置" name="reflection">
@@ -74,6 +71,7 @@ import { getIpProtectionDetail, updateIpProtectionConfig } from '@/services/Prot
 import IpProtectionIcmpBlockTab from './SecurityTabs/IpProtectionIcmpBlockTab.vue'
 import IpProtectionBlackWhiteListTab from './SecurityTabs/IpProtectionBlackWhiteListTab.vue'
 import IpProtectionRegionBlockTab from './SecurityTabs/IpProtectionRegionBlockTab.vue'
+import IpProtectionRateLimitTab from './SecurityTabs/IpProtectionRateLimitTab.vue'
 
 const props = defineProps({
   visible: {
@@ -119,6 +117,17 @@ const securityConfig = reactive({
   regionBlock: {
     chinaRegions: [],
     internationalRegions: []
+  },
+  
+  // 源限速配置
+  rateLimit: {
+    enabled: false,
+    type: 'pps',
+    threshold: 1000,
+    action: 'limit',
+    blockTime: '5',
+    customBlockTime: 5,
+    whitelist: []
   }
 })
 
@@ -153,6 +162,19 @@ const fetchProtectionDetail = async () => {
           internationalRegions: res.data.securityConfig.regionBlock.internationalRegions || []
         }
       }
+      
+      // 设置源限速数据
+      if (res.data.securityConfig && res.data.securityConfig.rateLimit) {
+        securityConfig.rateLimit = {
+          enabled: res.data.securityConfig.rateLimit.enabled || false,
+          type: res.data.securityConfig.rateLimit.type || 'pps',
+          threshold: res.data.securityConfig.rateLimit.threshold || 1000,
+          action: res.data.securityConfig.rateLimit.action || 'limit',
+          blockTime: res.data.securityConfig.rateLimit.blockTime || '5',
+          customBlockTime: res.data.securityConfig.rateLimit.customBlockTime || 5,
+          whitelist: res.data.securityConfig.rateLimit.whitelist || []
+        }
+      }
     } else {
       ElMessage.error(res.message || '获取防护对象详情失败')
     }
@@ -181,7 +203,8 @@ const handleSave = async () => {
         icmp: securityConfig.icmp,
         blacklist: securityConfig.blackWhiteList.blacklist,
         whitelist: securityConfig.blackWhiteList.whitelist,
-        regionBlock: securityConfig.regionBlock
+        regionBlock: securityConfig.regionBlock,
+        rateLimit: securityConfig.rateLimit
       }
     }
     
