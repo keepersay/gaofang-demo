@@ -121,13 +121,26 @@ const securityConfig = reactive({
   
   // 源限速配置
   rateLimit: {
-    enabled: false,
-    type: 'pps',
-    threshold: 1000,
-    action: 'limit',
-    blockTime: '5',
-    customBlockTime: 5,
-    whitelist: []
+    pps: {
+      enabled: false,
+      threshold: 1000,
+      enableWhitelist: false
+    },
+    bps: {
+      enabled: false,
+      threshold: 10240,
+      enableWhitelist: false
+    },
+    synPps: {
+      enabled: false,
+      threshold: 100,
+      enableWhitelist: false
+    },
+    synBps: {
+      enabled: false,
+      threshold: 10240,
+      enableWhitelist: false
+    }
   }
 })
 
@@ -165,14 +178,69 @@ const fetchProtectionDetail = async () => {
       
       // 设置源限速数据
       if (res.data.securityConfig && res.data.securityConfig.rateLimit) {
-        securityConfig.rateLimit = {
-          enabled: res.data.securityConfig.rateLimit.enabled || false,
-          type: res.data.securityConfig.rateLimit.type || 'pps',
-          threshold: res.data.securityConfig.rateLimit.threshold || 1000,
-          action: res.data.securityConfig.rateLimit.action || 'limit',
-          blockTime: res.data.securityConfig.rateLimit.blockTime || '5',
-          customBlockTime: res.data.securityConfig.rateLimit.customBlockTime || 5,
-          whitelist: res.data.securityConfig.rateLimit.whitelist || []
+        try {
+          // 检查是否为旧版数据结构
+          if (res.data.securityConfig.rateLimit.pps === undefined) {
+            // 旧版数据结构
+            const oldRateLimit = res.data.securityConfig.rateLimit;
+            securityConfig.rateLimit = {
+              pps: {
+                enabled: oldRateLimit.type === 'pps' && oldRateLimit.enabled,
+                threshold: oldRateLimit.type === 'pps' ? oldRateLimit.threshold : 1000,
+                enableWhitelist: false
+              },
+              bps: {
+                enabled: oldRateLimit.type === 'bps' && oldRateLimit.enabled,
+                threshold: oldRateLimit.type === 'bps' ? oldRateLimit.threshold : 10240,
+                enableWhitelist: false
+              },
+              synPps: {
+                enabled: oldRateLimit.type === 'synpps' && oldRateLimit.enabled,
+                threshold: oldRateLimit.type === 'synpps' ? oldRateLimit.threshold : 100,
+                enableWhitelist: false
+              },
+              synBps: {
+                enabled: oldRateLimit.type === 'synbps' && oldRateLimit.enabled,
+                threshold: oldRateLimit.type === 'synbps' ? oldRateLimit.threshold : 10240,
+                enableWhitelist: false
+              }
+            };
+          } else {
+            // 新版数据结构
+            securityConfig.rateLimit = {
+              pps: {
+                enabled: res.data.securityConfig.rateLimit.pps?.enabled || false,
+                threshold: res.data.securityConfig.rateLimit.pps?.threshold || 1000,
+                enableWhitelist: res.data.securityConfig.rateLimit.pps?.enableWhitelist || false
+              },
+              bps: {
+                enabled: res.data.securityConfig.rateLimit.bps?.enabled || false,
+                threshold: res.data.securityConfig.rateLimit.bps?.threshold || 10240,
+                enableWhitelist: res.data.securityConfig.rateLimit.bps?.enableWhitelist || false
+              },
+              synPps: {
+                enabled: res.data.securityConfig.rateLimit.synPps?.enabled || false,
+                threshold: res.data.securityConfig.rateLimit.synPps?.threshold || 100,
+                enableWhitelist: res.data.securityConfig.rateLimit.synPps?.enableWhitelist || false
+              },
+              synBps: {
+                enabled: res.data.securityConfig.rateLimit.synBps?.enabled || false,
+                threshold: res.data.securityConfig.rateLimit.synBps?.threshold || 10240,
+                enableWhitelist: res.data.securityConfig.rateLimit.synBps?.enableWhitelist || false
+              },
+              whitelist: res.data.securityConfig.rateLimit.whitelist || []
+            };
+          }
+        } catch (e) {
+          console.error('解析源限速数据出错:', e);
+          // 使用默认配置
+          securityConfig.rateLimit = {
+            pps: { enabled: false, threshold: 1000, enableWhitelist: false },
+            bps: { enabled: false, threshold: 10240, enableWhitelist: false },
+            synPps: { enabled: false, threshold: 100, enableWhitelist: false },
+            synBps: { enabled: false, threshold: 10240, enableWhitelist: false },
+            whitelist: []
+          };
         }
       }
     } else {

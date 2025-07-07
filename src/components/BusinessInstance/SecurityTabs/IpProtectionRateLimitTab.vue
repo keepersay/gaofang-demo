@@ -9,103 +9,135 @@
     </div>
     
     <div class="rate-limit-settings">
-      <div class="limit-switch-row">
-        <span class="limit-label">启用源限速：</span>
-        <el-switch v-model="rateLimit.enabled" @change="updateConfig" />
+      <!-- PPS限速设置 -->
+      <div class="limit-item">
+        <div class="limit-header">
+          <div class="limit-switch-row">
+            <span class="required-marker">*</span>
+            <span class="limit-label">源PPS限速</span>
+            <el-switch v-model="rateLimit.pps.enabled" @change="updateConfig" />
+          </div>
+        </div>
+        
+        <div v-if="rateLimit.pps.enabled" class="limit-content">
+          <div class="threshold-row">
+            <span class="threshold-label">当源PPS限速达到</span>
+            <el-input-number 
+              v-model="rateLimit.pps.threshold" 
+              :min="32" 
+              :max="50000"
+              @change="updateConfig"
+              controls-position="right"
+              size="small"
+              class="threshold-input"
+            />
+            <span class="threshold-unit">Packet/s，做限速处理</span>
+          </div>
+          
+          <div class="whitelist-row">
+            <el-checkbox v-model="rateLimit.pps.enableWhitelist" @change="updateConfig">
+              源PPS限速超60秒仍攻击，将该源IP加入黑名单
+            </el-checkbox>
+          </div>
+        </div>
       </div>
       
-      <div v-if="rateLimit.enabled" class="limit-settings-container">
-        <div class="limit-type-row">
-          <span class="limit-label">限速类型：</span>
-          <el-radio-group v-model="rateLimit.type" @change="updateConfig">
-            <el-radio label="bps">bps</el-radio>
-            <el-radio label="pps">pps</el-radio>
-            <el-radio label="synbps">synbps</el-radio>
-            <el-radio label="synpps">synpps</el-radio>
-          </el-radio-group>
+      <!-- 源带宽限速设置 -->
+      <div class="limit-item">
+        <div class="limit-header">
+          <div class="limit-switch-row">
+            <span class="required-marker">*</span>
+            <span class="limit-label">源带宽限速</span>
+            <el-switch v-model="rateLimit.bps.enabled" @change="updateConfig" />
+          </div>
         </div>
         
-        <div class="limit-threshold-row">
-          <span class="limit-label">限速阈值：</span>
-          <el-input-number 
-            v-model="rateLimit.threshold" 
-            :min="1" 
-            :max="100000"
-            @change="updateConfig"
-          />
-          <span class="limit-unit">{{ getUnitByType(rateLimit.type) }}</span>
-        </div>
-        
-        <div class="limit-action-row">
-          <span class="limit-label">超限行为：</span>
-          <el-radio-group v-model="rateLimit.action" @change="updateConfig">
-            <el-radio label="limit">限速</el-radio>
-            <el-radio label="block">拉黑</el-radio>
-          </el-radio-group>
-        </div>
-        
-        <div class="block-time-row" v-if="rateLimit.action === 'block'">
-          <span class="limit-label">拉黑时长：</span>
-          <el-select v-model="rateLimit.blockTime" @change="updateConfig" style="width: 150px;">
-            <el-option
-              v-for="item in blockTimeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-          <div v-if="rateLimit.blockTime === 'custom'" class="custom-block-time">
+        <div v-if="rateLimit.bps.enabled" class="limit-content">
+          <div class="threshold-row">
+            <span class="threshold-label">当源带宽限速达到</span>
             <el-input-number 
-              v-model="rateLimit.customBlockTime" 
-              :min="1" 
-              :max="1440"
+              v-model="rateLimit.bps.threshold" 
+              :min="1024" 
+              :max="268435456"
               @change="updateConfig"
-              style="width: 120px;"
+              controls-position="right"
+              size="small"
+              class="threshold-input"
             />
-            <span class="limit-unit">分钟</span>
+            <span class="threshold-unit">Byte/s，做限速处理</span>
+          </div>
+          
+          <div class="whitelist-row">
+            <el-checkbox v-model="rateLimit.bps.enableWhitelist" @change="updateConfig">
+              源带宽限速超60秒仍攻击，将该源IP加入黑名单
+            </el-checkbox>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SYN PPS限速设置 -->
+      <div class="limit-item">
+        <div class="limit-header">
+          <div class="limit-switch-row">
+            <span class="required-marker">*</span>
+            <span class="limit-label">源SYN PPS限速</span>
+            <el-switch v-model="rateLimit.synPps.enabled" @change="updateConfig" />
           </div>
         </div>
         
-        <div class="limit-whitelist-row">
-          <span class="limit-label">白名单：</span>
-          <div class="whitelist-input-container">
-            <el-input
-              v-model="whitelistInput"
-              type="textarea"
-              :rows="4"
-              placeholder="请输入IP白名单，多个IP请用换行分隔"
+        <div v-if="rateLimit.synPps.enabled" class="limit-content">
+          <div class="threshold-row">
+            <span class="threshold-label">当源SYN PPS限速达到</span>
+            <el-input-number 
+              v-model="rateLimit.synPps.threshold" 
+              :min="1" 
+              :max="10000"
+              @change="updateConfig"
+              controls-position="right"
+              size="small"
+              class="threshold-input"
             />
-            <div class="whitelist-tip">
-              源限速白名单中的IP不受源限速规则限制，多个IP请用换行分隔
-            </div>
-            <div class="whitelist-actions">
-              <el-button type="primary" size="small" @click="addToWhitelist">添加</el-button>
-            </div>
+            <span class="threshold-unit">Packet/s，做限速处理</span>
+          </div>
+          
+          <div class="whitelist-row">
+            <el-checkbox v-model="rateLimit.synPps.enableWhitelist" @change="updateConfig">
+              源SYN PPS限速超60秒仍攻击，将该源IP加入黑名单
+            </el-checkbox>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SYN带宽限速设置 -->
+      <div class="limit-item">
+        <div class="limit-header">
+          <div class="limit-switch-row">
+            <span class="required-marker">*</span>
+            <span class="limit-label">源SYN带宽限速</span>
+            <el-switch v-model="rateLimit.synBps.enabled" @change="updateConfig" />
           </div>
         </div>
         
-        <div class="whitelist-table-container" v-if="rateLimit.whitelist.length > 0">
-          <h4>已添加的白名单</h4>
-          <el-table
-            :data="rateLimit.whitelist"
-            style="width: 100%"
-            border
-            stripe
-          >
-            <el-table-column prop="ip" label="IP" min-width="180" />
-            <el-table-column prop="addTime" label="添加时间" width="180" />
-            <el-table-column label="操作" width="100" fixed="right">
-              <template #default="scope">
-                <el-button
-                  type="danger"
-                  size="small"
-                  @click="removeFromWhitelist(scope.row)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+        <div v-if="rateLimit.synBps.enabled" class="limit-content">
+          <div class="threshold-row">
+            <span class="threshold-label">当源SYN带宽限速达到</span>
+            <el-input-number 
+              v-model="rateLimit.synBps.threshold" 
+              :min="1024" 
+              :max="268435456"
+              @change="updateConfig"
+              controls-position="right"
+              size="small"
+              class="threshold-input"
+            />
+            <span class="threshold-unit">Byte/s，做限速处理</span>
+          </div>
+          
+          <div class="whitelist-row">
+            <el-checkbox v-model="rateLimit.synBps.enableWhitelist" @change="updateConfig">
+              源SYN带宽限速超60秒仍攻击，将该源IP加入黑名单
+            </el-checkbox>
+          </div>
         </div>
       </div>
     </div>
@@ -113,20 +145,33 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   config: {
     type: Object,
     default: () => ({
-      enabled: false,
-      type: 'pps',
-      threshold: 1000,
-      action: 'limit',
-      blockTime: '5',
-      customBlockTime: 5,
-      whitelist: []
+      pps: {
+        enabled: false,
+        threshold: 1000,
+        enableWhitelist: false
+      },
+      bps: {
+        enabled: false,
+        threshold: 10240,
+        enableWhitelist: false
+      },
+      synPps: {
+        enabled: false,
+        threshold: 100,
+        enableWhitelist: false
+      },
+      synBps: {
+        enabled: false,
+        threshold: 10240,
+        enableWhitelist: false
+      }
     })
   }
 })
@@ -135,156 +180,68 @@ const emit = defineEmits(['update:config'])
 
 // 本地状态
 const rateLimit = reactive({
-  enabled: props.config?.enabled || false,
-  type: props.config?.type || 'pps',
-  threshold: props.config?.threshold || 1000,
-  action: props.config?.action || 'limit',
-  blockTime: props.config?.blockTime || '5',
-  customBlockTime: props.config?.customBlockTime || 5,
-  whitelist: []
-})
-
-const whitelistInput = ref('')
-
-// 拉黑时长选项
-const blockTimeOptions = [
-  { label: '5分钟', value: '5' },
-  { label: '10分钟', value: '10' },
-  { label: '30分钟', value: '30' },
-  { label: '1小时', value: '60' },
-  { label: '2小时', value: '120' },
-  { label: '6小时', value: '360' },
-  { label: '12小时', value: '720' },
-  { label: '1天', value: '1440' },
-  { label: '自定义', value: 'custom' }
-]
-
-// 根据限速类型获取单位
-const getUnitByType = (type) => {
-  switch (type) {
-    case 'bps':
-      return 'bps';
-    case 'pps':
-      return 'pps';
-    case 'synbps':
-      return 'syn/bps';
-    case 'synpps':
-      return 'syn/pps';
-    default:
-      return '';
+  pps: {
+    enabled: false,
+    threshold: 1000,
+    enableWhitelist: false
+  },
+  bps: {
+    enabled: false,
+    threshold: 10240,
+    enableWhitelist: false
+  },
+  synPps: {
+    enabled: false,
+    threshold: 100,
+    enableWhitelist: false
+  },
+  synBps: {
+    enabled: false,
+    threshold: 10240,
+    enableWhitelist: false
   }
-}
+})
 
 // 更新配置
 const updateConfig = () => {
   emit('update:config', {
-    enabled: rateLimit.enabled,
-    type: rateLimit.type,
-    threshold: rateLimit.threshold,
-    action: rateLimit.action,
-    blockTime: rateLimit.blockTime,
-    customBlockTime: rateLimit.customBlockTime,
-    whitelist: rateLimit.whitelist
+    pps: { ...rateLimit.pps },
+    bps: { ...rateLimit.bps },
+    synPps: { ...rateLimit.synPps },
+    synBps: { ...rateLimit.synBps }
   })
-}
-
-// 添加到白名单
-const addToWhitelist = () => {
-  if (!whitelistInput.value.trim()) {
-    ElMessage.warning('请输入IP地址')
-    return
-  }
-  
-  // 解析IP列表
-  const ips = whitelistInput.value.split(/[\n,，\s]+/).filter(ip => ip.trim())
-  
-  if (ips.length === 0) {
-    ElMessage.warning('请输入有效的IP')
-    return
-  }
-  
-  // 验证IP格式
-  const invalidIps = ips.filter(ip => !isValidIp(ip))
-  if (invalidIps.length > 0) {
-    ElMessage.warning(`以下IP格式无效: ${invalidIps.join(', ')}`)
-    return
-  }
-  
-  // 添加到白名单
-  let addedCount = 0
-  ips.forEach(ip => {
-    if (!rateLimit.whitelist.some(item => item.ip === ip)) {
-      rateLimit.whitelist.push({
-        ip,
-        addTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
-      })
-      addedCount++
-    }
-  })
-  
-  if (addedCount > 0) {
-    ElMessage.success(`成功添加 ${addedCount} 个IP到白名单`)
-    whitelistInput.value = ''
-    updateConfig()
-  } else {
-    ElMessage.warning('所有IP已存在于白名单中')
-  }
-}
-
-// 从白名单移除
-const removeFromWhitelist = (row) => {
-  ElMessageBox.confirm(
-    `确定要从白名单中删除 ${row.ip} 吗？`,
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    const index = rateLimit.whitelist.findIndex(item => item.ip === row.ip)
-    if (index !== -1) {
-      rateLimit.whitelist.splice(index, 1)
-      updateConfig()
-      ElMessage.success('删除成功')
-    }
-  }).catch(() => {})
-}
-
-// 验证IP地址格式
-const isValidIp = (ip) => {
-  // IPv4格式验证
-  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/
-  // IPv6格式验证
-  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/
-  // CIDR格式验证
-  const cidrRegex = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/
-  
-  if (ipv4Regex.test(ip)) {
-    // 验证IPv4各段数值
-    return ip.split('.').every(segment => parseInt(segment) <= 255)
-  } else if (ipv6Regex.test(ip)) {
-    return true
-  } else if (cidrRegex.test(ip)) {
-    const [ipPart, prefixPart] = ip.split('/')
-    const isValidIpPart = ipPart.split('.').every(segment => parseInt(segment) <= 255)
-    const isValidPrefix = parseInt(prefixPart) >= 0 && parseInt(prefixPart) <= 32
-    return isValidIpPart && isValidPrefix
-  }
-  
-  return false
 }
 
 // 初始化数据
 const initFromProps = () => {
   if (props.config) {
-    rateLimit.enabled = props.config.enabled || false
-    rateLimit.type = props.config.type || 'pps'
-    rateLimit.threshold = props.config.threshold || 1000
-    rateLimit.action = props.config.action || 'limit'
-    rateLimit.blockTime = props.config.blockTime || '5'
-    rateLimit.customBlockTime = props.config.customBlockTime || 5
-    rateLimit.whitelist = [...(props.config.whitelist || [])]
+    // 初始化PPS限速
+    if (props.config.pps) {
+      rateLimit.pps.enabled = props.config.pps.enabled || false
+      rateLimit.pps.threshold = props.config.pps.threshold || 1000
+      rateLimit.pps.enableWhitelist = props.config.pps.enableWhitelist || false
+    }
+    
+    // 初始化BPS限速
+    if (props.config.bps) {
+      rateLimit.bps.enabled = props.config.bps.enabled || false
+      rateLimit.bps.threshold = props.config.bps.threshold || 10240
+      rateLimit.bps.enableWhitelist = props.config.bps.enableWhitelist || false
+    }
+    
+    // 初始化SYN PPS限速
+    if (props.config.synPps) {
+      rateLimit.synPps.enabled = props.config.synPps.enabled || false
+      rateLimit.synPps.threshold = props.config.synPps.threshold || 100
+      rateLimit.synPps.enableWhitelist = props.config.synPps.enableWhitelist || false
+    }
+    
+    // 初始化SYN BPS限速
+    if (props.config.synBps) {
+      rateLimit.synBps.enabled = props.config.synBps.enabled || false
+      rateLimit.synBps.threshold = props.config.synBps.threshold || 10240
+      rateLimit.synBps.enableWhitelist = props.config.synBps.enableWhitelist || false
+    }
   }
 }
 
@@ -315,62 +272,56 @@ initFromProps()
   margin-top: 20px;
 }
 
-.limit-switch-row,
-.limit-type-row,
-.limit-threshold-row,
-.limit-action-row,
-.block-time-row,
-.limit-whitelist-row {
-  display: flex;
+.limit-item {
   margin-bottom: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.limit-header {
+  padding: 12px 15px;
+  background-color: #f5f7fa;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.limit-content {
+  padding: 15px;
+}
+
+.limit-switch-row {
+  display: flex;
   align-items: center;
 }
 
+.required-marker {
+  color: #f56c6c;
+  margin-right: 5px;
+}
+
 .limit-label {
-  width: 100px;
   margin-right: 12px;
   flex-shrink: 0;
 }
 
-.limit-unit {
+.threshold-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.threshold-label {
+  margin-right: 10px;
+}
+
+.threshold-input {
+  width: 150px;
+}
+
+.threshold-unit {
   margin-left: 10px;
 }
 
-.limit-settings-container {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-}
-
-.custom-block-time {
+.whitelist-row {
   margin-top: 10px;
-  margin-left: 112px;
-  display: flex;
-  align-items: center;
-}
-
-.whitelist-input-container {
-  flex: 1;
-}
-
-.whitelist-tip {
-  margin-top: 5px;
-  font-size: 12px;
-  color: #909399;
-}
-
-.whitelist-actions {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.whitelist-table-container {
-  margin-top: 20px;
-}
-
-.whitelist-table-container h4 {
-  margin-bottom: 10px;
 }
 </style> 
