@@ -8,13 +8,7 @@
         <el-form-item label="业务实例">
           <el-input v-model="searchForm.instanceName" placeholder="请输入业务实例名称" clearable />
         </el-form-item>
-        <el-form-item label="地址类型">
-          <el-select v-model="searchForm.addressType" placeholder="请选择地址类型" clearable>
-            <el-option label="全部" value="" />
-            <el-option label="IPv4" value="IPv4" />
-            <el-option label="IPv6" value="IPv6" />
-          </el-select>
-        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -42,7 +36,10 @@
           {{ row.protectionIpGroupInfo }}
         </template>
       </el-table-column>
-      <el-table-column prop="addressType" label="地址类型" width="100">
+      <el-table-column prop="addressType" label="地址类型" width="100"
+        :filters="addressTypeFilters"
+        :filter-method="filterAddressType"
+        filter-placement="bottom-end">
         <template #default="{ row }">
           <el-tag :type="row.addressType === 'IPv4' ? 'success' : 'warning'">
             {{ row.addressType }}
@@ -188,9 +185,19 @@ const currentEditData = ref(null)
 const searchForm = reactive({
   publicIp: '',
   instanceName: '',
-  addressType: '',
   status: ''
 })
+
+// 地址类型过滤选项
+const addressTypeFilters = [
+  { text: 'IPv4', value: 'IPv4' },
+  { text: 'IPv6', value: 'IPv6' }
+]
+
+// 地址类型过滤方法
+const filterAddressType = (value, row) => {
+  return row.addressType === value
+}
 
 // 分页
 const pagination = reactive({
@@ -253,7 +260,6 @@ const handleSearch = () => {
 const resetSearch = () => {
   searchForm.publicIp = ''
   searchForm.instanceName = ''
-  searchForm.addressType = ''
   handleSearch()
 }
 
