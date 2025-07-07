@@ -36,12 +36,9 @@
             </el-tab-pane>
             
             <el-tab-pane label="反射攻击配置" name="reflection">
-              <div class="tab-content">
-                <h3>反射攻击配置</h3>
-                <div class="placeholder-content">
-                  此功能模块待实现
-                </div>
-              </div>
+              <IpProtectionReflectionTab
+                v-model="securityConfig.reflection"
+              />
             </el-tab-pane>
             
             <el-tab-pane label="指纹过滤" name="fingerprint">
@@ -72,6 +69,7 @@ import IpProtectionIcmpBlockTab from './SecurityTabs/IpProtectionIcmpBlockTab.vu
 import IpProtectionBlackWhiteListTab from './SecurityTabs/IpProtectionBlackWhiteListTab.vue'
 import IpProtectionRegionBlockTab from './SecurityTabs/IpProtectionRegionBlockTab.vue'
 import IpProtectionRateLimitTab from './SecurityTabs/IpProtectionRateLimitTab.vue'
+import IpProtectionReflectionTab from './SecurityTabs/IpProtectionReflectionTab.vue'
 
 const props = defineProps({
   visible: {
@@ -141,6 +139,13 @@ const securityConfig = reactive({
       threshold: 10240,
       enableWhitelist: false
     }
+  },
+  
+  // 反射攻击配置
+  reflection: {
+    enabled: false,
+    reflectionAttacks: [],
+    customRules: []
   }
 })
 
@@ -243,6 +248,11 @@ const fetchProtectionDetail = async () => {
           };
         }
       }
+      
+      // 设置反射攻击配置数据
+      if (res.data.securityConfig && res.data.securityConfig.reflection) {
+        securityConfig.reflection = res.data.securityConfig.reflection;
+      }
     } else {
       ElMessage.error(res.message || '获取防护对象详情失败')
     }
@@ -264,7 +274,7 @@ const handleSave = async () => {
   try {
     saveLoading.value = true
     
-    // 构建保存数据
+          // 构建保存数据
     const submitData = {
       id: props.protectionId,
       securityConfig: {
@@ -272,7 +282,8 @@ const handleSave = async () => {
         blacklist: securityConfig.blackWhiteList.blacklist,
         whitelist: securityConfig.blackWhiteList.whitelist,
         regionBlock: securityConfig.regionBlock,
-        rateLimit: securityConfig.rateLimit
+        rateLimit: securityConfig.rateLimit,
+        reflection: securityConfig.reflection
       }
     }
     
