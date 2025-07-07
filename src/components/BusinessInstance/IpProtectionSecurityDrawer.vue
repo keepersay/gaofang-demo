@@ -42,12 +42,9 @@
             </el-tab-pane>
             
             <el-tab-pane label="指纹过滤" name="fingerprint">
-              <div class="tab-content">
-                <h3>指纹过滤</h3>
-                <div class="placeholder-content">
-                  此功能模块待实现
-                </div>
-              </div>
+              <IpProtectionFingerprintTab
+                v-model="securityConfig.fingerprint"
+              />
             </el-tab-pane>
           </el-tabs>
         </div>
@@ -70,6 +67,7 @@ import IpProtectionBlackWhiteListTab from './SecurityTabs/IpProtectionBlackWhite
 import IpProtectionRegionBlockTab from './SecurityTabs/IpProtectionRegionBlockTab.vue'
 import IpProtectionRateLimitTab from './SecurityTabs/IpProtectionRateLimitTab.vue'
 import IpProtectionReflectionTab from './SecurityTabs/IpProtectionReflectionTab.vue'
+import IpProtectionFingerprintTab from './SecurityTabs/IpProtectionFingerprintTab.vue'
 
 const props = defineProps({
   visible: {
@@ -146,6 +144,12 @@ const securityConfig = reactive({
     enabled: false,
     reflectionAttacks: [],
     customRules: []
+  },
+  
+  // 指纹过滤配置
+  fingerprint: {
+    enabled: false,
+    rules: []
   }
 })
 
@@ -253,6 +257,11 @@ const fetchProtectionDetail = async () => {
       if (res.data.securityConfig && res.data.securityConfig.reflection) {
         securityConfig.reflection = res.data.securityConfig.reflection;
       }
+      
+      // 设置指纹过滤配置数据
+      if (res.data.securityConfig && res.data.securityConfig.fingerprint) {
+        securityConfig.fingerprint = res.data.securityConfig.fingerprint;
+      }
     } else {
       ElMessage.error(res.message || '获取防护对象详情失败')
     }
@@ -283,7 +292,8 @@ const handleSave = async () => {
         whitelist: securityConfig.blackWhiteList.whitelist,
         regionBlock: securityConfig.regionBlock,
         rateLimit: securityConfig.rateLimit,
-        reflection: securityConfig.reflection
+        reflection: securityConfig.reflection,
+        fingerprint: securityConfig.fingerprint
       }
     }
     
