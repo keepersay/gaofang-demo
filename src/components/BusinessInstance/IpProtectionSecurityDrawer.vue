@@ -3,7 +3,7 @@
     <el-drawer
       v-model="drawerVisible"
       title="安全防护"
-      size="50%"
+      size="60%"
       :destroy-on-close="false"
       :before-close="handleClose"
       custom-class="security-config-drawer"
@@ -381,7 +381,7 @@ watch(
 }
 
 .security-tabs :deep(.el-tabs__nav) {
-  min-width: 120px;
+  min-width: 100px;
 }
 
 .security-tabs :deep(.el-tabs__item) {
@@ -389,7 +389,7 @@ watch(
   line-height: 40px;
   text-align: left;
   padding-left: 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .tab-content {
