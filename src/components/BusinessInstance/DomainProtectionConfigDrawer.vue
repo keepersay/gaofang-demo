@@ -29,14 +29,33 @@
                 <el-tag>{{ getAccessTypeLabel(basicForm.accessType) }}</el-tag>
               </el-form-item>
               
-              <el-form-item label="防护IP组" prop="protectionIpGroupId">
+              <el-form-item label="IPv4防护IP组" prop="ipv4GroupId">
                 <el-select 
-                  v-model="basicForm.protectionIpGroupId" 
-                  placeholder="请选择防护IP组" 
+                  v-model="basicForm.ipv4GroupId" 
+                  placeholder="请选择IPv4防护IP组" 
                   style="width: 100%"
+                  clearable
+                  @change="handleIpGroupChange"
                 >
                   <el-option
-                    v-for="item in protectionIpGroupOptions"
+                    v-for="item in ipv4GroupOptions"
+                    :key="item.groupId"
+                    :label="item.displayName"
+                    :value="item.groupId"
+                  />
+                </el-select>
+              </el-form-item>
+              
+              <el-form-item label="IPv6防护IP组" prop="ipv6GroupId">
+                <el-select 
+                  v-model="basicForm.ipv6GroupId" 
+                  placeholder="请选择IPv6防护IP组" 
+                  style="width: 100%"
+                  clearable
+                  @change="handleIpGroupChange"
+                >
+                  <el-option
+                    v-for="item in ipv6GroupOptions"
                     :key="item.groupId"
                     :label="item.displayName"
                     :value="item.groupId"
@@ -45,7 +64,9 @@
               </el-form-item>
 
               <el-form-item label="地址类型">
-                <el-input v-model="basicForm.addressType" disabled />
+                <el-tag :type="getAddressTypeTagType(basicForm.addressType)">
+                  {{ basicForm.addressType }}
+                </el-tag>
               </el-form-item>
               
               <el-form-item label="防护域名" prop="domain">
@@ -226,7 +247,8 @@ const basicForm = reactive({
   id: null,
   instanceId: '',
   accessType: 'domain',
-  protectionIpGroupId: '',
+  ipv4GroupId: '',
+  ipv6GroupId: '',
   addressType: '',
   domain: '',
   cname: '',
@@ -238,6 +260,8 @@ const basicForm = reactive({
 
 // 防护IP组选项
 const protectionIpGroupOptions = ref([])
+const ipv4GroupOptions = ref([])
+const ipv6GroupOptions = ref([])
 
 // 实例信息
 const instanceInfo = reactive({
@@ -273,8 +297,29 @@ const memberForm = reactive({
 
 // 表单验证规则
 const basicRules = reactive({
-  protectionIpGroupId: [
-    { required: true, message: '请选择防护IP组', trigger: 'change' }
+  ipv4GroupId: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value && !basicForm.ipv6GroupId) {
+          callback(new Error('请至少选择一个防护IP组'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'change' 
+    }
+  ],
+  ipv6GroupId: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value && !basicForm.ipv4GroupId) {
+          callback(new Error('请至少选择一个防护IP组'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'change' 
+    }
   ],
   domain: [
     { required: true, message: '请输入防护域名', trigger: 'blur' },
@@ -341,7 +386,8 @@ const fetchProtectionDetail = async () => {
         id: data.id,
         instanceId: data.instanceId,
         accessType: data.accessType || 'domain',
-        protectionIpGroupId: data.protectionIpGroupId,
+        ipv4GroupId: data.ipv4GroupId || '',
+        ipv6GroupId: data.ipv6GroupId || '',
         addressType: data.addressType || 'IPv4',
         domain: data.domain,
         cname: data.cname,
@@ -368,17 +414,37 @@ const fetchProtectionDetail = async () => {
           if (ipGroupsRes.code === 200) {
             protectionIpGroupOptions.value = ipGroupsRes.data.map(group => ({
               groupId: group.groupId,
-              displayName: group.displayName
+              displayName: group.displayName,
+              addressType: group.addressType
             }))
             
+            // 分类IPv4和IPv6组
+            ipv4GroupOptions.value = protectionIpGroupOptions.value.filter(item => item.addressType === 'IPv4')
+            ipv6GroupOptions.value = protectionIpGroupOptions.value.filter(item => item.addressType === 'IPv6')
+            
             // 确保当前IP组在选项中
-            const exists = protectionIpGroupOptions.value.some(item => item.groupId === data.protectionIpGroupId)
-            if (!exists && data.protectionIpGroupId) {
-              // 如果当前选中的IP组不在列表中，添加一个临时选项
-              protectionIpGroupOptions.value.push({
-                groupId: data.protectionIpGroupId,
-                displayName: `防护IP组 #${data.protectionIpGroupId.slice(-5)}`
-              })
+            if (data.ipv4GroupId) {
+              const existsIpv4 = ipv4GroupOptions.value.some(item => item.groupId === data.ipv4GroupId)
+              if (!existsIpv4) {
+                // 如果当前选中的IPv4组不在列表中，添加一个临时选项
+                ipv4GroupOptions.value.push({
+                  groupId: data.ipv4GroupId,
+                  displayName: `IPv4组 #${data.ipv4GroupId.slice(-5)}`,
+                  addressType: 'IPv4'
+                })
+              }
+            }
+            
+            if (data.ipv6GroupId) {
+              const existsIpv6 = ipv6GroupOptions.value.some(item => item.groupId === data.ipv6GroupId)
+              if (!existsIpv6) {
+                // 如果当前选中的IPv6组不在列表中，添加一个临时选项
+                ipv6GroupOptions.value.push({
+                  groupId: data.ipv6GroupId,
+                  displayName: `IPv6组 #${data.ipv6GroupId.slice(-5)}`,
+                  addressType: 'IPv6'
+                })
+              }
             }
           } else {
             console.error('获取防护IP组列表失败:', ipGroupsRes.message)
@@ -432,6 +498,30 @@ const getAccessTypeLabel = (type) => {
   return types[type] || type
 }
 
+// 处理IP组变更
+const handleIpGroupChange = () => {
+  // 根据选择的IP组更新地址类型
+  if (basicForm.ipv4GroupId && basicForm.ipv6GroupId) {
+    basicForm.addressType = '双栈'
+  } else if (basicForm.ipv4GroupId) {
+    basicForm.addressType = 'IPv4'
+  } else if (basicForm.ipv6GroupId) {
+    basicForm.addressType = 'IPv6'
+  } else {
+    basicForm.addressType = ''
+  }
+}
+
+// 获取地址类型标签类型
+const getAddressTypeTagType = (type) => {
+  const types = {
+    'IPv4': 'primary',
+    'IPv6': 'success',
+    '双栈': 'warning'
+  }
+  return types[type] || 'info'
+}
+
 // 保存配置
 const handleSave = async () => {
   try {
@@ -448,7 +538,9 @@ const handleSave = async () => {
     // 构建提交数据
     const submitData = {
       id: basicForm.id,
-      protectionIpGroupId: basicForm.protectionIpGroupId,
+      ipv4GroupId: basicForm.ipv4GroupId,
+      ipv6GroupId: basicForm.ipv6GroupId,
+      addressType: basicForm.addressType,
       domain: basicForm.domain,
       businessQpsType: basicForm.businessQpsType,
       dedicatedBusinessQps: basicForm.businessQpsType === 'dedicated' ? basicForm.dedicatedBusinessQps : 0,
