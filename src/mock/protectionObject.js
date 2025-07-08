@@ -86,16 +86,29 @@ const domainProtectionList = Mock.mock({
       const names = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
       return names[Math.floor(Math.random() * names.length)];
     },
-    'protectionIpGroupId': function() {
-      return generateUUID();
+    'ipv4GroupId': function() {
+      // 偶数ID有IPv4组
+      return this.id % 2 === 0 ? generateUUID() : '';
+    },
+    'ipv6GroupId': function() {
+      // 3的倍数ID有IPv6组
+      return this.id % 3 === 0 ? generateUUID() : '';
     },
     'protectionIpGroupInfo': function() {
-      const addressTypes = ['IPv4', 'IPv6', 'dual'];
       const ipCount = this.id % 5 + 2;
       return `${this.addressType}防护组 #${this.id % 10 + 1}（${this.instanceName}，${ipCount}个IP）`;
     },
     'addressType': function() {
-      return this.id % 3 === 0 ? 'IPv6' : 'IPv4';
+      // 同时有IPv4和IPv6组的是双栈
+      if (this.ipv4GroupId && this.ipv6GroupId) {
+        return '双栈';
+      } else if (this.ipv4GroupId) {
+        return 'IPv4';
+      } else if (this.ipv6GroupId) {
+        return 'IPv6';
+      }
+      // 默认为IPv4
+      return 'IPv4';
     },
     'domain': function() {
       return `example${this.id}.com`
@@ -452,12 +465,12 @@ Mock.mock(/\/api\/protection\/domain\/\d+/, 'get', (options) => {
   
   console.log(`找到域名防护对象，ID: ${id}，业务实例ID: ${item.instanceId}`);
   
-  // 生成IPv4和IPv6组ID
-  const ipv4GroupId = item.id % 2 === 0 ? generateUUID() : '';
-  const ipv6GroupId = item.id % 3 === 0 ? generateUUID() : '';
+  // 确保有IPv4和IPv6组ID
+  const ipv4GroupId = item.ipv4GroupId || (item.addressType === 'IPv4' || item.addressType === '双栈' ? generateUUID() : '');
+  const ipv6GroupId = item.ipv6GroupId || (item.addressType === 'IPv6' || item.addressType === '双栈' ? generateUUID() : '');
   
   // 确定地址类型
-  let addressType = '';
+  let addressType = item.addressType || 'IPv4';
   if (ipv4GroupId && ipv6GroupId) {
     addressType = '双栈';
   } else if (ipv4GroupId) {
@@ -471,7 +484,7 @@ Mock.mock(/\/api\/protection\/domain\/\d+/, 'get', (options) => {
     ...item,
     ipv4GroupId,
     ipv6GroupId,
-    addressType: addressType || item.addressType,
+    addressType,
     instanceInfo: {
       customerName: item.customerName,
       businessQps: item.instanceBusinessQps,
@@ -734,85 +747,20 @@ Mock.mock('/api/protection/ip/config', 'put', (options) => {
 Mock.mock('/api/protection/domain/add', 'post', (options) => {
   const body = JSON.parse(options.body)
   
-  // 验证必填字段
-  const requiredFields = ['instanceId', 'protectionIpGroupId', 'domain', 'businessQpsType', 'protectionPackage'];
-  const errors = {};
-  
-  requiredFields.forEach(field => {
-    if (!body[field]) {
-      errors[field] = [`${field}字段不能为空`];
-    }
-  });
-  
-  // 验证域名格式
-  if (body.domain && !/^[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/.test(body.domain)) {
-    errors.domain = errors.domain || [];
-    errors.domain.push('域名格式不正确，请输入有效的域名格式，如example.com');
-  }
-  
-  // 如果有错误，返回错误信息
-  if (Object.keys(errors).length > 0) {
-    return {
-      code: 400,
-      message: '表单验证失败',
-      errors: errors
-    };
-  }
-  
   // 创建新对象
   const newId = getNewDomainProtectionId()
-  
-  // 确保instanceId格式正确
-  const instanceId = body.instanceId.toString().startsWith('BI') 
-    ? body.instanceId 
-    : `BI${body.instanceId}`;
-  
   const newItem = {
     id: newId,
     ...body,
-    instanceId: instanceId, // 使用格式化后的instanceId
-    status: 'active', // 设置默认状态为启用
+    // 确保有地址类型
+    addressType: body.addressType || (body.ipv4GroupId && body.ipv6GroupId ? '双栈' : (body.ipv4GroupId ? 'IPv4' : 'IPv6')),
+    cname: body.domain ? `${body.domain}.vmdat.com` : '',
+    status: 'active',
     createTime: new Date().toISOString()
   }
   
-  // 如果没有设置客户名称，根据业务实例ID设置
-  if (!newItem.customerName && newItem.instanceId) {
-    // 模拟根据业务实例ID获取客户名称
-    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司']
-    newItem.customerName = customerNames[newItem.instanceId.replace('BI', '') % customerNames.length]
-  }
-  
-  // 如果没有设置业务实例名称，根据业务实例ID设置
-  if (!newItem.instanceName && newItem.instanceId) {
-    newItem.instanceName = getInstanceNameById(newItem.instanceId)
-  }
-  
-  // 添加防护IP组信息
-  if (newItem.protectionIpGroupId) {
-    // 检查是否是来自业务实例选项的ID
-    const isFromOptions = businessInstanceOptions.data.some(option => option.value === instanceId);
-    
-    if (isFromOptions) {
-      // 对于来自业务实例选项的ID，直接使用IP组ID的后5位作为显示名称
-      newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`;
-    } else {
-      // 从业务实例中获取IP组信息
-      const instance = businessInstanceData.getBusinessInstance(newItem.instanceId)
-      if (instance && instance.protectionIpGroups) {
-        const ipGroup = instance.protectionIpGroups.find(group => group.groupId === newItem.protectionIpGroupId)
-        if (ipGroup) {
-          newItem.protectionIpGroupInfo = ipGroup.displayName
-        } else {
-          newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`
-        }
-      } else {
-        newItem.protectionIpGroupInfo = `${newItem.addressType}防护组 #${newItem.protectionIpGroupId.slice(-5)}`
-      }
-    }
-  }
-  
-  // 添加到数据列表
-  domainProtectionData.unshift(newItem)
+  // 添加到列表
+  domainProtectionData.push(newItem)
   
   return {
     code: 200,
@@ -835,52 +783,41 @@ Mock.mock('/api/protection/domain/update', 'put', (options) => {
     }
   }
   
-  // 确保instanceId格式正确
-  if (body.instanceId) {
-    body.instanceId = body.instanceId.toString().startsWith('BI') 
-      ? body.instanceId 
-      : `BI${body.instanceId}`;
-  }
-  
-  // 更新防护IP组信息
-  if (body.protectionIpGroupId && body.protectionIpGroupId !== domainProtectionData[index].protectionIpGroupId) {
-    const instanceId = body.instanceId || domainProtectionData[index].instanceId;
-    
-    // 检查是否是来自业务实例选项的ID
-    const isFromOptions = businessInstanceOptions.data.some(option => option.value === instanceId);
-    
-    if (isFromOptions) {
-      // 对于来自业务实例选项的ID，直接使用IP组ID的后5位作为显示名称
-      const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
-      body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`;
-    } else {
-      // 从业务实例中获取IP组信息
-      const instance = businessInstanceData.getBusinessInstance(instanceId)
-      if (instance && instance.protectionIpGroups) {
-        const ipGroup = instance.protectionIpGroups.find(group => group.groupId === body.protectionIpGroupId)
-        if (ipGroup) {
-          body.protectionIpGroupInfo = ipGroup.displayName
-        } else {
-          const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
-          body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`
-        }
-      } else {
-        const addressType = body.addressType || domainProtectionData[index].addressType || 'IP';
-        body.protectionIpGroupInfo = `${addressType}防护组 #${body.protectionIpGroupId.slice(-5)}`
-      }
-    }
+  // 确定地址类型
+  let addressType = '';
+  if (body.ipv4GroupId && body.ipv6GroupId) {
+    addressType = '双栈';
+  } else if (body.ipv4GroupId) {
+    addressType = 'IPv4';
+  } else if (body.ipv6GroupId) {
+    addressType = 'IPv6';
+  } else {
+    addressType = domainProtectionData[index].addressType || 'IPv4';
   }
   
   // 更新对象
-  domainProtectionData[index] = {
-    ...domainProtectionData[index],
-    ...body
+  const oldItem = domainProtectionData[index]
+  const updatedItem = {
+    ...oldItem,
+    instanceId: body.instanceId || oldItem.instanceId,
+    accessType: body.accessType || oldItem.accessType,
+    ipv4GroupId: body.ipv4GroupId !== undefined ? body.ipv4GroupId : oldItem.ipv4GroupId,
+    ipv6GroupId: body.ipv6GroupId !== undefined ? body.ipv6GroupId : oldItem.ipv6GroupId,
+    addressType: addressType,
+    domain: body.domain || oldItem.domain,
+    cname: body.domain ? `${body.domain}.vmdat.com` : oldItem.cname,
+    businessQpsType: body.businessQpsType || oldItem.businessQpsType,
+    dedicatedBusinessQps: body.dedicatedBusinessQps || oldItem.dedicatedBusinessQps,
+    protectionPackage: body.protectionPackage || oldItem.protectionPackage
   }
+  
+  // 替换对象
+  domainProtectionData[index] = updatedItem
   
   return {
     code: 200,
     message: 'success',
-    data: domainProtectionData[index]
+    data: updatedItem
   }
 })
 

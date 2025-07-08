@@ -40,16 +40,35 @@
         </el-radio-group>
       </el-form-item>
       
-      <el-form-item label="防护IP组" prop="protectionIpGroupId">
+      <el-form-item label="IPv4防护IP组" prop="ipv4GroupId">
         <el-select 
-          v-model="form.protectionIpGroupId" 
-          placeholder="请选择防护IP组" 
+          v-model="form.ipv4GroupId" 
+          placeholder="请选择IPv4防护IP组" 
           style="width: 100%"
           :disabled="!form.instanceId"
+          clearable
           @change="handleIpGroupChange"
         >
           <el-option
-            v-for="item in protectionIpGroupOptions"
+            v-for="item in ipv4GroupOptions"
+            :key="item.groupId"
+            :label="item.displayName"
+            :value="item.groupId"
+          />
+        </el-select>
+      </el-form-item>
+      
+      <el-form-item label="IPv6防护IP组" prop="ipv6GroupId">
+        <el-select 
+          v-model="form.ipv6GroupId" 
+          placeholder="请选择IPv6防护IP组" 
+          style="width: 100%"
+          :disabled="!form.instanceId"
+          clearable
+          @change="handleIpGroupChange"
+        >
+          <el-option
+            v-for="item in ipv6GroupOptions"
             :key="item.groupId"
             :label="item.displayName"
             :value="item.groupId"
@@ -58,7 +77,9 @@
       </el-form-item>
 
       <el-form-item label="地址类型">
-        <el-input v-model="form.addressType" disabled />
+        <el-tag :type="getAddressTypeTagType(form.addressType)">
+          {{ form.addressType }}
+        </el-tag>
       </el-form-item>
       
       <el-form-item label="防护域名" prop="domain">
@@ -149,6 +170,8 @@ const instanceOptions = ref([])
 
 // 防护IP组选项
 const protectionIpGroupOptions = ref([])
+const ipv4GroupOptions = ref([])
+const ipv6GroupOptions = ref([])
 
 // 业务实例信息
 const instanceInfo = reactive({
@@ -166,7 +189,8 @@ const remainingBusinessQps = computed(() => {
 const form = reactive({
   instanceId: '',
   accessType: 'domain',
-  protectionIpGroupId: '',
+  ipv4GroupId: '',
+  ipv6GroupId: '',
   addressType: '',
   domain: '',
   cname: '',
@@ -183,8 +207,29 @@ const rules = reactive({
   accessType: [
     { required: true, message: '请选择接入方式', trigger: 'change' }
   ],
-  protectionIpGroupId: [
-    { required: true, message: '请选择防护IP组', trigger: 'change' }
+  ipv4GroupId: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value && !form.ipv6GroupId) {
+          callback(new Error('IPv4防护IP组和IPv6防护IP组至少选择一个'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'change' 
+    }
+  ],
+  ipv6GroupId: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value && !form.ipv4GroupId) {
+          callback(new Error('IPv4防护IP组和IPv6防护IP组至少选择一个'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'change' 
+    }
   ],
   domain: [
     { required: true, message: '请输入防护域名', trigger: 'blur' },
@@ -226,7 +271,8 @@ const initFormData = () => {
   Object.assign(form, {
     instanceId: '',
     accessType: 'domain',
-    protectionIpGroupId: '',
+    ipv4GroupId: '',
+    ipv6GroupId: '',
     addressType: '',
     domain: '',
     cname: '',
@@ -243,6 +289,8 @@ const initFormData = () => {
   })
 
   protectionIpGroupOptions.value = []
+  ipv4GroupOptions.value = []
+  ipv6GroupOptions.value = []
 
   // 如果是编辑模式，填充表单数据
   if (isEdit.value && props.editData) {
@@ -257,8 +305,9 @@ const initFormData = () => {
     Object.assign(form, {
       instanceId: formattedInstanceId,
       accessType: editData.accessType || 'domain',
-      protectionIpGroupId: editData.protectionIpGroupId,
-      addressType: editData.addressType,
+      ipv4GroupId: editData.ipv4GroupId || '',
+      ipv6GroupId: editData.ipv6GroupId || '',
+      addressType: editData.addressType || '',
       domain: editData.domain,
       cname: editData.cname,
       businessQpsType: editData.businessQpsType || 'shared',
@@ -274,9 +323,12 @@ const initFormData = () => {
 // 处理业务实例变更
 const handleInstanceChange = async (instanceId) => {
   // 重置相关字段
-  form.protectionIpGroupId = ''
+  form.ipv4GroupId = ''
+  form.ipv6GroupId = ''
   form.addressType = ''
   protectionIpGroupOptions.value = []
+  ipv4GroupOptions.value = []
+  ipv6GroupOptions.value = []
   
   // 重置实例信息
   Object.assign(instanceInfo, {
@@ -314,32 +366,56 @@ const handleInstanceChange = async (instanceId) => {
       try {
         const ipGroupsRes = await getInstanceAllocatedIpGroups(formattedInstanceId)
         if (ipGroupsRes.code === 200) {
-          protectionIpGroupOptions.value = ipGroupsRes.data
+          protectionIpGroupOptions.value = ipGroupsRes.data.map(group => ({
+            groupId: group.groupId,
+            displayName: group.displayName,
+            addressType: group.addressType
+          }))
           
-          // 如果是编辑模式且有protectionIpGroupId，确保该选项在列表中
-          if (isEdit.value && props.editData && props.editData.protectionIpGroupId) {
-            const exists = protectionIpGroupOptions.value.some(item => 
-              item.groupId === props.editData.protectionIpGroupId
-            )
-            
-            if (!exists && props.editData.protectionIpGroupId) {
-              // 如果当前选中的IP组不在列表中，添加一个临时选项
-              protectionIpGroupOptions.value.push({
-                groupId: props.editData.protectionIpGroupId,
-                displayName: `防护IP组 #${props.editData.protectionIpGroupId.slice(-5)}`
-              })
+          // 分类IPv4和IPv6组
+          ipv4GroupOptions.value = protectionIpGroupOptions.value.filter(item => item.addressType === 'IPv4')
+          ipv6GroupOptions.value = protectionIpGroupOptions.value.filter(item => item.addressType === 'IPv6')
+          
+          // 如果是编辑模式且有ipv4GroupId/ipv6GroupId，确保该选项在列表中
+          if (isEdit.value && props.editData) {
+            if (props.editData.ipv4GroupId) {
+              const existsIpv4 = ipv4GroupOptions.value.some(item => 
+                item.groupId === props.editData.ipv4GroupId
+              )
+              
+              if (!existsIpv4 && props.editData.ipv4GroupId) {
+                // 如果当前选中的IPv4组不在列表中，添加一个临时选项
+                ipv4GroupOptions.value.push({
+                  groupId: props.editData.ipv4GroupId,
+                  displayName: `IPv4组 #${props.editData.ipv4GroupId.slice(-5)}`,
+                  addressType: 'IPv4'
+                })
+              }
+              
+              // 设置当前IPv4组
+              form.ipv4GroupId = props.editData.ipv4GroupId
             }
             
-            // 设置当前IP组
-            form.protectionIpGroupId = props.editData.protectionIpGroupId
-            // 获取IP组详情
-            await handleIpGroupChange(form.protectionIpGroupId)
-          }
-          
-          // 如果只有一个IP组选项，自动选择
-          if (protectionIpGroupOptions.value.length === 1 && !form.protectionIpGroupId) {
-            form.protectionIpGroupId = protectionIpGroupOptions.value[0].groupId
-            await handleIpGroupChange(form.protectionIpGroupId)
+            if (props.editData.ipv6GroupId) {
+              const existsIpv6 = ipv6GroupOptions.value.some(item => 
+                item.groupId === props.editData.ipv6GroupId
+              )
+              
+              if (!existsIpv6 && props.editData.ipv6GroupId) {
+                // 如果当前选中的IPv6组不在列表中，添加一个临时选项
+                ipv6GroupOptions.value.push({
+                  groupId: props.editData.ipv6GroupId,
+                  displayName: `IPv6组 #${props.editData.ipv6GroupId.slice(-5)}`,
+                  addressType: 'IPv6'
+                })
+              }
+              
+              // 设置当前IPv6组
+              form.ipv6GroupId = props.editData.ipv6GroupId
+            }
+            
+            // 更新地址类型
+            handleIpGroupChange()
           }
         } else {
           ElMessage.error(ipGroupsRes.message || '获取防护IP组列表失败')
@@ -381,32 +457,20 @@ const handleInstanceChange = async (instanceId) => {
 }
 
 // 处理IP组变更
-const handleIpGroupChange = async (groupId) => {
-  if (!groupId) {
+const handleIpGroupChange = () => {
+  // 根据选择的IP组更新地址类型
+  if (form.ipv4GroupId && form.ipv6GroupId) {
+    form.addressType = '双栈'
+  } else if (form.ipv4GroupId) {
+    form.addressType = 'IPv4'
+  } else if (form.ipv6GroupId) {
+    form.addressType = 'IPv6'
+  } else {
     form.addressType = ''
-    return
   }
   
-  try {
-    // 先从选项中查找
-    const ipGroup = protectionIpGroupOptions.value.find(item => item.groupId === groupId)
-    
-    if (ipGroup) {
-      // 设置地址类型
-      form.addressType = ipGroup.addressType || 'IPv4'
-    } else {
-      // 如果没有找到，从服务器获取详情
-      const res = await getIpGroupDetail(groupId)
-      if (res.code === 200) {
-        form.addressType = res.data.addressType || 'IPv4'
-      } else {
-        form.addressType = 'IPv4' // 默认值
-      }
-    }
-  } catch (error) {
-    console.error('获取IP组详情失败:', error)
-    form.addressType = 'IPv4' // 出错时使用默认值
-  }
+  // 更新CNAME
+  generateCname()
 }
 
 // 生成CNAME
@@ -427,6 +491,16 @@ const handleBusinessQpsTypeChange = (type) => {
   }
 }
 
+// 获取地址类型标签类型
+const getAddressTypeTagType = (type) => {
+  const types = {
+    'IPv4': 'primary',
+    'IPv6': 'success',
+    '双栈': 'warning'
+  }
+  return types[type] || 'info'
+}
+
 // 提交表单
 const handleSubmit = async () => {
   if (!formRef.value) return
@@ -440,22 +514,22 @@ const handleSubmit = async () => {
     const submitData = {
       instanceId: form.instanceId,
       accessType: form.accessType,
-      protectionIpGroupId: form.protectionIpGroupId,
+      ipv4GroupId: form.ipv4GroupId,
+      ipv6GroupId: form.ipv6GroupId,
       addressType: form.addressType,
       domain: form.domain,
-      cname: form.cname,
       businessQpsType: form.businessQpsType,
       dedicatedBusinessQps: form.businessQpsType === 'dedicated' ? form.dedicatedBusinessQps : 0,
       protectionPackage: form.protectionPackage
     }
     
-    // 如果是编辑模式，需要传入ID
+    // 如果是编辑模式，添加ID字段
     if (isEdit.value && props.editData) {
       submitData.id = props.editData.id
     }
     
-    // 调用API
-    const res = isEdit.value
+    // 调用接口
+    const res = isEdit.value 
       ? await updateDomainProtection(submitData)
       : await addDomainProtection(submitData)
     
@@ -464,33 +538,11 @@ const handleSubmit = async () => {
       emit('success')
       dialogVisible.value = false
     } else {
-      // 处理服务器返回的详细错误信息
-      if (res.errors) {
-        // 如果有详细的错误信息，显示第一个错误
-        const firstErrorField = Object.keys(res.errors)[0];
-        const firstError = res.errors[firstErrorField][0];
-        ElMessage.error(`${firstErrorField}: ${firstError}`);
-        
-        // 如果是表单字段的错误，标记对应字段为错误状态
-        if (formRef.value && formRef.value.fields[firstErrorField]) {
-          formRef.value.fields[firstErrorField].validateMessage = firstError;
-          formRef.value.fields[firstErrorField].validateState = 'error';
-        }
-      } else {
-        ElMessage.error(res.message || (isEdit.value ? '编辑失败' : '添加失败'));
-      }
+      ElMessage.error(res.message || (isEdit.value ? '编辑失败' : '添加失败'))
     }
   } catch (error) {
-    console.error(isEdit.value ? '编辑域名防护对象失败:' : '添加域名防护对象失败:', error);
-    
-    // 检查是否是表单验证错误
-    if (error.fields) {
-      // 表单验证失败，显示第一个错误
-      const firstField = Object.keys(error.fields)[0];
-      ElMessage.error(`表单验证失败: ${error.fields[firstField][0].message}`);
-    } else {
-      ElMessage.error('表单验证失败，请检查输入');
-    }
+    console.error('表单提交失败:', error)
+    ElMessage.error('表单验证失败，请检查输入')
   } finally {
     loading.value = false
   }
