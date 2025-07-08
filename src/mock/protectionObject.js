@@ -570,22 +570,44 @@ Mock.mock('/api/protection/ip/add', 'post', (options) => {
   
   // 创建新对象
   const newId = getNewIpProtectionId()
+  
+  // 确保instanceId格式正确
+  const instanceId = body.instanceId.toString().startsWith('BI') 
+    ? body.instanceId 
+    : `BI${body.instanceId}`;
+  
+  // 获取业务实例名称
+  const instanceName = getInstanceNameById(instanceId);
+  
+  // 获取客户名称
+  let customerName = '';
+  const instance = businessInstanceData.getBusinessInstance(instanceId);
+  if (instance) {
+    customerName = instance.customerName;
+  } else {
+    // 如果找不到实例，使用默认客户名称
+    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
+    customerName = customerNames[parseInt(instanceId.replace('BI', '')) % customerNames.length];
+  }
+  
+  // 生成防护IP组信息
+  let protectionIpGroupInfo = '';
+  if (body.protectionIpGroupId) {
+    protectionIpGroupInfo = `防护IP组 #${body.protectionIpGroupId.slice(-5)}（${instanceName}）`;
+  }
+  
   const newItem = {
     id: newId,
     ...body,
+    // 确保有业务实例ID和名称
+    instanceId: instanceId,
+    instanceName: instanceName,
+    customerName: customerName,
+    // 设置防护IP组信息
+    protectionIpGroupInfo: protectionIpGroupInfo,
+    // 设置默认状态
+    status: 'active',
     createTime: new Date().toISOString()
-  }
-  
-  // 如果没有设置客户名称，根据业务实例ID设置
-  if (!newItem.customerName && newItem.instanceId) {
-    // 模拟根据业务实例ID获取客户名称
-    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司']
-    newItem.customerName = customerNames[newItem.instanceId % customerNames.length]
-  }
-  
-  // 如果没有设置业务实例名称，根据业务实例ID设置
-  if (!newItem.instanceName && newItem.instanceId) {
-    newItem.instanceName = getInstanceNameById(newItem.instanceId)
   }
   
   // 添加到数据列表
