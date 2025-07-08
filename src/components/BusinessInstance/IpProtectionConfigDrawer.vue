@@ -499,7 +499,8 @@ const fetchProtectionDetail = async () => {
           if (ipGroupsRes.code === 200) {
             protectionIpGroupOptions.value = ipGroupsRes.data.map(group => ({
               groupId: group.groupId,
-              displayName: group.displayName
+              displayName: group.displayName,
+              addressType: group.addressType
             }))
             
             // 确保当前IP组在选项中
@@ -510,6 +511,11 @@ const fetchProtectionDetail = async () => {
                 groupId: data.protectionIpGroupId,
                 displayName: `防护IP组 #${data.protectionIpGroupId.slice(-5)}`
               })
+            }
+            
+            // 调用handleIpGroupChange确保地址类型正确更新
+            if (data.protectionIpGroupId) {
+              await handleIpGroupChange(data.protectionIpGroupId);
             }
           } else {
             console.error('获取防护IP组列表失败:', ipGroupsRes.message);
@@ -758,7 +764,10 @@ const handleIpGroupChange = async (groupId) => {
     
     // 如果没有找到或没有地址类型信息，从服务器获取详情
     if (!ipGroup || !ipGroup.addressType) {
+      loading.value = true;
       const res = await getIpGroupDetail(groupId);
+      loading.value = false;
+      
       if (res.code === 200) {
         ipGroup = res.data;
         
@@ -771,13 +780,17 @@ const handleIpGroupChange = async (groupId) => {
     }
     
     if (ipGroup) {
+      // 更新选中的IP组信息
       selectedIpGroupInfo.addressType = ipGroup.addressType || '';
       selectedIpGroupInfo.ipCount = ipGroup.ipCount || 0;
       selectedIpGroupInfo.ips = ipGroup.ips || [];
+      
+      console.log(`IP组已更改，地址类型更新为: ${selectedIpGroupInfo.addressType}`);
     }
   } catch (error) {
     console.error('获取IP组详情失败:', error);
     ElMessage.error('获取IP组详情失败');
+    loading.value = false;
   }
 }
 
