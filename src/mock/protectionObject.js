@@ -435,6 +435,93 @@ Mock.mock(/\/api\/protection\/ip\/detail\/\d+/, 'get', (options) => {
   }
 })
 
+// 获取域名防护对象详情
+Mock.mock(/\/api\/protection\/domain\/\d+/, 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/domain\/(\d+)/)[1])
+  console.log(`获取域名防护对象详情，ID: ${id}`);
+  
+  // 查找对象
+  const item = domainProtectionData.find(item => item.id === id)
+  if (!item) {
+    console.error(`域名防护对象不存在，ID: ${id}`);
+    return {
+      code: 404,
+      message: '域名防护对象不存在'
+    }
+  }
+  
+  console.log(`找到域名防护对象，ID: ${id}，业务实例ID: ${item.instanceId}`);
+  
+  // 添加实例信息和负载均衡配置
+  const detailData = {
+    ...item,
+    instanceInfo: {
+      customerName: item.customerName,
+      businessQps: item.instanceBusinessQps,
+      allocatedBusinessQps: item.instanceBusinessQps * 0.6, // 模拟已分配60%
+      currentBusinessQps: item.businessQpsType === 'dedicated' ? item.dedicatedBusinessQps : 0
+    },
+    slbConfig: {
+      scheduler: 'wrr',
+      sessionTimeout: 300,
+      healthCheck: 'TCP',
+      members: [
+        {
+          ip: '192.168.1.100',
+          port: 80,
+          weight: 10
+        },
+        {
+          ip: '192.168.1.101',
+          port: 80,
+          weight: 20
+        }
+      ]
+    }
+  }
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: detailData
+  }
+})
+
+// 更新域名防护对象配置
+Mock.mock('/api/protection/domain/config', 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = body.id
+  
+  // 查找对象
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  if (index === -1) {
+    return {
+      code: 404,
+      message: '域名防护对象不存在'
+    }
+  }
+  
+  // 更新对象
+  const oldItem = domainProtectionData[index]
+  const updatedItem = {
+    ...oldItem,
+    protectionIpGroupId: body.protectionIpGroupId || oldItem.protectionIpGroupId,
+    domain: body.domain || oldItem.domain,
+    businessQpsType: body.businessQpsType || oldItem.businessQpsType,
+    dedicatedBusinessQps: body.dedicatedBusinessQps || oldItem.dedicatedBusinessQps,
+    protectionPackage: body.protectionPackage || oldItem.protectionPackage
+  }
+  
+  // 替换对象
+  domainProtectionData[index] = updatedItem
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: updatedItem
+  }
+})
+
 // 添加IP防护对象
 Mock.mock('/api/protection/ip/add', 'post', (options) => {
   const body = JSON.parse(options.body)

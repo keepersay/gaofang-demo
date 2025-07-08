@@ -158,4 +158,21 @@ export function getBusinessInstanceOptions() {
     url: '/api/business-instance/options',
     method: 'get'
   })
+}
+
+// 获取域名防护对象详情
+export function getDomainProtectionDetail(id) {
+  return request({
+    url: `/api/protection/domain/${id}`,
+    method: 'get'
+  })
+}
+
+// 更新域名防护对象配置
+export function updateDomainProtectionConfig(data) {
+  return request({
+    url: `/api/protection/domain/config`,
+    method: 'put',
+    data
+  })
 } 

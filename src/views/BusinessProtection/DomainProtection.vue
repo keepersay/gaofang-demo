@@ -130,6 +130,13 @@
       :edit-data="currentEditData"
       @success="handleModalSuccess"
     />
+    
+    <!-- 域名防护对象配置抽屉 -->
+    <domain-protection-config-drawer
+      v-model:visible="configDrawerVisible"
+      :protection-id="currentConfigId"
+      @success="handleConfigSuccess"
+    />
   </div>
 </template>
 
@@ -145,6 +152,7 @@ import {
   disableDomainProtection
 } from '@/services/ProtectionObjectService'
 import DomainProtectionModal from '@/components/BusinessInstance/DomainProtectionModal.vue'
+import DomainProtectionConfigDrawer from '@/components/BusinessInstance/DomainProtectionConfigDrawer.vue'
 
 // 状态
 const loading = ref(false)
@@ -152,6 +160,10 @@ const tableData = ref([])
 const selectedRows = ref([])
 const modalVisible = ref(false)
 const currentEditData = ref(null)
+
+// 配置域名防护对象
+const configDrawerVisible = ref(false)
+const currentConfigId = ref(null)
 
 // 状态过滤选项
 const statusFilters = [
@@ -244,8 +256,8 @@ const handleAdd = () => {
 
 // 配置域名防护对象
 const handleConfig = (row) => {
-  currentEditData.value = row
-  modalVisible.value = true
+  currentConfigId.value = row.id
+  configDrawerVisible.value = true
 }
 
 // 安全防护配置
@@ -365,6 +377,11 @@ const handleDisable = (row) => {
 
 // 处理模态框成功
 const handleModalSuccess = () => {
+  fetchDomainProtectionList()
+}
+
+// 配置成功回调
+const handleConfigSuccess = () => {
   fetchDomainProtectionList()
 }
 
