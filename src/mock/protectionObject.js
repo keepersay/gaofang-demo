@@ -749,18 +749,55 @@ Mock.mock('/api/protection/domain/add', 'post', (options) => {
   
   // 创建新对象
   const newId = getNewDomainProtectionId()
+  
+  // 确保instanceId格式正确
+  const instanceId = body.instanceId.toString().startsWith('BI') 
+    ? body.instanceId 
+    : `BI${body.instanceId}`;
+  
+  // 获取业务实例名称
+  const instanceName = getInstanceNameById(instanceId);
+  
+  // 获取客户名称
+  let customerName = '';
+  const instance = businessInstanceData.getBusinessInstance(instanceId);
+  if (instance) {
+    customerName = instance.customerName;
+  } else {
+    // 如果找不到实例，使用默认客户名称
+    const customerNames = ['北京科技有限公司', '上海网络科技有限公司', '广州信息技术有限公司', '深圳互联网有限公司', '杭州数字科技有限公司'];
+    customerName = customerNames[parseInt(instanceId.replace('BI', '')) % customerNames.length];
+  }
+  
   const newItem = {
     id: newId,
     ...body,
+    // 确保有业务实例ID和名称
+    instanceId: instanceId,
+    instanceName: instanceName,
+    customerName: customerName,
     // 确保有地址类型
     addressType: body.addressType || (body.ipv4GroupId && body.ipv6GroupId ? '双栈' : (body.ipv4GroupId ? 'IPv4' : 'IPv6')),
+    // 生成CNAME
     cname: body.domain ? `${body.domain}.vmdat.com` : '',
+    // 设置默认状态
     status: 'active',
     createTime: new Date().toISOString()
   }
   
+  // 生成防护IP组信息
+  let protectionIpGroupInfo = '';
+  if (body.ipv4GroupId && body.ipv6GroupId) {
+    protectionIpGroupInfo = `双栈防护组（${instanceName}，IPv4+IPv6）`;
+  } else if (body.ipv4GroupId) {
+    protectionIpGroupInfo = `IPv4防护组 #${body.ipv4GroupId.slice(-5)}（${instanceName}）`;
+  } else if (body.ipv6GroupId) {
+    protectionIpGroupInfo = `IPv6防护组 #${body.ipv6GroupId.slice(-5)}（${instanceName}）`;
+  }
+  newItem.protectionIpGroupInfo = protectionIpGroupInfo;
+  
   // 添加到列表
-  domainProtectionData.push(newItem)
+  domainProtectionData.unshift(newItem)
   
   return {
     code: 200,
