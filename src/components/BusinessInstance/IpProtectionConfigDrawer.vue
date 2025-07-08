@@ -22,6 +22,7 @@
                   v-model="basicForm.protectionIpGroupId" 
                   placeholder="请选择防护IP组" 
                   style="width: 100%"
+                  @change="handleIpGroupChange"
                 >
                   <el-option
                     v-for="item in protectionIpGroupOptions"
@@ -30,6 +31,15 @@
                     :value="item.groupId"
                   />
                 </el-select>
+              </el-form-item>
+              
+              <el-form-item label="地址类型">
+                <el-tag :type="getAddressTypeTag(selectedIpGroupInfo.addressType)">
+                  {{ selectedIpGroupInfo.addressType || '未选择' }}
+                </el-tag>
+                <div class="form-tip">
+                  地址类型由所选防护IP组决定
+                </div>
               </el-form-item>
               
               <el-form-item label="防护带宽" prop="protectionBandwidthType">
@@ -235,7 +245,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getIpProtectionDetail, updateIpProtectionConfig, getInstanceAllocatedIpGroups } from '@/services/ProtectionObjectService'
+import { getIpProtectionDetail, updateIpProtectionConfig, getInstanceAllocatedIpGroups, getIpGroupDetail } from '@/services/ProtectionObjectService'
 
 const props = defineProps({
   visible: {
@@ -267,6 +277,13 @@ const activeTab = ref('basic')
 const basicFormRef = ref(null)
 const slbFormRef = ref(null)
 const memberFormRef = ref(null)
+
+// 选中的IP组信息
+const selectedIpGroupInfo = reactive({
+  addressType: '',
+  ipCount: 0,
+  ips: []
+})
 
 // 基本信息表单
 const basicForm = reactive({
@@ -457,6 +474,11 @@ const fetchProtectionDetail = async () => {
         layer7Protection: data.layer7Protection
       })
       
+      // 设置地址类型信息
+      if (data.addressType) {
+        selectedIpGroupInfo.addressType = data.addressType;
+      }
+      
       // 填充实例信息
       if (data.instanceInfo) {
         Object.assign(instanceInfo, {
@@ -565,6 +587,7 @@ const handleSave = async () => {
     const submitData = {
       id: basicForm.id,
       protectionIpGroupId: basicForm.protectionIpGroupId,
+      addressType: selectedIpGroupInfo.addressType,
       protectionBandwidthType: basicForm.protectionBandwidthType,
       dedicatedProtectionBandwidth: basicForm.protectionBandwidthType === 'dedicated' ? basicForm.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: basicForm.businessBandwidthType,
@@ -720,6 +743,51 @@ const getBandwidthDisplay = (type, dedicated, total) => {
   } else {
     return `${dedicated}/${total}`
   }
+}
+
+// 处理IP组变化
+const handleIpGroupChange = async (groupId) => {
+  if (!groupId) {
+    selectedIpGroupInfo.addressType = '';
+    return;
+  }
+  
+  try {
+    // 先从选项中查找
+    let ipGroup = protectionIpGroupOptions.value.find(item => item.groupId === groupId);
+    
+    // 如果没有找到或没有地址类型信息，从服务器获取详情
+    if (!ipGroup || !ipGroup.addressType) {
+      const res = await getIpGroupDetail(groupId);
+      if (res.code === 200) {
+        ipGroup = res.data;
+        
+        // 更新选项中的地址类型
+        const index = protectionIpGroupOptions.value.findIndex(item => item.groupId === groupId);
+        if (index !== -1) {
+          protectionIpGroupOptions.value[index].addressType = ipGroup.addressType;
+        }
+      }
+    }
+    
+    if (ipGroup) {
+      selectedIpGroupInfo.addressType = ipGroup.addressType || '';
+      selectedIpGroupInfo.ipCount = ipGroup.ipCount || 0;
+      selectedIpGroupInfo.ips = ipGroup.ips || [];
+    }
+  } catch (error) {
+    console.error('获取IP组详情失败:', error);
+    ElMessage.error('获取IP组详情失败');
+  }
+}
+
+// 获取地址类型标签
+const getAddressTypeTag = (type) => {
+  const types = {
+    'IPv4': 'primary',
+    'IPv6': 'success'
+  }
+  return types[type] || 'info'
 }
 </script>
 

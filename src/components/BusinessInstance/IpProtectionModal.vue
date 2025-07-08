@@ -33,14 +33,6 @@
         <el-input v-model="instanceInfo.customerName" disabled />
       </el-form-item>
       
-      <el-form-item label="地址类型" prop="addressType">
-        <el-radio-group v-model="form.addressType" @change="handleAddressTypeChange">
-          <el-radio value="all">全部</el-radio>
-          <el-radio value="IPv4">IPv4</el-radio>
-          <el-radio value="IPv6">IPv6</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      
       <el-form-item label="防护IP组" prop="protectionIpGroupId">
         <el-select 
           v-model="form.protectionIpGroupId" 
@@ -50,12 +42,21 @@
           @change="handleIpGroupChange"
         >
           <el-option
-            v-for="item in filteredIpGroupOptions"
+            v-for="item in ipGroupOptions"
             :key="item.groupId"
             :label="item.displayName"
             :value="item.groupId"
           />
         </el-select>
+      </el-form-item>
+      
+      <el-form-item label="地址类型">
+        <el-tag :type="getAddressTypeTag(selectedIpGroupInfo.addressType)">
+          {{ selectedIpGroupInfo.addressType || '未选择' }}
+        </el-tag>
+        <div class="form-tip">
+          地址类型由所选防护IP组决定
+        </div>
       </el-form-item>
       
       <el-form-item label="IP列表">
@@ -174,14 +175,6 @@ const instanceOptions = ref([])
 // IP组选项
 const ipGroupOptions = ref([])
 
-// 根据地址类型筛选IP组选项
-const filteredIpGroupOptions = computed(() => {
-  if (form.addressType === 'all') {
-    return ipGroupOptions.value
-  }
-  return ipGroupOptions.value.filter(item => item.addressType === form.addressType)
-})
-
 // 选中的IP组信息
 const selectedIpGroupInfo = reactive({
   addressType: '',
@@ -210,7 +203,6 @@ const remainingBusinessBandwidth = computed(() => {
 // 表单数据
 const form = reactive({
   instanceId: '',
-  addressType: 'all',
   protectionIpGroupId: '',
   protectionBandwidthType: 'shared',
   dedicatedProtectionBandwidth: 0,
@@ -223,9 +215,6 @@ const form = reactive({
 const rules = reactive({
   instanceId: [
     { required: true, message: '请选择业务实例', trigger: 'change' }
-  ],
-  addressType: [
-    { required: true, message: '请选择地址类型', trigger: 'change' }
   ],
   protectionIpGroupId: [
     { required: true, message: '请选择防护IP组', trigger: 'change' }
@@ -317,11 +306,6 @@ const init = async () => {
       
       // 获取IP组详情
       await handleIpGroupChange(form.protectionIpGroupId)
-      
-      // 设置地址类型
-      if (selectedIpGroupInfo.addressType) {
-        form.addressType = selectedIpGroupInfo.addressType
-      }
     }
   } catch (error) {
     console.error('初始化失败:', error)
@@ -359,19 +343,6 @@ const handleInstanceChange = async (instanceId) => {
     ElMessage.error('获取业务实例详情失败')
   } finally {
     loading.value = false
-  }
-}
-
-// 处理地址类型变更
-const handleAddressTypeChange = (type) => {
-  // 清空已选择的IP组
-  form.protectionIpGroupId = ''
-  resetIpGroupInfo()
-  
-  // 如果筛选后只有一个IP组，自动选择
-  if (filteredIpGroupOptions.value.length === 1) {
-    form.protectionIpGroupId = filteredIpGroupOptions.value[0].groupId
-    handleIpGroupChange(form.protectionIpGroupId)
   }
 }
 
@@ -419,16 +390,20 @@ const handleIpGroupChange = async (groupId) => {
       selectedIpGroupInfo.addressType = ipGroup.addressType
       selectedIpGroupInfo.ipCount = ipGroup.ipCount
       selectedIpGroupInfo.ips = ipGroup.ips || []
-      
-      // 如果地址类型为"全部"，则更新为实际IP组的地址类型
-      if (form.addressType === 'all') {
-        form.addressType = ipGroup.addressType
-      }
     }
   } catch (error) {
     console.error('获取IP组详情失败:', error)
     ElMessage.error('获取IP组详情失败')
   }
+}
+
+// 获取地址类型标签样式
+const getAddressTypeTag = (type) => {
+  const types = {
+    'IPv4': 'primary',
+    'IPv6': 'success'
+  }
+  return types[type] || 'info'
 }
 
 // 重置业务实例信息
@@ -480,6 +455,7 @@ const handleSubmit = async () => {
     const data = {
       instanceId: form.instanceId,
       protectionIpGroupId: form.protectionIpGroupId,
+      addressType: selectedIpGroupInfo.addressType, // 使用选择的IP组类型作为地址类型
       protectionBandwidthType: form.protectionBandwidthType,
       dedicatedProtectionBandwidth: form.protectionBandwidthType === 'dedicated' ? form.dedicatedProtectionBandwidth : 0,
       businessBandwidthType: form.businessBandwidthType,
