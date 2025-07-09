@@ -114,52 +114,82 @@
           </el-tab-pane>
           
           <el-tab-pane label="负载均衡配置" name="slb">
-            <el-form 
-              ref="slbFormRef" 
-              :model="slbForm" 
-              :rules="slbRules" 
-              label-width="140px"
-              label-position="right"
-            >
-              <el-form-item label="调度算法" prop="scheduler">
-                <el-select v-model="slbForm.scheduler" style="width: 100%">
-                  <el-option label="加权轮询(WRR)" value="wrr" />
-                  <el-option label="加权最小连接数(WLC)" value="wlc" />
-                  <el-option label="源IP哈希(CONN-HASH)" value="conn-hash" />
-                </el-select>
-              </el-form-item>
-              
-              <el-form-item label="会话超时时间(秒)" prop="sessionTimeout">
-                <el-input-number v-model="slbForm.sessionTimeout" :min="1" :max="3600" style="width: 120px" />
-              </el-form-item>
-              
-              <el-form-item label="健康检查" prop="healthCheck">
-                <el-select v-model="slbForm.healthCheck" style="width: 100%">
-                  <el-option label="TCP" value="TCP" />
+            <div class="slb-header">
+              <div class="slb-search">
+                <el-input
+                  v-model="slbSearchForm.keyword"
+                  placeholder="搜索名称、端口"
+                  clearable
+                  style="width: 200px; margin-right: 10px;"
+                  @input="handleSlbSearch"
+                />
+                <el-select
+                  v-model="slbSearchForm.protocol"
+                  placeholder="监听协议"
+                  clearable
+                  style="width: 120px; margin-right: 10px;"
+                  @change="handleSlbSearch"
+                >
                   <el-option label="HTTP" value="HTTP" />
                   <el-option label="HTTPS" value="HTTPS" />
-                  <el-option label="无健康检查" value="NONE" />
+                  <el-option label="TCP" value="TCP" />
+                  <el-option label="UDP" value="UDP" />
                 </el-select>
-              </el-form-item>
-              
-              <el-divider content-position="left">后端Member配置</el-divider>
-              
-              <div class="member-operations">
-                <el-button type="primary" @click="handleAddMember">添加Member</el-button>
+                <el-select
+                  v-model="slbSearchForm.status"
+                  placeholder="运行状态"
+                  clearable
+                  style="width: 120px; margin-right: 10px;"
+                  @change="handleSlbSearch"
+                >
+                  <el-option label="运行中" value="running" />
+                  <el-option label="已停止" value="stopped" />
+                  <el-option label="异常" value="error" />
+                </el-select>
+                <el-button type="primary" @click="handleSlbSearch">搜索</el-button>
               </div>
-              
-              <el-table :data="slbForm.members" border style="width: 100%">
-                <el-table-column label="IP地址" prop="ip" min-width="150" />
-                <el-table-column label="端口" prop="port" width="100" />
-                <el-table-column label="权重" prop="weight" width="100" />
-                <el-table-column label="操作" width="150" fixed="right">
-                  <template #default="{ row, $index }">
-                    <el-button type="primary" link @click="handleEditMember(row, $index)">编辑</el-button>
-                    <el-button type="danger" link @click="handleDeleteMember($index)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-form>
+              <div class="slb-actions">
+                <el-button type="primary" @click="handleCreateSlbListener">新建监听</el-button>
+              </div>
+            </div>
+            
+            <el-table
+              :data="filteredSlbList"
+              border
+              style="width: 100%"
+              v-loading="slbLoading"
+            >
+              <el-table-column label="名称" prop="name" min-width="150" show-overflow-tooltip />
+              <el-table-column label="端口" prop="port" width="100" />
+              <el-table-column label="地址类型" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getAddressTypeTagType(row.addressType)">{{ row.addressType }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="监听协议" prop="protocol" width="100" />
+              <el-table-column label="运行状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getSlbStatusTagType(row.status)">{{ getSlbStatusLabel(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建人" prop="creator" width="120" show-overflow-tooltip />
+              <el-table-column label="创建时间" prop="createTime" width="180" show-overflow-tooltip />
+              <el-table-column label="备注" prop="remark" min-width="150" show-overflow-tooltip />
+              <el-table-column label="操作" width="250" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link @click="handleEditSlbInfo(row)">编辑</el-button>
+                  <el-button type="primary" link @click="handleEditSlb(row)">配置</el-button>
+                  <el-button :type="row.status === 'running' ? 'danger' : 'success'" link @click="handleToggleSlbStatus(row)">
+                    {{ row.status === 'running' ? '停止' : '启动' }}
+                  </el-button>
+                  <el-button type="danger" link @click="handleDeleteSlb(row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            
+            <div class="empty-data" v-if="filteredSlbList.length === 0 && !slbLoading">
+              <el-empty description="暂无负载均衡监听配置" />
+            </div>
           </el-tab-pane>
         </el-tabs>
         
@@ -204,12 +234,21 @@
       </span>
     </template>
   </el-dialog>
+  
+  <!-- 负载均衡监听抽屉 -->
+  <SlbListenerDrawer 
+    v-model:visible="slbListenerVisible"
+    :protection-id="basicForm.id"
+    :listener-data="currentSlbListener"
+    @success="handleSlbListenerSuccess"
+  />
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDomainProtectionDetail, updateDomainProtectionConfig, getInstanceAllocatedIpGroups } from '@/services/ProtectionObjectService'
+import SlbListenerDrawer from '@/components/BusinessInstance/SlbListenerDrawer.vue'
 
 const props = defineProps({
   visible: {
@@ -283,6 +322,41 @@ const slbForm = reactive({
   sessionTimeout: 300,
   healthCheck: 'TCP',
   members: []
+})
+
+// 负载均衡实例列表
+const slbList = ref([])
+const slbLoading = ref(false)
+
+// 负载均衡搜索表单
+const slbSearchForm = reactive({
+  keyword: '',
+  protocol: '',
+  status: ''
+})
+
+// 负载均衡监听抽屉
+const slbListenerVisible = ref(false)
+const currentSlbListener = ref(null)
+
+// 根据搜索条件过滤负载均衡列表
+const filteredSlbList = computed(() => {
+  if (!slbList.value || slbList.value.length === 0) return []
+  
+  return slbList.value.filter(item => {
+    // 关键字搜索(名称、端口)
+    const keywordMatch = !slbSearchForm.keyword || 
+      item.name.toLowerCase().includes(slbSearchForm.keyword.toLowerCase()) ||
+      String(item.port).includes(slbSearchForm.keyword)
+    
+    // 协议筛选
+    const protocolMatch = !slbSearchForm.protocol || item.protocol === slbSearchForm.protocol
+    
+    // 状态筛选
+    const statusMatch = !slbSearchForm.status || item.status === slbSearchForm.status
+    
+    return keywordMatch && protocolMatch && statusMatch
+  })
 })
 
 // Member表单
@@ -459,15 +533,47 @@ const fetchProtectionDetail = async () => {
         ElMessage.error('业务实例ID不存在')
       }
       
-      // 填充负载均衡配置
-      if (data.slbConfig) {
-        Object.assign(slbForm, {
-          scheduler: data.slbConfig.scheduler || 'wrr',
-          sessionTimeout: data.slbConfig.sessionTimeout || 300,
-          healthCheck: data.slbConfig.healthCheck || 'TCP',
-          members: data.slbConfig.members || []
-        })
-      }
+      // 填充负载均衡列表（模拟数据）
+      slbLoading.value = true
+      setTimeout(() => {
+        // 这里应该是从API获取数据，现在使用模拟数据
+        slbList.value = [
+          {
+            id: '1',
+            name: 'HTTP监听80',
+            port: 80,
+            addressType: 'IPv4',
+            protocol: 'HTTP',
+            status: 'running',
+            creator: '管理员',
+            createTime: '2023-10-01 12:00:00',
+            remark: 'Web服务HTTP监听'
+          },
+          {
+            id: '2',
+            name: 'HTTPS监听443',
+            port: 443,
+            addressType: 'IPv4',
+            protocol: 'HTTPS',
+            status: 'running',
+            creator: '管理员',
+            createTime: '2023-10-01 12:05:00',
+            remark: 'Web服务HTTPS监听'
+          },
+          {
+            id: '3',
+            name: 'TCP监听8080',
+            port: 8080,
+            addressType: '双栈',
+            protocol: 'TCP',
+            status: 'stopped',
+            creator: '系统',
+            createTime: '2023-10-02 09:30:00',
+            remark: '后端API服务监听'
+          }
+        ]
+        slbLoading.value = false
+      }, 500)
     } else {
       ElMessage.error(res.message || '获取域名防护对象详情失败')
     }
@@ -520,6 +626,102 @@ const getAddressTypeTagType = (type) => {
     '双栈': 'warning'
   }
   return types[type] || 'info'
+}
+
+// 获取负载均衡状态标签类型
+const getSlbStatusTagType = (status) => {
+  const types = {
+    'running': 'success',
+    'stopped': 'info',
+    'error': 'danger'
+  }
+  return types[status] || 'info'
+}
+
+// 获取负载均衡状态显示标签
+const getSlbStatusLabel = (status) => {
+  const labels = {
+    'running': '运行中',
+    'stopped': '已停止',
+    'error': '异常'
+  }
+  return labels[status] || status
+}
+
+// 处理负载均衡搜索
+const handleSlbSearch = () => {
+  // 已通过计算属性实现过滤
+}
+
+// 处理创建负载均衡监听
+const handleCreateSlbListener = () => {
+  slbListenerVisible.value = true
+  currentSlbListener.value = null
+}
+
+// 处理编辑负载均衡信息
+const handleEditSlbInfo = (row) => {
+  slbListenerVisible.value = true
+  currentSlbListener.value = { ...row }
+}
+
+// 处理编辑负载均衡
+const handleEditSlb = (row) => {
+  ElMessage.info(`配置负载均衡 ${row.name} 功能待实现`)
+}
+
+// 处理切换负载均衡状态
+const handleToggleSlbStatus = (row) => {
+  const action = row.status === 'running' ? '停止' : '启动'
+  ElMessageBox.confirm(
+    `确定要${action}负载均衡 ${row.name} 吗？`,
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    ElMessage.success(`${action}成功`)
+    // 模拟状态切换
+    row.status = row.status === 'running' ? 'stopped' : 'running'
+  }).catch(() => {})
+}
+
+// 处理删除负载均衡
+const handleDeleteSlb = (row) => {
+  ElMessageBox.confirm(
+    `确定要删除负载均衡 ${row.name} 吗？此操作不可恢复！`,
+    '警告',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    ElMessage.success('删除成功')
+    // 模拟删除
+    const index = slbList.value.findIndex(item => item.id === row.id)
+    if (index !== -1) {
+      slbList.value.splice(index, 1)
+    }
+  }).catch(() => {})
+}
+
+// 处理负载均衡监听成功
+const handleSlbListenerSuccess = (data) => {
+  if (!data) return
+  
+  if (currentSlbListener.value) {
+    // 编辑模式 - 更新列表中的数据
+    const index = slbList.value.findIndex(item => item.id === data.id)
+    if (index !== -1) {
+      slbList.value[index] = data
+    }
+  } else {
+    // 创建模式 - 添加到列表
+    slbList.value.push(data)
+  }
 }
 
 // 保存配置
@@ -720,5 +922,30 @@ watch(() => drawerVisible.value, (visible) => {
 .syslog-label {
   margin-right: 10px;
   white-space: nowrap;
+}
+
+.slb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.slb-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slb-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.empty-data {
+  margin-top: 20px;
 }
 </style> 
