@@ -127,6 +127,30 @@
           <!-- 高级配置 -->
           <el-divider content-position="left">高级配置</el-divider>
           
+          <!-- TCP/UDP专用配置 -->
+          <template v-if="form.protocol === 'TCP' || form.protocol === 'UDP'">
+            <el-form-item label="插入TOA/UOA" prop="insertToa">
+              <el-switch v-model="form.insertToa" />
+            </el-form-item>
+            
+            <el-form-item label="会话超时双向reset" prop="sessionResetEnabled">
+              <el-switch v-model="form.sessionResetEnabled" />
+            </el-form-item>
+            
+            <el-form-item label="五元组转换日志">
+              <div class="syslog-config">
+                <div class="syslog-item">
+                  <span class="syslog-label">Syslog IP:</span>
+                  <el-input v-model="form.syslogIp" placeholder="请输入Syslog IP" />
+                </div>
+                <div class="syslog-item">
+                  <span class="syslog-label">Syslog Port:</span>
+                  <el-input-number v-model="form.syslogPort" :min="1" :max="65535" style="width: 120px" />
+                </div>
+              </div>
+            </el-form-item>
+          </template>
+          
           <el-form-item label="限速配置">
             <el-select v-model="form.rateLimit" placeholder="请选择限速配置" clearable style="width: 100%">
               <el-option label="暂无可用配置" value="" disabled />
@@ -235,6 +259,12 @@ const form = reactive({
     failureThreshold: 3
   },
   
+  // TCP/UDP专用配置
+  insertToa: false,
+  sessionResetEnabled: false,
+  syslogIp: '',
+  syslogPort: 514,
+  
   // 高级配置
   rateLimit: '',
   blacklist: '',
@@ -337,6 +367,10 @@ const initFormData = () => {
         successThreshold: 1,
         failureThreshold: 3
       },
+      insertToa: false,
+      sessionResetEnabled: false,
+      syslogIp: '',
+      syslogPort: 514,
       rateLimit: '',
       blacklist: '',
       ipWhitelist: '',
@@ -437,5 +471,22 @@ watch(() => drawerVisible.value, (visible) => {
   color: #909399;
   line-height: 1;
   margin-top: 5px;
+}
+
+.syslog-config {
+  display: flex;
+  gap: 20px;
+}
+
+.syslog-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.syslog-label {
+  white-space: nowrap;
+  color: #606266;
 }
 </style> 
