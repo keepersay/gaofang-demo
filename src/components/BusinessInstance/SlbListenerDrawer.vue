@@ -66,6 +66,37 @@
               <el-switch v-model="form.tls" />
             </el-form-item>
             
+            <template v-if="form.tls">
+              <el-form-item label="TLS版本" prop="tlsVersions" required>
+                <div class="tls-versions">
+                  <el-checkbox-group v-model="form.tlsVersions">
+                    <el-checkbox label="TLS1.0" border />
+                    <el-checkbox label="TLS1.1" border />
+                    <el-checkbox label="TLS1.2" border />
+                    <el-checkbox label="TLS1.3" border />
+                  </el-checkbox-group>
+                </div>
+                <div class="form-tip">至少选择一个TLS版本</div>
+              </el-form-item>
+              
+              <el-form-item label="SSL Ciphers" prop="sslCiphers">
+                <el-input 
+                  v-model="form.sslCiphers" 
+                  placeholder="请输入SSL Ciphers配置" 
+                  :rows="2"
+                  type="textarea"
+                />
+                <div class="form-tip">设置SSL加密套件，留空则使用默认配置</div>
+              </el-form-item>
+              
+              <el-form-item label="服务器证书" prop="serverCertificate" required>
+                <el-select v-model="form.serverCertificate" placeholder="请选择服务器证书" style="width: 100%">
+                  <el-option v-for="cert in certificateOptions" :key="cert.value" :label="cert.label" :value="cert.value" />
+                </el-select>
+                <div class="form-tip">可在证书管理模块配置证书</div>
+              </el-form-item>
+            </template>
+            
             <el-form-item label="国密">
               <el-switch v-model="form.gm" />
               <div class="form-tip" v-if="form.gm">需先在证书管理中配置国密证书</div>
@@ -296,6 +327,9 @@ const form = reactive({
   
   // 加密相关(HTTPS)
   tls: false,
+  tlsVersions: ['TLS1.2', 'TLS1.3'], // 默认选择TLS1.2和TLS1.3
+  sslCiphers: '',
+  serverCertificate: '',
   gm: false,
   biAuth: false,
   
@@ -332,6 +366,14 @@ const form = reactive({
   policyWhitelist: '',
   remark: ''
 })
+
+// 证书选项（模拟数据，实际应从API获取）
+const certificateOptions = ref([
+  { value: 'default', label: '默认证书' },
+  { value: 'cert-1', label: '通配符证书 *.example.com' },
+  { value: 'cert-2', label: 'www.example.com' },
+  { value: 'cert-3', label: 'api.example.com' },
+])
 
 // 表单校验规则
 const rules = {
@@ -377,6 +419,21 @@ const rules = {
   realSourceIpHeader: [
     { required: true, message: '请输入真实源IP HTTP头字段', trigger: 'blur' }
   ],
+  tlsVersions: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value || value.length === 0) {
+          callback(new Error('请至少选择一个TLS版本'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'change' 
+    }
+  ],
+  serverCertificate: [
+    { required: true, message: '请选择服务器证书', trigger: 'change' }
+  ],
   ccThreshold: [
     { required: true, message: '请输入防护阈值', trigger: 'blur' },
     { type: 'number', min: 1, max: 1000000, message: '防护阈值范围为1-1000000', trigger: 'blur' }
@@ -406,8 +463,24 @@ watch(() => form.protocol, (val) => {
   // 重置加密相关选项
   if (val !== 'HTTPS') {
     form.tls = false
+    form.tlsVersions = ['TLS1.2', 'TLS1.3']
+    form.sslCiphers = ''
+    form.serverCertificate = ''
     form.gm = false
     form.biAuth = false
+  }
+})
+
+// 监听TLS开关状态
+watch(() => form.tls, (val) => {
+  if (!val) {
+    // TLS关闭时重置相关配置
+    form.tlsVersions = ['TLS1.2', 'TLS1.3']
+    form.sslCiphers = ''
+    form.serverCertificate = ''
+  } else if (val && form.tlsVersions.length === 0) {
+    // 确保至少有一个TLS版本被选中
+    form.tlsVersions = ['TLS1.2']
   }
 })
 
@@ -421,6 +494,11 @@ const initFormData = () => {
     if (props.listenerData.healthCheck) {
       Object.assign(form.healthCheck, props.listenerData.healthCheck)
     }
+    
+    // 确保TLS版本数组存在
+    if (!form.tlsVersions || !Array.isArray(form.tlsVersions) || form.tlsVersions.length === 0) {
+      form.tlsVersions = ['TLS1.2', 'TLS1.3']; // 默认值
+    }
   } else {
     // 创建模式，使用默认值
     Object.assign(form, {
@@ -430,10 +508,19 @@ const initFormData = () => {
       addressType: 'IPv4',
       protocol: 'HTTP',
       scheduler: 'wrr',
+      
+      // 加密相关(HTTPS)
       tls: false,
+      tlsVersions: ['TLS1.2', 'TLS1.3'],
+      sslCiphers: '',
+      serverCertificate: '',
       gm: false,
       biAuth: false,
+      
+      // 回源协议(HTTP/HTTPS)
       backendProtocol: 'TCP',
+      
+      // 健康检查
       healthCheck: {
         protocol: 'TCP',
         port: undefined,
@@ -442,15 +529,21 @@ const initFormData = () => {
         successThreshold: 1,
         failureThreshold: 3
       },
+      
+      // TCP/UDP专用配置
       insertToa: false,
       sessionResetEnabled: false,
       syslogIp: '',
       syslogPort: 514,
+      
+      // HTTP/HTTPS专用配置
       realSourceIpHeader: 'X-Forwarded-For',
       ccProtection: false,
       ccThreshold: 1000,
       ccDetectionPeriod: 60,
       ccBlockDuration: 300,
+      
+      // 高级配置
       rateLimit: '',
       blacklist: '',
       ipWhitelist: '',
@@ -588,5 +681,14 @@ watch(() => drawerVisible.value, (visible) => {
 .unit {
   margin-left: 10px;
   color: #606266;
+}
+
+.tls-versions {
+  margin-bottom: 10px;
+}
+
+.tls-versions .el-checkbox {
+  margin-right: 15px;
+  margin-bottom: 10px;
 }
 </style> 
