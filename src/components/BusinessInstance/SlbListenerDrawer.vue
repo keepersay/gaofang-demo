@@ -151,6 +151,58 @@
             </el-form-item>
           </template>
           
+          <!-- HTTP/HTTPS专用配置 -->
+          <template v-if="form.protocol === 'HTTP' || form.protocol === 'HTTPS'">
+            <div class="config-section">
+              <el-form-item label="真实源IP HTTP头字段" prop="realSourceIpHeader">
+                <el-input v-model="form.realSourceIpHeader" placeholder="X-Forwarded-For" />
+                <div class="form-tip">
+                  <el-icon><info-filled /></el-icon>
+                  提示：1. 如果已存在该字段，则将真实源IP添加到最后，使用逗号分隔。2. 如果不存在该字段，则新增该字段和真实源IP值
+                </div>
+              </el-form-item>
+              
+              <el-form-item label="开启CC防护" prop="ccProtection">
+                <el-switch v-model="form.ccProtection" />
+              </el-form-item>
+              
+              <template v-if="form.ccProtection">
+                <el-form-item label="防护阈值" prop="ccThreshold" required>
+                  <div class="threshold-input">
+                    <el-input-number v-model="form.ccThreshold" :min="1" :max="1000000" controls-position="right" style="width: 200px" />
+                    <span class="unit">qps</span>
+                  </div>
+                  <div class="form-tip">
+                    <el-icon><info-filled /></el-icon>
+                    提示：范围1-1000000
+                  </div>
+                </el-form-item>
+                
+                <el-form-item label="检测周期" prop="ccDetectionPeriod" required>
+                  <div class="period-input">
+                    <el-input-number v-model="form.ccDetectionPeriod" :min="1" :max="3600" controls-position="right" style="width: 200px" />
+                    <span class="unit">s</span>
+                  </div>
+                  <div class="form-tip">
+                    <el-icon><info-filled /></el-icon>
+                    提示：范围1-3600
+                  </div>
+                </el-form-item>
+                
+                <el-form-item label="封禁时长" prop="ccBlockDuration" required>
+                  <div class="duration-input">
+                    <el-input-number v-model="form.ccBlockDuration" :min="1" :max="86400" controls-position="right" style="width: 200px" />
+                    <span class="unit">s</span>
+                  </div>
+                  <div class="form-tip">
+                    <el-icon><info-filled /></el-icon>
+                    提示：范围1-86400
+                  </div>
+                </el-form-item>
+              </template>
+            </div>
+          </template>
+          
           <el-form-item label="限速配置">
             <el-select v-model="form.rateLimit" placeholder="请选择限速配置" clearable style="width: 100%">
               <el-option label="暂无可用配置" value="" disabled />
@@ -198,6 +250,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
   visible: {
@@ -265,6 +318,13 @@ const form = reactive({
   syslogIp: '',
   syslogPort: 514,
   
+  // HTTP/HTTPS专用配置
+  realSourceIpHeader: 'X-Forwarded-For',
+  ccProtection: false,
+  ccThreshold: 1000,
+  ccDetectionPeriod: 60,
+  ccBlockDuration: 300,
+  
   // 高级配置
   rateLimit: '',
   blacklist: '',
@@ -313,6 +373,21 @@ const rules = {
   'healthCheck.failureThreshold': [
     { required: true, message: '请输入失败次数', trigger: 'blur' },
     { type: 'number', min: 1, max: 128, message: '失败次数范围为1-128', trigger: 'blur' }
+  ],
+  realSourceIpHeader: [
+    { required: true, message: '请输入真实源IP HTTP头字段', trigger: 'blur' }
+  ],
+  ccThreshold: [
+    { required: true, message: '请输入防护阈值', trigger: 'blur' },
+    { type: 'number', min: 1, max: 1000000, message: '防护阈值范围为1-1000000', trigger: 'blur' }
+  ],
+  ccDetectionPeriod: [
+    { required: true, message: '请输入检测周期', trigger: 'blur' },
+    { type: 'number', min: 1, max: 3600, message: '检测周期范围为1-3600秒', trigger: 'blur' }
+  ],
+  ccBlockDuration: [
+    { required: true, message: '请输入封禁时长', trigger: 'blur' },
+    { type: 'number', min: 1, max: 86400, message: '封禁时长范围为1-86400秒', trigger: 'blur' }
   ]
 }
 
@@ -371,6 +446,11 @@ const initFormData = () => {
       sessionResetEnabled: false,
       syslogIp: '',
       syslogPort: 514,
+      realSourceIpHeader: 'X-Forwarded-For',
+      ccProtection: false,
+      ccThreshold: 1000,
+      ccDetectionPeriod: 60,
+      ccBlockDuration: 300,
       rateLimit: '',
       blacklist: '',
       ipWhitelist: '',
@@ -487,6 +567,26 @@ watch(() => drawerVisible.value, (visible) => {
 
 .syslog-label {
   white-space: nowrap;
+  color: #606266;
+}
+
+.config-section {
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #fafafa;
+}
+
+.threshold-input,
+.period-input,
+.duration-input {
+  display: flex;
+  align-items: center;
+}
+
+.unit {
+  margin-left: 10px;
   color: #606266;
 }
 </style> 
