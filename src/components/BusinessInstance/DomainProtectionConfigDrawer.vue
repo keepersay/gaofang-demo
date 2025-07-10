@@ -321,9 +321,13 @@
         >
           <el-form-item label="地址类型" prop="addressType" required>
             <el-radio-group v-model="memberForm.addressType">
-              <el-radio label="主机名">主机名</el-radio>
-              <el-radio label="主工具箱">主工具箱</el-radio>
+              <el-radio label="主机簿">主机簿</el-radio>
+              <el-radio label="手工配置">手工配置</el-radio>
             </el-radio-group>
+            <div class="form-tip">
+              <el-icon><InfoFilled /></el-icon>
+              <span>主机簿功能尚未实现，目前仅支持手工配置</span>
+            </div>
           </el-form-item>
           
           <el-form-item label="IP" prop="ip" required>
@@ -539,7 +543,7 @@ const memberForm = reactive({
   ip: '',
   port: '',
   weight: 10,
-  addressType: '主机名',
+  addressType: '手工配置',
   role: '主'
 })
 
@@ -935,7 +939,7 @@ const fetchMemberList = (listenerId) => {
           status: 'running',
           healthStatus: 'normal',
           listenerId: '3',
-          addressType: '主机名',
+          addressType: '手工配置',
           role: '主'
         },
         {
@@ -947,7 +951,7 @@ const fetchMemberList = (listenerId) => {
           status: 'running',
           healthStatus: 'normal',
           listenerId: '3',
-          addressType: '主机名',
+          addressType: '手工配置',
           role: '备'
         }
       ]
@@ -963,7 +967,7 @@ const fetchMemberList = (listenerId) => {
           status: 'running',
           healthStatus: 'normal',
           listenerId: '1',
-          addressType: '主机名',
+          addressType: '手工配置',
           role: '主'
         }
       ]
@@ -979,7 +983,7 @@ const fetchMemberList = (listenerId) => {
           status: 'running',
           healthStatus: 'normal',
           listenerId: '2',
-          addressType: '主工具箱',
+          addressType: '手工配置',
           role: '主'
         },
         {
@@ -991,7 +995,7 @@ const fetchMemberList = (listenerId) => {
           status: 'stopped',
           healthStatus: 'abnormal',
           listenerId: '2',
-          addressType: '主机名',
+          addressType: '手工配置',
           role: '备'
         }
       ]
@@ -1076,7 +1080,7 @@ const handleAddMember = () => {
     ip: '',
     port: currentSlb.value.port,
     weight: 10,
-    addressType: '主机名',
+    addressType: '手工配置',
     role: '主'
   })
   
