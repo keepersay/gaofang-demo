@@ -2,7 +2,7 @@
 <template>
   <el-drawer
     v-model="drawerVisible"
-    :title="isEdit ? '编辑监听' : '新建监听'"
+    :title="isEdit ? '编辑监听' : '添加监听'"
     :size="'50%'"
     :destroy-on-close="true"
     :close-on-click-modal="false"

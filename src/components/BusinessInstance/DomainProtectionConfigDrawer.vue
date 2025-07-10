@@ -149,15 +149,17 @@
                 <el-button type="primary" @click="handleSlbSearch">搜索</el-button>
               </div>
               <div class="slb-actions">
-                <el-button type="primary" @click="handleCreateSlbListener">新建监听</el-button>
+                <el-button type="primary" @click="handleCreateSlbListener">添加监听</el-button>
               </div>
             </div>
             
             <el-table
-              :data="filteredSlbList"
+              :data="paginatedSlbList"
               border
               style="width: 100%"
               v-loading="slbLoading"
+              @row-click="handleSlbRowClick"
+              highlight-current-row
             >
               <el-table-column label="名称" prop="name" min-width="150" show-overflow-tooltip />
               <el-table-column label="端口" prop="port" width="100" />
@@ -175,10 +177,9 @@
               <el-table-column label="创建人" prop="creator" width="120" show-overflow-tooltip />
               <el-table-column label="创建时间" prop="createTime" width="180" show-overflow-tooltip />
               <el-table-column label="备注" prop="remark" min-width="150" show-overflow-tooltip />
-              <el-table-column label="操作" width="250" fixed="right">
+              <el-table-column label="操作" width="200" fixed="right">
                 <template #default="{ row }">
                   <el-button type="primary" link @click="handleEditSlbInfo(row)">编辑</el-button>
-                  <el-button type="primary" link @click="handleEditSlb(row)">配置</el-button>
                   <el-button :type="row.status === 'running' ? 'danger' : 'success'" link @click="handleToggleSlbStatus(row)">
                     {{ row.status === 'running' ? '停止' : '启动' }}
                   </el-button>
@@ -189,6 +190,102 @@
             
             <div class="empty-data" v-if="filteredSlbList.length === 0 && !slbLoading">
               <el-empty description="暂无负载均衡监听配置" />
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination-container" v-if="filteredSlbList.length > 0">
+              <el-pagination
+                v-model:current-page="slbPagination.currentPage"
+                v-model:page-size="slbPagination.pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :small="false"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="filteredSlbList.length"
+                @size-change="handleSlbSizeChange"
+                @current-change="handleSlbCurrentChange"
+              />
+            </div>
+
+            <!-- 后端member部分 -->
+            <div class="backend-member-section" v-if="currentSlb">
+              <div class="section-header">
+                <h3>后端member</h3>
+              </div>
+              
+              <div class="member-header">
+                <div class="member-info">
+                  <span class="member-listener-name">监听名称: {{ currentSlb.name }} ({{ currentSlb.port }})</span>
+                </div>
+                
+                <div class="member-stats">
+                  <span class="stat-item total">总数: {{ memberStats.total }}</span>
+                  <span class="stat-item running">已启用: {{ memberStats.running }}</span>
+                  <span class="stat-item stopped">停止: {{ memberStats.stopped }}</span>
+                  <span class="stat-item normal">正常: {{ memberStats.normal }}</span>
+                  <span class="stat-item partial-abnormal">部分异常: {{ memberStats.partialAbnormal }}</span>
+                  <span class="stat-item abnormal">异常: {{ memberStats.abnormal }}</span>
+                </div>
+                
+                <div class="member-actions">
+                  <el-button type="primary" @click="handleAddMember">添加后端主机</el-button>
+                </div>
+              </div>
+              
+              <el-table
+                :data="paginatedMemberList"
+                border
+                style="width: 100%"
+                v-loading="memberLoading"
+              >
+                <el-table-column type="index" label="序号" width="60" />
+                <el-table-column label="主机器名称" prop="hostName" min-width="120" show-overflow-tooltip />
+                <el-table-column label="IP地址" prop="ip" min-width="140" show-overflow-tooltip />
+                <el-table-column label="端口" prop="port" width="80" />
+                <el-table-column label="权重" prop="weight" width="80" />
+                <el-table-column label="角色" prop="role" width="80" />
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="getMemberStatusTagType(row.status)">{{ getMemberStatusLabel(row.status) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="健康检查" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="getHealthStatusTagType(row.healthStatus)">{{ getHealthStatusLabel(row.healthStatus) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="监控" width="80">
+                  <template #default="{ row }">
+                    <el-button type="primary" link @click="handleViewMonitor(row)">查看监控</el-button>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="180" fixed="right">
+                  <template #default="{ row, $index }">
+                    <el-button type="primary" link @click="handleEditMember(row, $index)">编辑</el-button>
+                    <el-button :type="row.status === 'running' ? 'danger' : 'success'" link @click="handleToggleMemberStatus(row)">
+                      {{ row.status === 'running' ? '停用' : '启用' }}
+                    </el-button>
+                    <el-button type="danger" link @click="handleDeleteMember($index)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              
+              <div class="empty-data" v-if="memberList.length === 0 && !memberLoading">
+                <el-empty description="暂无后端服务器" />
+              </div>
+              
+              <!-- 后端member分页 -->
+              <div class="pagination-container" v-if="memberList.length > 0">
+                <el-pagination
+                  v-model:current-page="memberPagination.currentPage"
+                  v-model:page-size="memberPagination.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :small="false"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="memberList.length"
+                  @size-change="handleMemberSizeChange"
+                  @current-change="handleMemberCurrentChange"
+                />
+              </div>
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -202,38 +299,66 @@
   </el-drawer>
   
   <!-- Member编辑对话框 -->
-  <el-dialog
+  <el-drawer
     v-model="memberDialogVisible"
-    :title="isEditMember ? '编辑Member' : '添加Member'"
-    width="500px"
+    :title="isEditMember ? '编辑后端主机' : '添加后端主机'"
+    :size="'50%'"
+    :destroy-on-close="true"
     :close-on-click-modal="false"
+    :close-on-press-escape="false"
+    direction="rtl"
+    append-to-body
   >
-    <el-form
-      ref="memberFormRef"
-      :model="memberForm"
-      :rules="memberRules"
-      label-width="80px"
-    >
-      <el-form-item label="IP地址" prop="ip">
-        <el-input v-model="memberForm.ip" placeholder="请输入IP地址" />
-      </el-form-item>
-      
-      <el-form-item label="端口" prop="port">
-        <el-input-number v-model="memberForm.port" :min="1" :max="65535" style="width: 120px" />
-      </el-form-item>
-      
-      <el-form-item label="权重" prop="weight">
-        <el-input-number v-model="memberForm.weight" :min="1" :max="100" style="width: 120px" />
-      </el-form-item>
-    </el-form>
+    <template #default>
+      <div class="member-drawer-content">
+        <el-form
+          ref="memberFormRef"
+          :model="memberForm"
+          :rules="memberRules"
+          label-width="100px"
+          label-position="right"
+          class="member-form"
+        >
+          <el-form-item label="地址类型" prop="addressType" required>
+            <el-radio-group v-model="memberForm.addressType">
+              <el-radio label="主机名">主机名</el-radio>
+              <el-radio label="主工具箱">主工具箱</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          
+          <el-form-item label="IP" prop="ip" required>
+            <el-input v-model="memberForm.ip" placeholder="请输入IP地址" />
+          </el-form-item>
+          
+          <el-form-item label="端口" prop="port" required>
+            <el-input v-model="memberForm.port" placeholder="请输入端口" />
+          </el-form-item>
+          
+          <el-form-item label="权重" prop="weight" required>
+            <el-input-number v-model="memberForm.weight" :min="1" :max="100" style="width: 120px" />
+            <div class="weight-tip">
+              <el-icon><InfoFilled /></el-icon>
+              <span>范围: 1-100</span>
+            </div>
+          </el-form-item>
+          
+          <el-form-item label="角色" prop="role" required>
+            <el-radio-group v-model="memberForm.role">
+              <el-radio label="主">主</el-radio>
+              <el-radio label="备">备</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
+    </template>
     
     <template #footer>
-      <span class="dialog-footer">
+      <div class="drawer-footer">
         <el-button @click="memberDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleMemberSubmit">确定</el-button>
-      </span>
+      </div>
     </template>
-  </el-dialog>
+  </el-drawer>
   
   <!-- 负载均衡监听抽屉 -->
   <SlbListenerDrawer 
@@ -249,6 +374,7 @@ import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDomainProtectionDetail, updateDomainProtectionConfig, getInstanceAllocatedIpGroups } from '@/services/ProtectionObjectService'
 import SlbListenerDrawer from '@/components/BusinessInstance/SlbListenerDrawer.vue'
+import { InfoFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
   visible: {
@@ -335,6 +461,35 @@ const slbSearchForm = reactive({
   status: ''
 })
 
+// 负载均衡分页
+const slbPagination = reactive({
+  currentPage: 1,
+  pageSize: 10
+})
+
+// 当前选中的负载均衡实例
+const currentSlb = ref(null)
+
+// 后端member列表
+const memberList = ref([])
+const memberLoading = ref(false)
+
+// 后端member统计数据
+const memberStats = reactive({
+  total: 0,
+  running: 0,
+  stopped: 0,
+  normal: 0,
+  partialAbnormal: 0,
+  abnormal: 0
+})
+
+// 后端member分页
+const memberPagination = reactive({
+  currentPage: 1,
+  pageSize: 10
+})
+
 // 负载均衡监听抽屉
 const slbListenerVisible = ref(false)
 const currentSlbListener = ref(null)
@@ -343,7 +498,8 @@ const currentSlbListener = ref(null)
 const filteredSlbList = computed(() => {
   if (!slbList.value || slbList.value.length === 0) return []
   
-  return slbList.value.filter(item => {
+  // 先应用过滤条件
+  const filteredList = slbList.value.filter(item => {
     // 关键字搜索(名称、端口)
     const keywordMatch = !slbSearchForm.keyword || 
       item.name.toLowerCase().includes(slbSearchForm.keyword.toLowerCase()) ||
@@ -357,6 +513,22 @@ const filteredSlbList = computed(() => {
     
     return keywordMatch && protocolMatch && statusMatch
   })
+  
+  return filteredList
+})
+
+// 分页后的负载均衡列表
+const paginatedSlbList = computed(() => {
+  const start = (slbPagination.currentPage - 1) * slbPagination.pageSize
+  const end = start + slbPagination.pageSize
+  return filteredSlbList.value.slice(start, end)
+})
+
+// 分页后的后端member列表
+const paginatedMemberList = computed(() => {
+  const start = (memberPagination.currentPage - 1) * memberPagination.pageSize
+  const end = start + memberPagination.pageSize
+  return memberList.value.slice(start, end)
 })
 
 // Member表单
@@ -365,8 +537,10 @@ const isEditMember = ref(false)
 const currentMemberIndex = ref(-1)
 const memberForm = reactive({
   ip: '',
-  port: 80,
-  weight: 10
+  port: '',
+  weight: 10,
+  addressType: '主机名',
+  role: '主'
 })
 
 // 表单验证规则
@@ -415,21 +589,42 @@ const basicRules = reactive({
 })
 
 const memberRules = reactive({
+  addressType: [
+    { required: true, message: '请选择地址类型', trigger: 'change' }
+  ],
   ip: [
     { required: true, message: '请输入IP地址', trigger: 'blur' },
     { 
-      pattern: /^(\d{1,3}\.){3}\d{1,3}$|^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/, 
-      message: '请输入有效的IPv4或IPv6地址', 
+      pattern: /^(\d{1,3}\.){3}\d{1,3}$/, 
+      message: '请输入有效的IPv4地址', 
       trigger: 'blur' 
     }
   ],
   port: [
     { required: true, message: '请输入端口号', trigger: 'blur' },
-    { type: 'number', min: 1, max: 65535, message: '端口号必须在1-65535之间', trigger: 'blur' }
+    { 
+      pattern: /^\d+$/, 
+      message: '端口号必须是数字', 
+      trigger: 'blur' 
+    },
+    {
+      validator: (rule, value, callback) => {
+        const port = parseInt(value);
+        if (isNaN(port) || port < 1 || port > 65535) {
+          callback(new Error('端口号必须在1-65535之间'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur'
+    }
   ],
   weight: [
     { required: true, message: '请输入权重', trigger: 'blur' },
     { type: 'number', min: 1, max: 100, message: '权重必须在1-100之间', trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
   ]
 })
 
@@ -650,7 +845,8 @@ const getSlbStatusLabel = (status) => {
 
 // 处理负载均衡搜索
 const handleSlbSearch = () => {
-  // 已通过计算属性实现过滤
+  // 重置到第一页
+  slbPagination.currentPage = 1
 }
 
 // 处理创建负载均衡监听
@@ -663,11 +859,6 @@ const handleCreateSlbListener = () => {
 const handleEditSlbInfo = (row) => {
   slbListenerVisible.value = true
   currentSlbListener.value = { ...row }
-}
-
-// 处理编辑负载均衡
-const handleEditSlb = (row) => {
-  ElMessage.info(`配置负载均衡 ${row.name} 功能待实现`)
 }
 
 // 处理切换负载均衡状态
@@ -705,7 +896,290 @@ const handleDeleteSlb = (row) => {
     if (index !== -1) {
       slbList.value.splice(index, 1)
     }
+    
+    // 如果删除的是当前选中的负载均衡，则清空当前选中
+    if (currentSlb.value && currentSlb.value.id === row.id) {
+      currentSlb.value = null
+      memberList.value = []
+    }
   }).catch(() => {})
+}
+
+// 处理负载均衡行点击
+const handleSlbRowClick = (row) => {
+  currentSlb.value = row
+  fetchMemberList(row.id)
+}
+
+// 获取后端member列表
+const fetchMemberList = (listenerId) => {
+  if (!listenerId) return
+  
+  memberLoading.value = true
+  
+  // 重置分页到第一页
+  memberPagination.currentPage = 1
+  
+  // 模拟API调用
+  setTimeout(() => {
+    // 这里应该是从API获取数据，现在使用模拟数据
+    if (listenerId === '3') {
+      // TCP监听8080的成员
+      memberList.value = [
+        {
+          id: 'member-a1b2c3d4',
+          hostName: '--',
+          ip: '100.0.0.13',
+          port: 8080,
+          weight: 10,
+          status: 'running',
+          healthStatus: 'normal',
+          listenerId: '3',
+          addressType: '主机名',
+          role: '主'
+        },
+        {
+          id: 'member-b2c3d4e5',
+          hostName: '--',
+          ip: '100.0.0.14',
+          port: 8080,
+          weight: 10,
+          status: 'running',
+          healthStatus: 'normal',
+          listenerId: '3',
+          addressType: '主机名',
+          role: '备'
+        }
+      ]
+    } else if (listenerId === '1') {
+      // HTTP监听80的成员
+      memberList.value = [
+        {
+          id: 'member-c3d4e5f6',
+          hostName: '--',
+          ip: '100.0.0.15',
+          port: 80,
+          weight: 5,
+          status: 'running',
+          healthStatus: 'normal',
+          listenerId: '1',
+          addressType: '主机名',
+          role: '主'
+        }
+      ]
+    } else if (listenerId === '2') {
+      // HTTPS监听443的成员
+      memberList.value = [
+        {
+          id: 'member-d4e5f6g7',
+          hostName: '--',
+          ip: '100.0.0.16',
+          port: 443,
+          weight: 8,
+          status: 'running',
+          healthStatus: 'normal',
+          listenerId: '2',
+          addressType: '主工具箱',
+          role: '主'
+        },
+        {
+          id: 'member-e5f6g7h8',
+          hostName: '--',
+          ip: '100.0.0.17',
+          port: 443,
+          weight: 8,
+          status: 'stopped',
+          healthStatus: 'abnormal',
+          listenerId: '2',
+          addressType: '主机名',
+          role: '备'
+        }
+      ]
+    } else {
+      memberList.value = []
+    }
+    
+    // 更新统计数据
+    updateMemberStats()
+    
+    memberLoading.value = false
+  }, 500)
+}
+
+// 更新member统计数据
+const updateMemberStats = () => {
+  const total = memberList.value.length
+  const running = memberList.value.filter(item => item.status === 'running').length
+  const stopped = memberList.value.filter(item => item.status === 'stopped').length
+  const normal = memberList.value.filter(item => item.healthStatus === 'normal').length
+  const abnormal = memberList.value.filter(item => item.healthStatus === 'abnormal').length
+  const partialAbnormal = total > 0 && abnormal > 0 && abnormal < total ? 1 : 0
+  
+  Object.assign(memberStats, {
+    total,
+    running,
+    stopped,
+    normal,
+    partialAbnormal,
+    abnormal
+  })
+}
+
+// 获取member状态标签类型
+const getMemberStatusTagType = (status) => {
+  const types = {
+    'running': 'success',
+    'stopped': 'info'
+  }
+  return types[status] || 'info'
+}
+
+// 获取member状态显示标签
+const getMemberStatusLabel = (status) => {
+  const labels = {
+    'running': '运行中',
+    'stopped': '已停止'
+  }
+  return labels[status] || status
+}
+
+// 获取健康检查状态标签类型
+const getHealthStatusTagType = (status) => {
+  const types = {
+    'normal': 'success',
+    'abnormal': 'danger'
+  }
+  return types[status] || 'info'
+}
+
+// 获取健康检查状态显示标签
+const getHealthStatusLabel = (status) => {
+  const labels = {
+    'normal': '正常',
+    'abnormal': '异常'
+  }
+  return labels[status] || status
+}
+
+// 处理添加member
+const handleAddMember = () => {
+  if (!currentSlb.value) {
+    ElMessage.warning('请先选择一个监听')
+    return
+  }
+  
+  isEditMember.value = false
+  currentMemberIndex.value = -1
+  
+  // 重置表单
+  Object.assign(memberForm, {
+    ip: '',
+    port: currentSlb.value.port,
+    weight: 10,
+    addressType: '主机名',
+    role: '主'
+  })
+  
+  memberDialogVisible.value = true
+}
+
+// 处理编辑member
+const handleEditMember = (row, index) => {
+  isEditMember.value = true
+  currentMemberIndex.value = index
+  
+  // 填充表单
+  Object.assign(memberForm, {
+    ip: row.ip,
+    port: row.port,
+    weight: row.weight,
+    addressType: row.addressType,
+    role: row.role
+  })
+  
+  memberDialogVisible.value = true
+}
+
+// 处理切换member状态
+const handleToggleMemberStatus = (row) => {
+  const action = row.status === 'running' ? '停用' : '启用'
+  ElMessageBox.confirm(
+    `确定要${action}后端服务器 ${row.ip}:${row.port} 吗？`,
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    ElMessage.success(`${action}成功`)
+    // 模拟状态切换
+    row.status = row.status === 'running' ? 'stopped' : 'running'
+    // 更新统计数据
+    updateMemberStats()
+  }).catch(() => {})
+}
+
+// 处理删除member
+const handleDeleteMember = (index) => {
+  ElMessageBox.confirm(
+    `确定要删除此后端服务器吗？`,
+    '警告',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(() => {
+    ElMessage.success('删除成功')
+    // 模拟删除
+    memberList.value.splice(index, 1)
+    // 更新统计数据
+    updateMemberStats()
+  }).catch(() => {})
+}
+
+// 处理查看监控
+const handleViewMonitor = (row) => {
+  ElMessage.info(`查看监控功能暂未实现: ${row.ip}:${row.port}`)
+}
+
+// 提交Member表单
+const handleMemberSubmit = async () => {
+  if (!memberFormRef.value) return
+  
+  try {
+    await memberFormRef.value.validate()
+    
+    const newMember = {
+      id: isEditMember.value ? memberList.value[currentMemberIndex.value].id : `member-${Math.random().toString(36).substr(2, 9)}`,
+      hostName: '--',
+      ip: memberForm.ip,
+      port: memberForm.port,
+      weight: memberForm.weight,
+      status: 'running',
+      healthStatus: 'normal',
+      listenerId: currentSlb.value.id,
+      addressType: memberForm.addressType,
+      role: memberForm.role
+    }
+    
+    if (isEditMember.value && currentMemberIndex.value >= 0) {
+      // 编辑模式
+      memberList.value[currentMemberIndex.value] = newMember
+    } else {
+      // 添加模式
+      memberList.value.push(newMember)
+    }
+    
+    // 更新统计数据
+    updateMemberStats()
+    
+    memberDialogVisible.value = false
+    ElMessage.success(isEditMember.value ? '编辑成功' : '添加成功')
+  } catch (error) {
+    console.error('Member表单验证失败:', error)
+  }
 }
 
 // 处理负载均衡监听成功
@@ -722,6 +1196,26 @@ const handleSlbListenerSuccess = (data) => {
     // 创建模式 - 添加到列表
     slbList.value.push(data)
   }
+}
+
+// 处理负载均衡分页大小变化
+const handleSlbSizeChange = (val) => {
+  slbPagination.pageSize = val
+}
+
+// 处理负载均衡当前页变化
+const handleSlbCurrentChange = (val) => {
+  slbPagination.currentPage = val
+}
+
+// 处理后端member分页大小变化
+const handleMemberSizeChange = (val) => {
+  memberPagination.pageSize = val
+}
+
+// 处理后端member当前页变化
+const handleMemberCurrentChange = (val) => {
+  memberPagination.currentPage = val
 }
 
 // 保存配置
@@ -786,72 +1280,6 @@ const handleClose = () => {
   ).then(() => {
     drawerVisible.value = false
   }).catch(() => {})
-}
-
-// 添加Member
-const handleAddMember = () => {
-  isEditMember.value = false
-  currentMemberIndex.value = -1
-  
-  // 重置表单
-  Object.assign(memberForm, {
-    ip: '',
-    port: 80,
-    weight: 10
-  })
-  
-  memberDialogVisible.value = true
-}
-
-// 编辑Member
-const handleEditMember = (row, index) => {
-  isEditMember.value = true
-  currentMemberIndex.value = index
-  
-  // 填充表单
-  Object.assign(memberForm, {
-    ip: row.ip,
-    port: row.port,
-    weight: row.weight
-  })
-  
-  memberDialogVisible.value = true
-}
-
-// 删除Member
-const handleDeleteMember = (index) => {
-  ElMessageBox.confirm(
-    '确定要删除此Member吗？',
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    slbForm.members.splice(index, 1)
-  }).catch(() => {})
-}
-
-// 提交Member表单
-const handleMemberSubmit = async () => {
-  if (!memberFormRef.value) return
-  
-  try {
-    await memberFormRef.value.validate()
-    
-    if (isEditMember.value && currentMemberIndex.value >= 0) {
-      // 编辑模式
-      slbForm.members[currentMemberIndex.value] = { ...memberForm }
-    } else {
-      // 添加模式
-      slbForm.members.push({ ...memberForm })
-    }
-    
-    memberDialogVisible.value = false
-  } catch (error) {
-    console.error('Member表单验证失败:', error)
-  }
 }
 
 // 监听抽屉显示状态
@@ -947,5 +1375,121 @@ watch(() => drawerVisible.value, (visible) => {
 
 .empty-data {
   margin-top: 20px;
+}
+
+/* 后端member样式 */
+.backend-member-section {
+  margin-top: 30px;
+  border-top: 1px solid #e6e6e6;
+  padding-top: 20px;
+}
+
+.section-header {
+  margin-bottom: 15px;
+}
+
+.section-header h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  margin: 0;
+}
+
+.member-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.member-info {
+  font-size: 14px;
+  color: #606266;
+}
+
+.member-listener-name {
+  font-weight: 500;
+}
+
+.member-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.stat-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.stat-item.total {
+  background-color: #ecf5ff;
+  color: #409eff;
+}
+
+.stat-item.running {
+  background-color: #f0f9eb;
+  color: #67c23a;
+}
+
+.stat-item.stopped {
+  background-color: #f4f4f5;
+  color: #909399;
+}
+
+.stat-item.normal {
+  background-color: #f0f9eb;
+  color: #67c23a;
+}
+
+.stat-item.partial-abnormal {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.stat-item.abnormal {
+  background-color: #fef0f0;
+  color: #f56c6c;
+}
+
+.member-actions {
+  margin-left: auto;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Member抽屉内容样式 */
+.member-drawer-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.member-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.weight-tip {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.weight-tip .el-icon {
+  margin-right: 5px;
 }
 </style> 
