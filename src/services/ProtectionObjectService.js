@@ -175,4 +175,29 @@ export function updateDomainProtectionConfig(data) {
     method: 'put',
     data
   })
+}
+
+/**
+ * 获取域名防护对象安全配置
+ * @param {number|string} id 域名防护对象ID
+ * @returns {Promise<object>} 请求结果
+ */
+export function getDomainProtectionSecurityConfig(id) {
+  return request({
+    url: `/api/protection/domain/${id}/security-config`,
+    method: 'get'
+  })
+}
+
+/**
+ * 更新域名防护对象安全配置
+ * @param {object} data 安全配置数据
+ * @returns {Promise<object>} 请求结果
+ */
+export function updateDomainProtectionSecurityConfig(data) {
+  return request({
+    url: `/api/protection/domain/${data.id}/security-config`,
+    method: 'put',
+    data
+  })
 } 

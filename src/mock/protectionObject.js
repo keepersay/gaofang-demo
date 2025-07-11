@@ -997,5 +997,183 @@ Mock.mock(new RegExp('/api/business-instance/\\w+/allocated-ip-groups'), 'get', 
 
 // 模拟接口：获取IP组详情
 if (mock) {
-  // ... existing code ...
+  Mock.mock(new RegExp('/api/ip-group/\\w+'), 'get', (options) => {
+    const groupId = options.url.match(/\/api\/ip-group\/(\w+)/)[1]
+    
+    // 模拟IP组详情
+    return {
+      code: 200,
+      message: 'success',
+      data: {
+        groupId,
+        addressType: groupId.includes('ipv6') ? 'IPv6' : 'IPv4',
+        ipCount: Math.floor(Math.random() * 5) + 1,
+        ips: Array(Math.floor(Math.random() * 5) + 1).fill().map(() => {
+          if (groupId.includes('ipv6')) {
+            // 生成IPv6
+            const segments = []
+            for (let j = 0; j < 8; j++) {
+              segments.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'))
+            }
+            return {
+              ip: segments.join(':'),
+              type: 'IPv6',
+              status: 'active'
+            }
+          } else {
+            // 生成IPv4
+            return {
+              ip: `203.0.113.${Math.floor(Math.random() * 254) + 1}`,
+              type: 'IPv4',
+              status: 'active'
+            }
+          }
+        })
+      }
+    }
+  })
+}
+
+// 获取域名防护对象安全配置
+Mock.mock(new RegExp('/api/protection/domain/\\d+/security-config'), 'get', (options) => {
+  const id = parseInt(options.url.match(/\/api\/protection\/domain\/(\d+)\/security-config/)[1])
+  
+  // 查找域名防护对象
+  const domainProtection = domainProtectionData.find(item => item.id === id)
+  if (!domainProtection) {
+    return {
+      code: 404,
+      message: '域名防护对象不存在'
+    }
+  }
+  
+  // 如果已有安全配置，返回现有配置
+  if (domainProtection.securityConfig) {
+    return {
+      code: 200,
+      message: 'success',
+      data: {
+        id: domainProtection.id,
+        domainName: domainProtection.domain,
+        securityConfig: domainProtection.securityConfig
+      }
+    }
+  }
+  
+  // 否则生成默认安全配置
+  const defaultSecurityConfig = {
+    highDefense: {
+      enabled: true,
+      level: 'medium',
+      mode: 'detect',
+      rules: [
+        { ruleId: '1070020113', enabled: true },
+        { ruleId: '1010010020', enabled: true },
+        { ruleId: '1060050015', enabled: true },
+        { ruleId: '1040010673', enabled: true },
+        { ruleId: '1040010336', enabled: true },
+        { ruleId: '1050010011', enabled: true },
+        { ruleId: '1080030112', enabled: true },
+        { ruleId: '1050010042', enabled: true }
+      ]
+    },
+    ccProtection: {
+      enabled: id % 2 === 0, // 偶数ID默认启用
+      mode: 'normal',
+      qpsThreshold: 100,
+      statisticsPeriod: 10,
+      blockDuration: 300,
+      action: 'block',
+      urlRules: [
+        {
+          url: '/login',
+          qpsThreshold: 20,
+          action: 'captcha',
+          enabled: true
+        },
+        {
+          url: '/api/*',
+          qpsThreshold: 50,
+          action: 'block',
+          enabled: true
+        }
+      ],
+      whitelist: [
+        {
+          ip: '192.168.1.1',
+          comment: '内部测试IP'
+        },
+        {
+          ip: '10.0.0.0/8',
+          comment: '内网IP段'
+        }
+      ]
+    },
+    botProtection: {
+      enabled: false
+    },
+    scanProtection: {
+      enabled: false
+    },
+    regionBlock: {
+      enabled: false
+    },
+    requestCompliance: {
+      enabled: false
+    },
+    cookieProtection: {
+      enabled: false
+    },
+    customRules: {
+      enabled: false
+    },
+    infoLeakage: {
+      enabled: false
+    }
+  }
+  
+  // 保存默认配置到对象中
+  domainProtection.securityConfig = defaultSecurityConfig
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: {
+      id: domainProtection.id,
+      domainName: domainProtection.domain,
+      securityConfig: defaultSecurityConfig
+    }
+  }
+})
+
+// 更新域名防护对象安全配置
+Mock.mock(new RegExp('/api/protection/domain/\\d+/security-config'), 'put', (options) => {
+  const body = JSON.parse(options.body)
+  const id = body.id
+  
+  // 查找域名防护对象
+  const index = domainProtectionData.findIndex(item => item.id === id)
+  if (index === -1) {
+    return {
+      code: 404,
+      message: '域名防护对象不存在'
+    }
+  }
+  
+  // 更新安全配置
+  domainProtectionData[index].securityConfig = body.securityConfig
+  
+  return {
+    code: 200,
+    message: 'success',
+    data: {
+      id: domainProtectionData[index].id,
+      domainName: domainProtectionData[index].domain,
+      securityConfig: domainProtectionData[index].securityConfig
+    }
+  }
+})
+
+export default {
+  mock
 } 

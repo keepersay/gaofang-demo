@@ -137,6 +137,13 @@
       :protection-id="currentConfigId"
       @success="handleConfigSuccess"
     />
+    
+    <!-- 域名防护对象安全防护抽屉 -->
+    <domain-protection-security-drawer
+      v-model:visible="securityDrawerVisible"
+      :protection-id="currentSecurityId"
+      @success="handleSecuritySuccess"
+    />
   </div>
 </template>
 
@@ -153,6 +160,7 @@ import {
 } from '@/services/ProtectionObjectService'
 import DomainProtectionModal from '@/components/BusinessInstance/DomainProtectionModal.vue'
 import DomainProtectionConfigDrawer from '@/components/BusinessInstance/DomainProtectionConfigDrawer.vue'
+import DomainProtectionSecurityDrawer from '@/components/BusinessInstance/DomainProtectionSecurityDrawer.vue'
 
 // 状态
 const loading = ref(false)
@@ -164,6 +172,10 @@ const currentEditData = ref(null)
 // 配置域名防护对象
 const configDrawerVisible = ref(false)
 const currentConfigId = ref(null)
+
+// 安全防护抽屉
+const securityDrawerVisible = ref(false)
+const currentSecurityId = ref(null)
 
 // 状态过滤选项
 const statusFilters = [
@@ -262,7 +274,8 @@ const handleConfig = (row) => {
 
 // 安全防护配置
 const handleSecurityConfig = (row) => {
-  ElMessage.info(`安全防护配置功能待实现: ${row.domain}`)
+  currentSecurityId.value = row.id
+  securityDrawerVisible.value = true
 }
 
 // 删除域名防护对象
@@ -382,6 +395,11 @@ const handleModalSuccess = () => {
 
 // 配置成功回调
 const handleConfigSuccess = () => {
+  fetchDomainProtectionList()
+}
+
+// 安全防护成功回调
+const handleSecuritySuccess = () => {
   fetchDomainProtectionList()
 }
 
