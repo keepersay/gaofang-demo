@@ -356,7 +356,7 @@ const getThreatLevelType = (level) => {
     '高': 'danger',
     '中': 'warning',
     '低': 'info',
-    '严重': 'error'
+    '严重': 'danger' // 修改从 'error' 到 'danger'
   }
   return types[level] || 'info'
 }
