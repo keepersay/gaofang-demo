@@ -3,7 +3,7 @@
     <div class="table-header">
       <span class="table-title">高级CC防护</span>
       <el-switch v-model="localValue.enabled" active-text="启用" inactive-text="禁用" />
-      <el-button type="primary" size="small" @click="openDialog()" :disabled="!localValue.enabled" style="margin-left: 16px;">新建</el-button>
+      <el-button type="primary" size="small" @click="openDialog()" :disabled="!localValue.enabled" style="margin-left: 16px;">新增</el-button>
     </div>
     <el-table :data="localValue.rules" border style="width: 100%; margin-top: 12px;" v-if="localValue.enabled && localValue.rules.length">
       <el-table-column label="序号" type="index" width="60" />
