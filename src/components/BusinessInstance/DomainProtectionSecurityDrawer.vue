@@ -252,7 +252,8 @@ const fetchSecurityConfig = async () => {
 // 更新配置
 const handleUpdate = (tab, data) => {
   if (protectionData.securityConfig[tab]) {
-    Object.assign(protectionData.securityConfig[tab], data)
+    // 深拷贝，避免响应式丢失
+    protectionData.securityConfig[tab] = JSON.parse(JSON.stringify(data))
   }
 }
 
