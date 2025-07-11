@@ -222,6 +222,7 @@ const handleTabChange = (tab) => {
 
 // 获取域名防护对象安全配置
 const fetchSecurityConfig = async () => {
+  protectionData.id = props.protectionId // 兜底赋值，防止id为null
   if (!props.protectionId) return
   
   loading.value = true
@@ -261,6 +262,10 @@ const handleUpdate = (tab, data) => {
 
 // 保存配置
 const handleSave = async () => {
+  if (!protectionData.id) {
+    ElMessage.error('保存失败：未获取到防护对象ID');
+    return;
+  }
   try {
     saveLoading.value = true
     
