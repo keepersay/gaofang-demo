@@ -9,21 +9,17 @@
     <template #default>
       <div class="security-drawer-content" v-loading="loading">
         <div class="security-menu">
-          <el-menu
-            :default-active="activeTab"
-            class="security-tabs"
-            @select="handleTabChange"
-          >
-            <el-menu-item index="highDefense">高防防护</el-menu-item>
-            <el-menu-item index="ccProtection">CC攻击防护</el-menu-item>
-            <el-menu-item index="botProtection">BOT攻击防护</el-menu-item>
-            <el-menu-item index="scanProtection">扫描防护</el-menu-item>
-            <el-menu-item index="regionBlock">区域封禁</el-menu-item>
-            <el-menu-item index="requestCompliance">请求合规性检查</el-menu-item>
-            <el-menu-item index="cookieProtection">Cookie防护</el-menu-item>
-            <el-menu-item index="customRules">自定义规则</el-menu-item>
-            <el-menu-item index="infoLeakage">信息防泄露</el-menu-item>
-          </el-menu>
+          <div class="menu-wrapper">
+            <div 
+              v-for="(item, index) in menuItems" 
+              :key="index" 
+              class="menu-item" 
+              :class="{ active: activeTab === item.key }"
+              @click="handleTabChange(item.key)"
+            >
+              {{ item.label }}
+            </div>
+          </div>
         </div>
         
         <div class="security-content">
@@ -122,6 +118,19 @@
 import { ref, reactive, computed, watch, defineAsyncComponent } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDomainProtectionSecurityConfig, updateDomainProtectionSecurityConfig } from '@/services/ProtectionObjectService'
+
+// 菜单项
+const menuItems = [
+  { key: 'highDefense', label: '高防防护' },
+  { key: 'ccProtection', label: 'CC攻击防护' },
+  { key: 'botProtection', label: 'BOT攻击防护' },
+  { key: 'scanProtection', label: '扫描防护' },
+  { key: 'regionBlock', label: '区域封禁' },
+  { key: 'requestCompliance', label: '请求合规性检查' },
+  { key: 'cookieProtection', label: 'Cookie防护' },
+  { key: 'customRules', label: '自定义规则' },
+  { key: 'infoLeakage', label: '信息防泄露' }
+]
 
 // 异步加载各个Tab组件
 const tabComponents = {
@@ -303,29 +312,49 @@ watch(() => drawerVisible.value, (val) => {
 <style scoped>
 .security-drawer-content {
   display: flex;
-  height: calc(100% - 60px); /* 减去底部按钮区域的高度 */
-  overflow: hidden;
+  height: calc(100vh - 140px);
 }
 
 .security-menu {
-  width: 200px;
+  width: 100px;
   border-right: 1px solid #e6e6e6;
-  height: 100%;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
-.security-tabs {
-  border-right: none;
+.menu-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.menu-item {
+  padding: 8px 4px;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  color: #606266;
+  line-height: 1.3;
+}
+
+.menu-item:hover {
+  background-color: #f5f7fa;
+}
+
+.menu-item.active {
+  color: #409eff;
+  background-color: #ecf5ff;
+  border-right: 2px solid #409eff;
 }
 
 .security-content {
   flex: 1;
-  padding: 0 20px;
+  padding: 0 10px;
   overflow-y: auto;
 }
 
 .tab-content {
-  padding: 20px 0;
   height: 100%;
 }
 
@@ -335,9 +364,8 @@ watch(() => drawerVisible.value, (val) => {
   left: 0;
   right: 0;
   padding: 10px 20px;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #e6e6e6;
   background-color: #fff;
+  border-top: 1px solid #e6e6e6;
+  text-align: right;
 }
 </style> 
