@@ -195,6 +195,47 @@
           />
         </div>
       </div>
+      
+      <!-- 响应体加密 -->
+      <div class="protection-section">
+        <div class="section-header">
+          <span class="section-title">响应体加密</span>
+          <el-switch v-model="config.responseEncryption.enabled" @change="handleConfigChange" />
+        </div>
+        
+        <div class="form-item">
+          <div class="textarea-label">
+            <span class="required">*</span>
+            <span>混淆路径(前缀匹配):</span>
+          </div>
+          <el-input
+            v-model="config.responseEncryption.obfuscatePaths"
+            type="textarea"
+            :rows="3"
+            :maxlength="5120"
+            :disabled="!config.responseEncryption.enabled"
+            placeholder="请输入混淆路径，多个之间用英文逗号分割，最多配置20个，单个路径最长255字符"
+            show-word-limit
+            @change="handleConfigChange"
+          />
+        </div>
+        
+        <div class="form-item">
+          <div class="textarea-label">
+            <span>例外路径(前缀匹配):</span>
+          </div>
+          <el-input
+            v-model="config.responseEncryption.exceptPaths"
+            type="textarea"
+            :rows="3"
+            :maxlength="5120"
+            :disabled="!config.responseEncryption.enabled"
+            placeholder="请输入例外路径，多个之间用英文逗号分割，最多配置20个，单个路径最长255字符"
+            show-word-limit
+            @change="handleConfigChange"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -245,6 +286,11 @@ const config = reactive({
     enabled: true,
     obfuscatePaths: "/",
     exceptPaths: ""
+  },
+  responseEncryption: {
+    enabled: true,
+    obfuscatePaths: "/",
+    exceptPaths: ""
   }
 })
 
@@ -276,6 +322,10 @@ const initConfig = () => {
     if (botProtection.jsObfuscation) {
       Object.assign(config.jsObfuscation, botProtection.jsObfuscation)
     }
+    
+    if (botProtection.responseEncryption) {
+      Object.assign(config.responseEncryption, botProtection.responseEncryption)
+    }
   }
 }
 
@@ -291,7 +341,8 @@ const emitUpdate = () => {
     staticResourceSuffix: { ...config.staticResourceSuffix },
     dynamicProtection: { ...config.dynamicProtection },
     htmlObfuscation: { ...config.htmlObfuscation },
-    jsObfuscation: { ...config.jsObfuscation }
+    jsObfuscation: { ...config.jsObfuscation },
+    responseEncryption: { ...config.responseEncryption }
   })
 }
 
