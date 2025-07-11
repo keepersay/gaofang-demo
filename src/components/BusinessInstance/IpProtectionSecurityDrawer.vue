@@ -9,50 +9,68 @@
       custom-class="security-config-drawer"
     >
       <div class="security-drawer-content" v-loading="loading">
-        <div class="security-tabs-container">
-          <el-tabs tab-position="left" v-model="activeTab" class="security-tabs">
-            <el-tab-pane label="ICMP禁用" name="icmp">
-              <IpProtectionIcmpBlockTab
-                v-model:config="securityConfig.icmp"
-              />
-            </el-tab-pane>
-            
-            <el-tab-pane label="黑白名单" name="blackwhitelist">
-              <IpProtectionBlackWhiteListTab
-                v-model:config="securityConfig.blackWhiteList"
-              />
-            </el-tab-pane>
-            
-            <el-tab-pane label="区域封禁" name="regionblock">
-              <IpProtectionRegionBlockTab
-                v-model:config="securityConfig.regionBlock"
-              />
-            </el-tab-pane>
-            
-            <el-tab-pane label="源限速" name="ratelimit">
-              <IpProtectionRateLimitTab
-                v-model:config="securityConfig.rateLimit"
-              />
-            </el-tab-pane>
-            
-            <el-tab-pane label="反射攻击配置" name="reflection">
-              <IpProtectionReflectionTab
-                v-model="securityConfig.reflection"
-              />
-            </el-tab-pane>
-            
-            <el-tab-pane label="指纹过滤" name="fingerprint">
-              <IpProtectionFingerprintTab
-                v-model="securityConfig.fingerprint"
-              />
-            </el-tab-pane>
-          </el-tabs>
+        <div class="security-menu">
+          <div class="menu-wrapper">
+            <div 
+              v-for="(item, index) in menuItems" 
+              :key="index" 
+              class="menu-item" 
+              :class="{ active: activeTab === item.key }"
+              @click="handleTabChange(item.key)"
+            >
+              {{ item.label }}
+            </div>
+          </div>
         </div>
         
-        <div class="drawer-footer">
-          <el-button @click="handleClose">取消</el-button>
-          <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
+        <div class="security-content">
+          <!-- ICMP禁用 -->
+          <div v-show="activeTab === 'icmp'" class="tab-content">
+            <IpProtectionIcmpBlockTab
+              v-model:config="securityConfig.icmp"
+            />
+          </div>
+          
+          <!-- 黑白名单 -->
+          <div v-show="activeTab === 'blackwhitelist'" class="tab-content">
+            <IpProtectionBlackWhiteListTab
+              v-model:config="securityConfig.blackWhiteList"
+            />
+          </div>
+          
+          <!-- 区域封禁 -->
+          <div v-show="activeTab === 'regionblock'" class="tab-content">
+            <IpProtectionRegionBlockTab
+              v-model:config="securityConfig.regionBlock"
+            />
+          </div>
+          
+          <!-- 源限速 -->
+          <div v-show="activeTab === 'ratelimit'" class="tab-content">
+            <IpProtectionRateLimitTab
+              v-model:config="securityConfig.rateLimit"
+            />
+          </div>
+          
+          <!-- 反射攻击配置 -->
+          <div v-show="activeTab === 'reflection'" class="tab-content">
+            <IpProtectionReflectionTab
+              v-model="securityConfig.reflection"
+            />
+          </div>
+          
+          <!-- 指纹过滤 -->
+          <div v-show="activeTab === 'fingerprint'" class="tab-content">
+            <IpProtectionFingerprintTab
+              v-model="securityConfig.fingerprint"
+            />
+          </div>
         </div>
+      </div>
+      
+      <div class="drawer-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" @click="handleSave" :loading="saveLoading">保存</el-button>
       </div>
     </el-drawer>
   </div>
@@ -68,6 +86,16 @@ import IpProtectionRegionBlockTab from './SecurityTabs/IpProtectionRegionBlockTa
 import IpProtectionRateLimitTab from './SecurityTabs/IpProtectionRateLimitTab.vue'
 import IpProtectionReflectionTab from './SecurityTabs/IpProtectionReflectionTab.vue'
 import IpProtectionFingerprintTab from './SecurityTabs/IpProtectionFingerprintTab.vue'
+
+// 菜单项
+const menuItems = [
+  { key: 'icmp', label: 'ICMP禁用' },
+  { key: 'blackwhitelist', label: '黑白名单' },
+  { key: 'regionblock', label: '区域封禁' },
+  { key: 'ratelimit', label: '源限速' },
+  { key: 'reflection', label: '反射攻击配置' },
+  { key: 'fingerprint', label: '指纹过滤' }
+]
 
 const props = defineProps({
   visible: {
@@ -94,6 +122,11 @@ const saveLoading = ref(false)
 
 // 当前激活的标签页
 const activeTab = ref('icmp')
+
+// 切换标签页
+const handleTabChange = (tab) => {
+  activeTab.value = tab
+}
 
 // 安全配置对象
 const securityConfig = reactive({
@@ -283,7 +316,7 @@ const handleSave = async () => {
   try {
     saveLoading.value = true
     
-          // 构建保存数据
+    // 构建保存数据
     const submitData = {
       id: props.protectionId,
       securityConfig: {
@@ -354,66 +387,61 @@ watch(
 }
 
 .security-drawer-content {
-  height: 100%;
+  display: flex;
+  height: calc(100vh - 140px);
+}
+
+.security-menu {
+  width: 80px;
+  border-right: 1px solid #e6e6e6;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.menu-wrapper {
   display: flex;
   flex-direction: column;
-}
-
-.security-tabs-container {
-  flex: 1;
-  overflow: hidden;
-}
-
-.security-tabs {
   height: 100%;
-  display: flex;
 }
 
-.security-tabs :deep(.el-tabs__content) {
+.menu-item {
+  padding: 8px 4px;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  color: #606266;
+  line-height: 1.3;
+}
+
+.menu-item:hover {
+  background-color: #f5f7fa;
+}
+
+.menu-item.active {
+  color: #409eff;
+  background-color: #ecf5ff;
+  border-right: 2px solid #409eff;
+}
+
+.security-content {
   flex: 1;
-  padding: 15px;
-  overflow: auto;
-}
-
-.security-tabs :deep(.el-tabs__header) {
-  margin-right: 0;
-  border-right: 1px solid #e4e7ed;
-}
-
-.security-tabs :deep(.el-tabs__nav) {
-  min-width: 100px;
-}
-
-.security-tabs :deep(.el-tabs__item) {
-  height: 40px;
-  line-height: 40px;
-  text-align: left;
-  padding-left: 12px;
-  font-size: 14px;
+  padding: 0 10px;
+  overflow-y: auto;
 }
 
 .tab-content {
   height: 100%;
 }
 
-.placeholder-content {
-  padding: 20px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  color: #909399;
-  text-align: center;
-  margin-top: 20px;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
 .drawer-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   padding: 10px 20px;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #e4e7ed;
+  background-color: #fff;
+  border-top: 1px solid #e6e6e6;
+  text-align: right;
 }
 </style> 
