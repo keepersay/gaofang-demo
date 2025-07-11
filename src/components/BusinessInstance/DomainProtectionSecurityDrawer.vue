@@ -251,8 +251,10 @@ const fetchSecurityConfig = async () => {
 
 // 更新配置
 const handleUpdate = (tab, data) => {
-  if (protectionData.securityConfig[tab]) {
-    // 深拷贝，避免响应式丢失
+  if (tab === 'ccProtection') {
+    // 直接替换新版结构
+    protectionData.securityConfig.ccProtection = JSON.parse(JSON.stringify(data))
+  } else if (protectionData.securityConfig[tab]) {
     protectionData.securityConfig[tab] = JSON.parse(JSON.stringify(data))
   }
 }
