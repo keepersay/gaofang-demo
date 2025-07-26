@@ -340,12 +340,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, reactive } from 'vue'
+import { ref, onMounted, watch, computed, reactive, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import RegionService from '@/services/RegionService'
 import DataCenterService from '@/services/DataCenterService'
 import { Search, Refresh, ArrowDown, EditPen } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+const route = useRoute()
 const search = ref('')
 const activeTab = ref('overview') // 默认选中总览tab
 const treeRef = ref()
@@ -426,6 +428,9 @@ onMounted(async () => {
     // 确保初始化集群映射
     initClustersMap()
     console.log('集群映射初始化完成:', clustersMap.value)
+    
+    // 处理从集群管理页面跳转过来的URL参数
+    handleClusterJumpFromUrl()
     
   } catch (error) {
     console.error('数据加载失败:', error)
@@ -792,30 +797,69 @@ async function confirmAddCluster() {
 function initClustersMap() {
   const map = {}
   dataCenters.value.forEach(dc => {
-    map[dc.id] = [
-      {
-        id: `${dc.id}_CLUSTER1`,
-        label: `${dc.name}集群1`,
+    const clusters = []
+    
+    // 添加默认集群
+    clusters.push({
+      id: `${dc.id}_CLUSTER1`,
+      label: `${dc.name}集群1`,
+      dataCenterId: dc.id,
+      nodeType: 'cluster',
+      status: 'running',
+      version: 'v2.5.3',
+      nodeCount: 5,
+      createTime: '2024-05-15 10:30:00',
+      remark: ''
+    })
+    
+    clusters.push({
+      id: `${dc.id}_CLUSTER2`,
+      label: `${dc.name}集群2`,
+      dataCenterId: dc.id,
+      nodeType: 'cluster',
+      status: 'running',
+      version: 'v2.5.2',
+      nodeCount: 3,
+      createTime: '2024-05-16 14:20:00',
+      remark: ''
+    })
+    
+    // 为特定机房添加从集群管理来的集群
+    if (dc.id === 'DC202407200001') { // 首尔机房01
+      clusters.push({
+        id: 'CLU202412070001',
+        label: '首尔机房WAF集群01',
         dataCenterId: dc.id,
         nodeType: 'cluster',
         status: 'running',
         version: 'v2.5.3',
-        nodeCount: 5,
-        createTime: '2024-05-15 10:30:00',
-        remark: ''
-      },
-      {
-        id: `${dc.id}_CLUSTER2`,
-        label: `${dc.name}集群2`,
+        nodeCount: 2,
+        createTime: '2024-05-16 14:20:00',
+        createUser: 'admin',
+        updateTime: '2024-05-16 14:20:00',
+        updateUser: 'admin',
+        remark: '首尔地区WAF防护集群'
+      })
+    }
+    
+    if (dc.id === 'DC202401010001') { // 北京机房01
+      clusters.push({
+        id: 'CLU202412070002',
+        label: '北京机房SLB集群01',
         dataCenterId: dc.id,
         nodeType: 'cluster',
         status: 'running',
-        version: 'v2.5.2',
+        version: 'v2.5.3',
         nodeCount: 3,
-        createTime: '2024-05-16 14:20:00',
-        remark: ''
-      }
-    ]
+        createTime: '2024-01-01 10:00:00',
+        createUser: 'admin',
+        updateTime: '2024-01-01 10:00:00',
+        updateUser: 'admin',
+        remark: '北京地区四层负载均衡集群'
+      })
+    }
+    
+    map[dc.id] = clusters
   })
   clustersMap.value = map
 }
@@ -1012,6 +1056,123 @@ function handleDeleteInstance(instance) {
   }).catch(() => {
     // 用户取消删除
   })
+}
+
+// 处理从集群管理页面跳转过来的URL参数
+const handleClusterJumpFromUrl = async () => {
+  const { clusterId, clusterName, from } = route.query
+  
+  if (!clusterId || !clusterName || from !== 'cluster-management') {
+    return
+  }
+  
+  console.log('检测到从集群管理页面跳转，目标集群:', { clusterId, clusterName })
+  
+  // 等待DOM更新完成
+  await nextTick()
+  
+  try {
+    // 在树数据中查找目标集群
+    const targetCluster = findClusterInTree(clusterId, treeData.value)
+    
+    if (targetCluster) {
+      console.log('找到目标集群:', targetCluster)
+      
+      // 展开到目标节点的路径
+      await expandToCluster(targetCluster)
+      
+      // 选中目标集群
+      selectedCluster.value = targetCluster
+      
+      // 切换到总览标签
+      activeTab.value = 'overview'
+      
+      // 加载集群数据
+      fetchServers(targetCluster.id)
+      fetchInstances(targetCluster.id)
+      
+      // 高亮树节点
+      if (treeRef.value) {
+        treeRef.value.setCurrentKey(targetCluster.id)
+      }
+      
+      ElMessage({
+        message: `已定位到集群: ${clusterName}`,
+        type: 'success',
+        duration: 3000
+      })
+    } else {
+      console.warn('未找到目标集群:', clusterId)
+      ElMessage({
+        message: `未找到指定的集群: ${clusterName}`,
+        type: 'warning',
+        duration: 5000
+      })
+    }
+  } catch (error) {
+    console.error('定位集群时出错:', error)
+    ElMessage({
+      message: '定位集群失败，请手动选择',
+      type: 'error',
+      duration: 5000
+    })
+  }
+}
+
+// 在树数据中递归查找指定ID的集群
+const findClusterInTree = (clusterId, nodes) => {
+  if (!nodes || !Array.isArray(nodes)) return null
+  
+  for (const node of nodes) {
+    // 检查当前节点
+    if (node.id === clusterId && node.nodeType === 'cluster') {
+      return node
+    }
+    
+    // 递归检查子节点
+    if (node.children && node.children.length > 0) {
+      const found = findClusterInTree(clusterId, node.children)
+      if (found) return found
+    }
+  }
+  
+  return null
+}
+
+// 展开到指定集群的路径
+const expandToCluster = async (targetCluster) => {
+  if (!treeRef.value || !targetCluster) return
+  
+  // 等待树渲染完成
+  await nextTick()
+  
+  try {
+    // 根据集群的dataCenterId找到父级机房节点
+    const dataCenterId = targetCluster.dataCenterId
+    if (!dataCenterId) return
+    
+    // 找到机房对应的地域
+    const dataCenter = dataCenters.value.find(dc => dc.id === dataCenterId)
+    if (!dataCenter) return
+    
+    const regionId = dataCenter.regionId
+    
+    // 展开地域节点
+    const regionNode = treeRef.value.getNode(regionId)
+    if (regionNode && !regionNode.expanded) {
+      regionNode.expand()
+    }
+    
+    // 展开机房节点
+    const dataCenterNode = treeRef.value.getNode(dataCenterId)
+    if (dataCenterNode && !dataCenterNode.expanded) {
+      dataCenterNode.expand()
+    }
+    
+    console.log('树节点展开完成')
+  } catch (error) {
+    console.error('展开树节点时出错:', error)
+  }
 }
 </script>
 

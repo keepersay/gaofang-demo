@@ -127,6 +127,16 @@
             </el-icon>
             <span>逻辑集群组</span>
           </el-menu-item>
+          <el-menu-item index="/resource/cluster">
+            <el-icon>
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2" fill="#fff"/>
+                <rect x="7" y="9" width="10" height="6" rx="1" fill="currentColor" fill-opacity=".15"/>
+                <path d="M7 12h10M10 9v6M14 9v6" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+            </el-icon>
+            <span>集群管理</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/business">
           <template #title>

@@ -302,6 +302,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'ResourceLogicClusterGroup',
         component: LogicClusterGroupManagement,
         meta: { title: '逻辑集群组' }
+      },
+      {
+        path: 'cluster',
+        name: 'ResourceCluster',
+        component: () => import('../views/ClusterManagement.vue'),
+        meta: { title: '集群管理' }
       }
     ]
   }
