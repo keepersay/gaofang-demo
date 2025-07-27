@@ -11,7 +11,7 @@
       :rules="rules" 
       ref="formRef" 
       label-width="100px"
-      v-loading="loading"
+      v-loading="loading.dataCenters"
     >
       <el-form-item label="集群名称" prop="name">
         <el-input
