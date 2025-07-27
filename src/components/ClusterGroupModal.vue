@@ -13,9 +13,9 @@
 
       <el-form-item label="类型" prop="type">
         <el-radio-group v-model="form.type" @change="handleTypeChange">
-          <el-radio label="standby">主备</el-radio>
-          <el-radio label="distributed">分布式</el-radio>
-          <el-radio label="anycast">Anycast</el-radio>
+          <el-radio value="standby">主备</el-radio>
+          <el-radio value="distributed">分布式</el-radio>
+          <el-radio value="anycast">Anycast</el-radio>
         </el-radio-group>
         <div class="form-tip">
           {{ getTypeDescription }}
@@ -144,16 +144,16 @@
       
       <el-form-item label="地址类型" prop="addressType">
         <el-radio-group v-model="form.addressType">
-          <el-radio label="ipv4">IPv4</el-radio>
-          <el-radio label="ipv6">IPv6</el-radio>
-          <el-radio label="dual">双栈</el-radio>
+                  <el-radio value="ipv4">IPv4</el-radio>
+        <el-radio value="ipv6">IPv6</el-radio>
+        <el-radio value="dual">双栈</el-radio>
         </el-radio-group>
       </el-form-item>
       
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="form.status">
-          <el-radio label="active">启用</el-radio>
-          <el-radio label="disabled">禁用</el-radio>
+                  <el-radio value="active">启用</el-radio>
+        <el-radio value="disabled">禁用</el-radio>
         </el-radio-group>
       </el-form-item>
     </el-form>

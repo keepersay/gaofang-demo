@@ -70,8 +70,8 @@
 
       <el-form-item label="集群状态" prop="status">
         <el-radio-group v-model="form.status">
-          <el-radio label="active">启用</el-radio>
-          <el-radio label="disabled">停用</el-radio>
+          <el-radio value="active">启用</el-radio>
+          <el-radio value="disabled">停用</el-radio>
         </el-radio-group>
       </el-form-item>
 
