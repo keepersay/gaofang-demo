@@ -113,19 +113,19 @@
             </el-icon>
             <span>网池</span>
           </el-menu-item>
-          <el-menu-item index="/resource/logiccluster">
-            <el-icon>
-              <!-- 集群风格，参考云数据库/集群 -->
-              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><ellipse cx="12" cy="7" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="17" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
-            </el-icon>
-            <span>逻辑集群</span>
-          </el-menu-item>
           <el-menu-item index="/resource/logicclustergroup">
             <el-icon>
               <!-- 组/多集群风格，参考云资源组 -->
               <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><rect x="3" y="7" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2" fill="#fff"/><rect x="7" y="11" width="10" height="2" rx="1" fill="currentColor" fill-opacity=".15"/></svg>
             </el-icon>
             <span>逻辑集群组</span>
+          </el-menu-item>
+          <el-menu-item index="/resource/logiccluster">
+            <el-icon>
+              <!-- 集群风格，参考云数据库/集群 -->
+              <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none"><ellipse cx="12" cy="7" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/><ellipse cx="12" cy="17" rx="8" ry="3" stroke="currentColor" stroke-width="2" fill="#fff"/></svg>
+            </el-icon>
+            <span>逻辑集群</span>
           </el-menu-item>
           <el-menu-item index="/resource/cluster">
             <el-icon>
