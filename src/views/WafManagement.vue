@@ -7,10 +7,7 @@
           <div class="tree-header">
             <el-input v-model="search" placeholder="搜索节点" size="small" clearable style="width: 60%;" />
             <div class="tree-actions">
-              <el-button size="small" @click="handleAddNode" circle>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              </el-button>
-              <el-button size="small" @click="handleCollapseAll" circle style="margin-left: 8px;">
+              <el-button size="small" @click="handleCollapseAll" circle>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </el-button>
             </div>
@@ -319,23 +316,7 @@
         <el-button type="primary" @click="saveClusterInfo">保存</el-button>
       </template>
     </el-dialog>
-    <el-dialog v-model="addClusterDialogVisible" title="新增集群" width="420px">
-      <el-form :model="addClusterForm" label-width="90px">
-        <el-form-item label="机房">
-          <el-input :value="selectedRegion?.label" disabled />
-        </el-form-item>
-        <el-form-item label="集群名称" required>
-          <el-input v-model="addClusterForm.clusterName" maxlength="32" show-word-limit />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="addClusterForm.remark" type="textarea" rows="2" maxlength="128" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="addClusterDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="addClusterLoading" @click="confirmAddCluster">确定</el-button>
-      </template>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -376,14 +357,7 @@ const servers = ref([])
 const editDialogVisible = ref(false)
 const editForm = reactive({ label: '', remark: '' })
 
-// 新增相关
-const addClusterDialogVisible = ref(false)
-const addClusterForm = reactive({
-  clusterName: '',
-  remark: ''
-})
-const addClusterLoading = ref(false)
-const selectedRegion = ref(null)
+
 
 // 构建地域-机房-集群树形结构
 const clustersMap = ref({}) // { dataCenterId: [集群列表] }
@@ -534,41 +508,7 @@ function getAllNodeKeys(nodes) {
   return keys;
 }
 
-function handleAddNode() {
-  if (selectedCluster.value && selectedCluster.value.nodeType === 'dataCenter') {
-    selectedRegion.value = selectedCluster.value
-    addClusterForm.clusterName = ''
-    addClusterForm.remark = ''
-    addClusterDialogVisible.value = true
-  } else {
-    // 根据不同情况给出更明确的提示
-    if (!selectedCluster.value) {
-      ElMessage({
-        message: '请先从左侧树形菜单中选择一个机房节点',
-        type: 'warning',
-        duration: 3000
-      })
-    } else if (selectedCluster.value.nodeType === 'region') {
-      ElMessage({
-        message: '请选择具体的机房节点，而不是地域节点',
-        type: 'warning',
-        duration: 3000
-      })
-    } else if (selectedCluster.value.nodeType === 'cluster') {
-      ElMessage({
-        message: '不能在集群节点下创建新集群，请选择机房节点',
-        type: 'warning',
-        duration: 3000
-      })
-    } else {
-      ElMessage({
-        message: '请先选择一个机房节点再新增集群',
-        type: 'warning',
-        duration: 3000
-      })
-    }
-  }
-}
+
 
 // 模拟获取服务器列表数据
 const fetchServers = async (clusterId) => {
@@ -772,26 +712,7 @@ const getDataCenterIdByRegion = (regionId) => {
   return dc ? dc.id : regionId
 }
 
-async function confirmAddCluster() {
-  if (!addClusterForm.clusterName) return
-  addClusterLoading.value = true
-  const dcId = selectedRegion.value.id
-  const newCluster = {
-    id: `${dcId}_CLUSTER${Date.now()}`,
-    label: addClusterForm.clusterName,
-    dataCenterId: dcId,
-    nodeType: 'cluster',
-    status: 'running',
-    version: 'v2.5.3',
-    nodeCount: 0,
-    createTime: new Date().toLocaleString(),
-    remark: addClusterForm.remark
-  }
-  if (!clustersMap.value[dcId]) clustersMap.value[dcId] = []
-  clustersMap.value[dcId].push(newCluster)
-  addClusterLoading.value = false
-  addClusterDialogVisible.value = false
-}
+
 
 // 初始化模拟集群数据
 function initClustersMap() {

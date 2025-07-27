@@ -7,10 +7,7 @@
           <div class="tree-header">
             <el-input v-model="search" placeholder="搜索节点" size="small" clearable style="width: 60%;" />
             <div class="tree-actions">
-              <el-button size="small" @click="handleAddNode" circle>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              </el-button>
-              <el-button size="small" @click="handleCollapseAll" circle style="margin-left: 8px;">
+              <el-button size="small" @click="handleCollapseAll" circle>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </el-button>
             </div>
@@ -163,9 +160,7 @@ function filterNode(value, data) {
   return data.label.toLowerCase().includes(value.toLowerCase())
 }
 
-function handleAddNode() {
-  // 预留新增节点逻辑
-}
+
 
 function handleCollapseAll() {
   if (treeRef.value) {
