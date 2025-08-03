@@ -172,7 +172,7 @@
                 </div>
               </div>
             </el-tab-pane>
-            <el-tab-pane label="集群管理" name="cluster">
+            <el-tab-pane label="主机管理" name="host">
               <div class="cluster-content">
                 <div class="search-bar">
                   <el-input
