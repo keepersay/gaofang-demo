@@ -203,6 +203,11 @@ const routes: Array<RouteRecordRaw> = [
     component: WafManagement
   },
   {
+    path: '/slb',
+    name: 'SLB',
+    component: SlbManagement
+  },
+  {
     path: '/waf-cc',
     name: 'WAFCC',
     component: Placeholder

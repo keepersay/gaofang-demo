@@ -2,7 +2,7 @@
   <div class="slb-page">
     <el-row class="slb-row" gutter="0">
       <!-- 左侧树形区域 -->
-      <el-col :span="5" class="tree-col">
+      <el-col :span="4" class="tree-col">
         <el-card class="tree-card">
           <div class="tree-header">
             <el-input v-model="search" placeholder="搜索节点" size="small" clearable style="width: 60%;" />
@@ -21,22 +21,91 @@
             highlight-current
             class="slb-tree"
             style="margin-top: 8px;"
-            v-loading="loading"
+            v-loading="treeLoading"
             @node-click="handleNodeClick"
           />
         </el-card>
       </el-col>
-      <!-- 右侧Tabs区域 -->
-      <el-col :span="19" class="tabs-col">
-        <el-card class="tabs-card">
-          <el-tabs v-model="activeTab">
-            <el-tab-pane label="实例管理" name="instance" />
-            <el-tab-pane label="集群管理" name="cluster" />
-            <el-tab-pane label="负载均衡配置" name="loadbalance" />
-            <el-tab-pane label="健康检查" name="healthcheck" />
-            <el-tab-pane label="流量统计" name="traffic" />
-            <el-tab-pane label="告警日志" name="alarmLog" />
+      <!-- 右侧内容区域 -->
+      <el-col :span="20" class="content-col">
+        <el-card class="content-card">
+          <div v-if="selectedCluster" class="cluster-header">
+            <h3>{{ selectedCluster.label }}</h3>
+            <el-tag v-if="selectedCluster.nodeType === 'cluster'" :type="getClusterStatusType(selectedCluster)">
+              {{ getClusterStatusText(selectedCluster) }}
+            </el-tag>
+          </div>
+          <div v-else class="cluster-header">
+            <h3>请从左侧选择SLB集群</h3>
+          </div>
+          
+          <!-- SLB集群Tab页面内容 -->
+          <el-tabs v-model="activeTab" v-if="selectedCluster && selectedCluster.nodeType === 'cluster'">
+            <el-tab-pane label="实例管理" name="instance">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 实例管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="集群监控" name="monitoring">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 集群监控内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="限速管理" name="rateLimit">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 限速管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="SNAT规则" name="snatRules">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} SNAT规则内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="集群管理" name="clusterManagement">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 集群管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="VIP池管理" name="vipPool">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} VIP池管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="配置日志" name="configLog">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 配置日志内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="主机IP对象" name="hostIpObject">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 主机IP对象内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="抓包管理" name="packetCapture">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 抓包管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="资源限制" name="resourceLimit">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 资源限制内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
+            <el-tab-pane label="升级管理" name="upgradeManagement">
+              <div class="tab-placeholder-content">
+                <el-empty :description="`${selectedCluster.label} 升级管理内容将在这里显示`" />
+              </div>
+            </el-tab-pane>
           </el-tabs>
+          <div v-else-if="selectedCluster && selectedCluster.nodeType === 'region'" class="placeholder-content">
+            <el-empty description="请选择此地域下的SLB集群" />
+          </div>
+          <div v-else-if="selectedCluster && selectedCluster.nodeType === 'dataCenter'" class="placeholder-content">
+            <el-empty description="请选择此机房下的SLB集群" />
+          </div>
+          <div v-else class="placeholder-content">
+            <el-empty description="请从左侧选择SLB集群" />
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -52,7 +121,7 @@ import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const search = ref('')
-const activeTab = ref('instance')
+const activeTab = ref('instance') // 默认选中实例管理tab
 const treeRef = ref()
 const selectedCluster = ref(null)
 
@@ -65,30 +134,31 @@ const defaultProps = {
 // 地域和SLB集群数据
 const regionTree = ref([])
 const dataCenters = ref([])
-const loading = ref(false)
+const treeLoading = ref(true)
+
+// 构建地域-机房-集群树形结构
+const clustersMap = ref({}) // { dataCenterId: [集群列表] }
 
 // 从RegionService获取树形结构地域数据
 const fetchRegions = async () => {
-  loading.value = true
   try {
+    console.log('开始加载地域数据...')
     regionTree.value = await RegionService.getRegionTree()
-    loading.value = false
+    console.log('地域数据加载完成:', regionTree.value)
+    return regionTree.value
   } catch (error) {
     console.error('获取地域数据失败:', error)
-    loading.value = false
+    regionTree.value = []
+    return []
   }
 }
 
-// 构建SLB管理树形数据
 const treeData = computed(() => {
-  // 递归处理树形结构
   function processRegions(regions) {
     if (!regions || regions.length === 0) return []
-    
     return regions.map(region => {
       const hasChildren = region.children && region.children.length > 0
       const childrenNodes = hasChildren ? processRegions(region.children) : []
-      
       // 找到该region下所有机房
       const dataCenterNodes = dataCenters.value
         .filter(dc => dc.regionId === region.id)
@@ -97,9 +167,11 @@ const treeData = computed(() => {
           label: dc.name,
           nodeType: 'dataCenter',
           regionId: dc.regionId,
-          children: getSLBClustersForDataCenter(dc.id)
+          children: (clustersMap.value[dc.id] || []).map(cluster => ({
+            ...cluster,
+            children: []
+          }))
         }))
-      
       return {
         id: region.id,
         label: region.name,
@@ -108,45 +180,61 @@ const treeData = computed(() => {
       }
     })
   }
-  
   return processRegions(regionTree.value)
 })
 
-// 获取指定机房的SLB集群
-const getSLBClustersForDataCenter = (dataCenterId) => {
-  const clusters = []
-  
-  // 添加默认集群
-  clusters.push({
-    id: `${dataCenterId}_SLB_CLUSTER1`,
-    label: `SLB集群1`,
-    dataCenterId: dataCenterId,
-    nodeType: 'cluster',
-    status: 'running'
-  })
-  
-  clusters.push({
-    id: `${dataCenterId}_SLB_CLUSTER2`,
-    label: `SLB集群2`,
-    dataCenterId: dataCenterId,
-    nodeType: 'cluster',
-    status: 'running'
-  })
-  
-  // 为特定机房添加从集群管理来的集群
-  if (dataCenterId === 'DC202401010001') { // 北京机房01
+// 初始化模拟SLB集群数据
+function initClustersMap() {
+  const map = {}
+  dataCenters.value.forEach(dc => {
+    const clusters = []
+    
+    // 添加默认集群
     clusters.push({
-      id: 'CLU202412070002',
-      label: '北京机房SLB集群01',
-      dataCenterId: dataCenterId,
+      id: `${dc.id}_SLB_CLUSTER1`,
+      label: `${dc.name}SLB集群1`,
+      dataCenterId: dc.id,
       nodeType: 'cluster',
       status: 'running',
-      createTime: '2024-01-01 10:00:00',
-      remark: '北京地区四层负载均衡集群'
+      version: 'v1.2.3',
+      nodeCount: 3,
+      createTime: '2024-05-15 10:30:00',
+      remark: ''
     })
-  }
-  
-  return clusters
+    
+    clusters.push({
+      id: `${dc.id}_SLB_CLUSTER2`,
+      label: `${dc.name}SLB集群2`,
+      dataCenterId: dc.id,
+      nodeType: 'cluster',
+      status: 'running',
+      version: 'v1.2.2',
+      nodeCount: 2,
+      createTime: '2024-05-16 14:20:00',
+      remark: ''
+    })
+    
+    // 为特定机房添加从集群管理来的集群
+    if (dc.id === 'DC202401010001') { // 北京机房01
+      clusters.push({
+        id: 'CLU202412070002',
+        label: '北京机房SLB集群01',
+        dataCenterId: dc.id,
+        nodeType: 'cluster',
+        status: 'running',
+        version: 'v1.2.3',
+        nodeCount: 4,
+        createTime: '2024-01-01 10:00:00',
+        createUser: 'admin',
+        updateTime: '2024-01-01 10:00:00',
+        updateUser: 'admin',
+        remark: '北京地区四层负载均衡集群'
+      })
+    }
+    
+    map[dc.id] = clusters
+  })
+  clustersMap.value = map
 }
 
 // 监听搜索输入
@@ -160,45 +248,116 @@ function filterNode(value, data) {
   return data.label.toLowerCase().includes(value.toLowerCase())
 }
 
-
+function handleNodeClick(data) {
+  selectedCluster.value = data
+  if (data.nodeType === 'cluster') {
+    activeTab.value = 'instance' // 选中集群时切换到实例管理tab
+  }
+  console.log('选中的节点:', data)
+}
 
 function handleCollapseAll() {
-  if (treeRef.value) {
-    treeRef.value.store.nodesMap && Object.values(treeRef.value.store.nodesMap).forEach(node => node.collapse())
+  if (!treeRef.value) return;
+  
+  try {
+    // 检查是否有展开的节点
+    const isAnyNodeExpanded = document.querySelector('.slb-tree .el-tree-node.is-expanded') !== null;
+    
+    if (isAnyNodeExpanded) {
+      // 如果有展开的节点，则全部折叠
+      const allKeys = getAllNodeKeys(treeData.value);
+      allKeys.forEach(key => {
+        const node = treeRef.value.getNode(key);
+        if (node && node.expanded) {
+          node.collapse();
+        }
+      });
+    } else {
+      // 如果没有展开的节点，则全部展开
+      const allKeys = getAllNodeKeys(treeData.value);
+      allKeys.forEach(key => {
+        const node = treeRef.value.getNode(key);
+        if (node) {
+          node.expand();
+        }
+      });
+    }
+  } catch (error) {
+    console.error('展开/折叠树节点时出错:', error);
   }
 }
 
-// 页面加载时获取地域数据
+// 递归获取所有节点的key
+function getAllNodeKeys(nodes) {
+  if (!nodes || !Array.isArray(nodes)) return [];
+  
+  let keys = [];
+  nodes.forEach(node => {
+    if (node.id) {
+      keys.push(node.id);
+    }
+    if (node.children && node.children.length > 0) {
+      keys = keys.concat(getAllNodeKeys(node.children));
+    }
+  });
+  return keys;
+}
+
+// 获取集群状态类型
+function getClusterStatusType(cluster) {
+  if (!cluster) return ''
+  switch (cluster.status) {
+    case 'running': return 'success'
+    case 'stopped': return 'danger'
+    case 'deploying': return 'warning'
+    default: return 'info'
+  }
+}
+
+// 获取集群状态文本
+function getClusterStatusText(cluster) {
+  if (!cluster) return ''
+  switch (cluster.status) {
+    case 'running': return '运行中'
+    case 'stopped': return '已停止'
+    case 'deploying': return '部署中'
+    default: return '未知状态'
+  }
+}
+
+// 页面加载时获取地域和机房数据
 onMounted(async () => {
   try {
-    loading.value = true
+    treeLoading.value = true
+    console.log('开始加载数据...')
     
-    // 并行加载数据
+    // 并行加载数据以提高效率
     const [_, dcData] = await Promise.all([
       fetchRegions(),
       DataCenterService.getDataCenters()
     ])
     
     dataCenters.value = dcData || []
+    console.log('机房数据加载完成:', dataCenters.value)
+    
+    // 确保初始化集群映射
+    initClustersMap()
+    console.log('集群映射初始化完成:', clustersMap.value)
     
     // 处理从集群管理页面跳转过来的URL参数
-    await nextTick()
     handleClusterJumpFromUrl()
     
   } catch (error) {
     console.error('数据加载失败:', error)
+    // 确保即使出错也能显示空树
+    regionTree.value = []
+    dataCenters.value = []
   } finally {
-    loading.value = false
+    // 无论成功失败都关闭loading
+    treeLoading.value = false
+    console.log('树加载状态已关闭')
   }
 })
-
-// 树节点点击事件
-function handleNodeClick(data) {
-  selectedCluster.value = data
-  if (data.nodeType === 'cluster') {
-    activeTab.value = 'instance'
-  }
-}
 
 // 处理从集群管理页面跳转过来的URL参数
 const handleClusterJumpFromUrl = async () => {
@@ -209,6 +368,9 @@ const handleClusterJumpFromUrl = async () => {
   }
   
   console.log('检测到从集群管理页面跳转到SLB，目标集群:', { clusterId, clusterName })
+  
+  // 等待DOM更新完成
+  await nextTick()
   
   try {
     // 在树数据中查找目标集群
@@ -324,7 +486,7 @@ const expandToCluster = async (targetCluster) => {
   padding-left: 0 !important;
   padding-right: 8px !important;
 }
-.tabs-col {
+.content-col {
   padding-right: 0 !important;
   padding-left: 0 !important;
 }
@@ -351,9 +513,47 @@ const expandToCluster = async (targetCluster) => {
   border-radius: 4px;
   padding: 2px 0;
 }
-.tabs-card {
+.content-card {
   margin-top: 0;
   margin-bottom: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.cluster-header {
+  display: flex;
+  align-items: center;
+  padding: 0 20px 10px;
+  border-bottom: 1px solid #eee;
+}
+.cluster-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+.cluster-header .el-tag {
+  margin-left: 12px;
+}
+.cluster-content {
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 4px;
+  min-height: 400px;
+}
+.placeholder-content {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+.tab-placeholder-content {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background-color: #fafafa;
+  border-radius: 4px;
 }
 </style> 
