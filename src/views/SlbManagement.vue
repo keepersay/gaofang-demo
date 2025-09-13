@@ -42,9 +42,7 @@
           <!-- SLB集群Tab页面内容 -->
           <el-tabs v-model="activeTab" v-if="selectedCluster && selectedCluster.nodeType === 'cluster'">
             <el-tab-pane label="实例管理" name="instance">
-              <div class="tab-placeholder-content">
-                <el-empty :description="`${selectedCluster.label} 实例管理内容将在这里显示`" />
-              </div>
+              <SlbInstanceManagement />
             </el-tab-pane>
             <el-tab-pane label="集群监控" name="monitoring">
               <div class="tab-placeholder-content">
@@ -118,6 +116,7 @@ import { useRoute } from 'vue-router'
 import RegionService from '@/services/RegionService'
 import DataCenterService from '@/services/DataCenterService'
 import { ElMessage } from 'element-plus'
+import SlbInstanceManagement from '@/components/SlbManagement/SlbInstanceManagement.vue'
 
 const route = useRoute()
 const search = ref('')

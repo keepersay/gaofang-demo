@@ -1,11 +1,37 @@
 <template>
   <el-container style="height: 100vh;">
     <!-- 侧边导航 -->
-    <el-aside width="220px" style="background: #f5f7fa;display:flex;flex-direction:column;">
+    <el-aside :width="sidebarWidth" :class="{ 'sidebar-collapsed': isCollapsed }" style="background: #f5f7fa;display:flex;flex-direction:column;transition: width 0.3s ease;">
       <!-- 顶部logo和系统标题区 -->
-      <div style="height:64px;display:flex;align-items:center;justify-content:center;background:#fff;border-bottom:1px solid #eee;">
-        <img src="/logo.svg" alt="logo" style="height:32px;width:32px;margin-right:10px;" />
-        <span style="font-weight:bold;font-size:18px;letter-spacing:2px;color:#222;">网元管理平台</span>
+      <div class="sidebar-header" style="height:64px;display:flex;align-items:center;background:#fff;border-bottom:1px solid #eee;position:relative;">
+        <div v-if="!isCollapsed" class="logo-area" style="display:flex;align-items:center;justify-content:center;flex:1;padding-right:40px;">
+          <img src="/logo.svg" alt="logo" style="height:32px;width:32px;margin-right:10px;" />
+          <span style="font-weight:bold;font-size:18px;letter-spacing:2px;color:#222;">网元管理平台</span>
+        </div>
+        <div v-else class="logo-collapsed" style="display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;height:100%;">
+          <img src="/logo.svg" alt="logo" style="height:24px;width:24px;margin-bottom:2px;" />
+          <el-button 
+            type="text" 
+            @click="toggleSidebar"
+            class="collapse-btn-small"
+            style="padding:2px;font-size:12px;height:16px;width:24px;"
+          >
+            <el-icon size="12">
+              <Expand />
+            </el-icon>
+          </el-button>
+        </div>
+        <el-button 
+          v-if="!isCollapsed"
+          type="text" 
+          @click="toggleSidebar"
+          class="collapse-btn"
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:999;padding:4px;"
+        >
+          <el-icon>
+            <Fold />
+          </el-icon>
+        </el-button>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -15,6 +41,8 @@
         active-text-color="#409EFF"
         @select="handleMenuSelect"
         :router="true"
+        :collapse="isCollapsed"
+        :collapse-transition="true"
         style="flex:1;"
       >
         <el-menu-item index="/overview">
@@ -260,7 +288,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   PieChart,
@@ -268,11 +296,31 @@ import {
   Bell,
   QuestionFilled,
   ArrowDown,
-  Box
+  Box,
+  Expand,
+  Fold
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
+
+// 侧边栏展开/收起状态管理
+const isCollapsed = ref(false)
+const sidebarWidth = computed(() => isCollapsed.value ? '64px' : '220px')
+
+// 从localStorage读取用户偏好
+onMounted(() => {
+  const saved = localStorage.getItem('sidebar-collapsed')
+  if (saved !== null) {
+    isCollapsed.value = JSON.parse(saved)
+  }
+})
+
+// 切换侧边栏状态
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+  localStorage.setItem('sidebar-collapsed', JSON.stringify(isCollapsed.value))
+}
 
 // 根据当前路由计算激活的菜单项
 const activeMenu = computed(() => {
@@ -299,4 +347,69 @@ const activeMenu = computed(() => {
 const handleMenuSelect = (index) => {
   router.push(index)
 }
-</script> 
+</script>
+
+<style scoped>
+/* 侧边栏过渡动画 */
+.el-aside {
+  transition: width 0.3s ease;
+}
+
+/* 收起状态下的样式调整 */
+.sidebar-collapsed .el-menu {
+  border-right: none;
+}
+
+/* 切换按钮样式 */
+.collapse-btn {
+  color: #666;
+  font-size: 16px;
+}
+
+.collapse-btn:hover {
+  color: #409EFF;
+  background-color: #f0f9ff;
+}
+
+/* 收起状态下的小按钮样式 */
+.collapse-btn-small {
+  color: #666;
+  font-size: 12px;
+  min-height: 16px;
+  line-height: 1;
+}
+
+.collapse-btn-small:hover {
+  color: #409EFF;
+  background-color: #f0f9ff;
+}
+
+/* Logo区域样式 */
+.logo-area {
+  transition: all 0.3s ease;
+}
+
+.logo-collapsed {
+  transition: all 0.3s ease;
+}
+
+/* 收起状态下菜单项的tooltip */
+.sidebar-collapsed .el-menu-item,
+.sidebar-collapsed .el-sub-menu__title {
+  padding: 0 20px !important;
+  text-align: center;
+}
+
+.sidebar-collapsed .el-menu-item span,
+.sidebar-collapsed .el-sub-menu__title span {
+  display: none;
+}
+
+.sidebar-collapsed .el-sub-menu .el-icon {
+  margin-right: 0;
+}
+
+.sidebar-collapsed .el-menu-item .el-icon {
+  margin-right: 0;
+}
+</style> 
