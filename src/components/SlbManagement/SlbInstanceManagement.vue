@@ -1,4 +1,4 @@
-<template>
+i<template>
   <div class="slb-instance-management">
     <!-- 搜索表单区域 -->
     <el-card class="search-card" shadow="never">
@@ -157,12 +157,19 @@
         />
       </div>
     </el-card>
+
+    <!-- 新建实例抽屉 -->
+    <SlbInstanceCreateDrawer
+      v-model="createDrawerVisible"
+      @success="handleCreateSuccess"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import SlbInstanceCreateDrawer from './SlbInstanceCreateDrawer.vue'
 
 // 搜索表单数据
 const searchForm = ref({
@@ -179,6 +186,9 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const totalCount = ref(0)
+
+// 新建实例抽屉控制
+const createDrawerVisible = ref(false)
 
 // 模拟数据
 const mockData = [
@@ -308,10 +318,19 @@ const handleReset = () => {
 
 // 新建实例
 const handleCreate = () => {
-  ElMessage({
-    message: '新建实例功能将在后续实现',
-    type: 'info'
-  })
+  createDrawerVisible.value = true
+}
+
+// 创建实例成功处理
+const handleCreateSuccess = (newInstance) => {
+  // 添加到表格数据的开头
+  tableData.value.unshift(newInstance)
+  totalCount.value++
+  
+  // 如果当前不在第一页，跳转到第一页以显示新创建的实例
+  if (currentPage.value !== 1) {
+    currentPage.value = 1
+  }
 }
 
 // 查看监控
