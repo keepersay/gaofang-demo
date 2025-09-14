@@ -1,219 +1,145 @@
 <template>
   <div class="business-monitor-content">
-    <!-- 搜索区域 -->
-    <div class="monitor-search-form">
-      <el-form :inline="true" size="small" :model="searchForm">
-        <el-form-item label="业务类型">
-          <el-select 
-            v-model="searchForm.businessType"
-            placeholder="请选择" 
-            style="width: 120px;"
-            clearable
-          >
-            <el-option label="全部" value="" />
-            <el-option label="HTTP" value="http" />
-            <el-option label="HTTPS" value="https" />
-            <el-option label="TCP" value="tcp" />
-            <el-option label="UDP" value="udp" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="监听端口">
-          <el-input 
-            v-model="searchForm.port"
-            placeholder="8080" 
-            style="width: 120px;" 
-            clearable
-          />
-        </el-form-item>
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="searchForm.timeRange"
-            type="datetimerange"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 300px;"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch" :loading="loading">
-            查询
-          </el-button>
-          <el-button @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    
-    <!-- 业务监控图表 -->
-    <div class="monitor-charts-grid">
-      <!-- 业务请求量 -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>业务请求量</h4>
-          <div class="chart-actions">
-            <el-button text size="small">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
+    <!-- 手风琴折叠面板 -->
+    <el-collapse v-model="activeNames" accordion>
+      <!-- 实例监控指标面板 -->
+      <el-collapse-item title="实例监控指标" name="instance-metrics">
+        <template #title>
+          <div class="collapse-title">
+            <el-icon><TrendCharts /></el-icon>
+            <span>实例监控指标</span>
           </div>
+        </template>
+        <div class="panel-content">
+          <el-empty description="实例监控指标功能开发中" />
         </div>
-        <div class="chart-content">
-          <el-empty description="监控图表功能开发中" />
-        </div>
-      </div>
-      
-      <!-- 业务响应时间 -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>业务响应时间</h4>
-          <div class="chart-actions">
-            <el-button text size="small">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
+      </el-collapse-item>
+
+      <!-- SNAT监控指标面板 -->
+      <el-collapse-item title="SNAT监控指标" name="snat-metrics">
+        <template #title>
+          <div class="collapse-title">
+            <el-icon><Share /></el-icon>
+            <span>SNAT监控指标</span>
           </div>
+        </template>
+        <div class="panel-content">
+          <el-empty description="SNAT监控指标功能开发中" />
         </div>
-        <div class="chart-content">
-          <el-empty description="监控图表功能开发中" />
-        </div>
-      </div>
-      
-      <!-- 业务错误率 -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>业务错误率</h4>
-          <div class="chart-actions">
-            <el-button text size="small">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
+      </el-collapse-item>
+
+      <!-- QOS监控指标面板 -->
+      <el-collapse-item title="QOS监控指标" name="qos-metrics">
+        <template #title>
+          <div class="collapse-title">
+            <el-icon><Timer /></el-icon>
+            <span>QOS监控指标</span>
           </div>
+        </template>
+        <div class="panel-content">
+          <el-empty description="QOS监控指标功能开发中" />
         </div>
-        <div class="chart-content">
-          <el-empty description="监控图表功能开发中" />
-        </div>
-      </div>
-      
-      <!-- 业务吞吐量 -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h4>业务吞吐量</h4>
-          <div class="chart-actions">
-            <el-button text size="small">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
-        </div>
-        <div class="chart-content">
-          <el-empty description="监控图表功能开发中" />
-        </div>
-      </div>
-    </div>
+      </el-collapse-item>
+    </el-collapse>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Refresh } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { TrendCharts, Share, Timer } from '@element-plus/icons-vue'
 
-// 搜索表单
-const searchForm = reactive({
-  businessType: '',
-  port: '',
-  timeRange: []
-})
-
-const loading = ref(false)
-
-// 搜索处理
-const handleSearch = () => {
-  console.log('业务监控查询:', searchForm)
-  loading.value = true
-  
-  setTimeout(() => {
-    loading.value = false
-    ElMessage.success('业务监控数据查询完成')
-  }, 1000)
-}
-
-// 重置处理
-const handleReset = () => {
-  Object.assign(searchForm, {
-    businessType: '',
-    port: '',
-    timeRange: []
-  })
-  ElMessage.info('搜索条件已重置')
-}
+// 手风琴激活的面板名称，默认展开第一个
+const activeNames = ref('instance-metrics')
 </script>
 
 <style scoped>
 .business-monitor-content {
   height: 100%;
-  padding: 0;
+  padding: 20px 20px 20px 2px;
+  overflow: visible;
 }
 
-.monitor-search-form {
-  background: #f8f9fa;
-  padding: 16px;
+.el-collapse {
+  border: 1px solid #dcdfe6;
   border-radius: 6px;
-  margin-bottom: 20px;
-  border: 1px solid #e9ecef;
-  
-  .el-form-item {
-    margin-bottom: 0;
-    margin-right: 24px;
-  }
-  
-  .el-form-item__label {
-    font-size: 14px;
-    color: #606266;
-    font-weight: 500;
-  }
-}
-
-.monitor-charts-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  height: calc(100% - 120px);
-}
-
-.chart-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
   background: #fff;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  line-height: 1.2;
   
-  .chart-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #f0f0f0;
-    background: #fafafa;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    
-    h4 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: #303133;
-    }
-    
-    .chart-actions {
-      display: flex;
-      gap: 8px;
-    }
+  .el-icon {
+    font-size: 16px;
+    color: #409eff;
   }
-  
-  .chart-content {
-    padding: 20px;
-    height: 250px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+}
+
+.panel-content {
+  padding: 20px;
+  min-height: 200px;
+  background: #fafafa;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 自定义折叠面板样式 */
+:deep(.el-collapse-item__header) {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 8px 20px;
+  font-weight: 500;
+  line-height: 1.2;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:deep(.el-collapse-item__header:hover) {
+  background: #e9ecef;
+}
+
+:deep(.el-collapse-item__content) {
+  padding: 16px;
+  background: #fff;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+:deep(.el-collapse-item__wrap) {
+  border-bottom: none;
+}
+
+/* 手风琴激活状态 */
+:deep(.el-collapse-item.is-active .el-collapse-item__header) {
+  background: #409eff;
+  color: #fff;
+}
+
+:deep(.el-collapse-item.is-active .collapse-title .el-icon) {
+  color: #fff;
+}
+
+/* 确保箭头图标显示 */
+:deep(.el-collapse-item__arrow) {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: #606266;
+  transition: transform 0.3s ease;
+}
+
+:deep(.el-collapse-item.is-active .el-collapse-item__arrow) {
+  color: #fff;
+  transform: rotate(90deg);
 }
 </style>
