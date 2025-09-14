@@ -344,8 +344,162 @@
             <span>QOS监控指标</span>
           </div>
         </template>
-        <div class="panel-content">
-          <el-empty description="QOS监控指标功能开发中" />
+        
+        <!-- 搜索控制表单 -->
+        <el-form :inline="true" size="small" :model="qosSearchForm" class="qos-inline-form">
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.hostIp" 
+              placeholder="主机"
+              style="width: 120px;"
+              clearable
+            >
+              <el-option
+                v-for="host in hostOptions"
+                :key="host.value"
+                :label="host.label"
+                :value="host.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.qosName" 
+              placeholder="QOS实例"
+              style="width: 120px;"
+              clearable
+            >
+              <el-option
+                v-for="qos in qosOptions"
+                :key="qos.value"
+                :label="qos.label"
+                :value="qos.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.listener" 
+              placeholder="监听"
+              style="width: 100px;"
+              :disabled="qosSearchForm.qosName === 'ALL'"
+              clearable
+            >
+              <el-option
+                v-for="listener in qosListenerOptions"
+                :key="listener.value"
+                :label="listener.label"
+                :value="listener.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.backendHost" 
+              placeholder="后端主机"
+              style="width: 120px;"
+              :disabled="qosSearchForm.qosName === 'ALL'"
+              clearable
+            >
+              <el-option
+                v-for="backend in qosBackendHostOptions"
+                :key="backend.value"
+                :label="backend.label"
+                :value="backend.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.statisticType" 
+              placeholder="统计方式"
+              style="width: 100px;"
+            >
+              <el-option
+                v-for="stat in statisticOptions"
+                :key="stat.value"
+                :label="stat.label"
+                :value="stat.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="qosSearchForm.startTime"
+              type="datetime"
+              placeholder="开始时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="qosSearchForm.endTime"
+              type="datetime"
+              placeholder="结束时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-checkbox v-model="qosSearchForm.autoRefresh">
+              自动刷新
+            </el-checkbox>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="qosSearchForm.refreshInterval" 
+              :disabled="!qosSearchForm.autoRefresh"
+              style="width: 80px;"
+            >
+              <el-option
+                v-for="refresh in refreshOptions"
+                :key="refresh.value"
+                :label="refresh.label"
+                :value="refresh.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-button type="primary" @click="handleQosSearch" :loading="qosLoading">
+              查询
+            </el-button>
+          </el-form-item>
+        </el-form>
+        
+        <!-- 每秒新建连接数 -->
+        <div class="qos-chart-simple">
+          <div class="qos-chart-title">
+            <h4>每秒新建连接数</h4>
+          </div>
+          <el-empty description="每秒新建连接数监控图表功能开发中" class="qos-chart-empty" />
+        </div>
+        
+        <!-- 并发连接数 -->
+        <div class="qos-chart-simple">
+          <div class="qos-chart-title">
+            <h4>并发连接数</h4>
+          </div>
+          <el-empty description="并发连接数监控图表功能开发中" class="qos-chart-empty" />
+        </div>
+        
+        <!-- 带宽 -->
+        <div class="qos-chart-simple">
+          <div class="qos-chart-title">
+            <h4>带宽</h4>
+          </div>
+          <el-empty description="带宽监控图表功能开发中" class="qos-chart-empty" />
         </div>
       </el-collapse-item>
     </el-collapse>
@@ -590,10 +744,116 @@ const stopSnatAutoRefresh = () => {
   }
 }
 
+// QOS监控指标搜索表单
+const qosSearchForm = reactive({
+  hostIp: 'ALL',
+  qosName: 'ALL',
+  listener: '',
+  backendHost: '',
+  statisticType: 'avg',
+  startTime: '',
+  endTime: '',
+  autoRefresh: false,
+  refreshInterval: 15
+})
+
+const qosLoading = ref(false)
+let qosRefreshTimer = null
+
+// QOS实例选项列表
+const qosOptions = ref([
+  { label: 'ALL', value: 'ALL' },
+  { label: 'QOS-限速-01', value: 'QOS-限速-01' },
+  { label: 'QOS-限速-02', value: 'QOS-限速-02' },
+  { label: 'QOS-限速-03', value: 'QOS-限速-03' }
+])
+
+// QOS监听选项（依赖QOS实例选择）
+const qosListenerOptions = computed(() => {
+  if (qosSearchForm.qosName === 'ALL') return []
+  // 模拟根据选中QOS实例返回对应监听列表
+  return [
+    { label: '8080', value: '8080' },
+    { label: '8443', value: '8443' },
+    { label: '9090', value: '9090' }
+  ]
+})
+
+// QOS后端主机选项（依赖QOS实例和监听选择）
+const qosBackendHostOptions = computed(() => {
+  if (qosSearchForm.qosName === 'ALL') return []
+  // 模拟根据选中QOS实例和监听返回对应后端主机列表
+  return [
+    { label: '192.168.1.10', value: '192.168.1.10' },
+    { label: '192.168.1.11', value: '192.168.1.11' },
+    { label: '192.168.1.12', value: '192.168.1.12' }
+  ]
+})
+
+// QOS监控查询处理
+const handleQosSearch = () => {
+  console.log('QOS监控查询:', qosSearchForm)
+  qosLoading.value = true
+  
+  setTimeout(() => {
+    qosLoading.value = false
+    ElMessage.success('QOS监控数据查询完成')
+  }, 1000)
+}
+
+// 监听QOS实例选择变化
+watch(() => qosSearchForm.qosName, (newVal) => {
+  if (newVal === 'ALL') {
+    // 清空并禁用监听和后端主机选择
+    qosSearchForm.listener = ''
+    qosSearchForm.backendHost = ''
+  }
+})
+
+// 监听QOS监听选择变化
+watch(() => qosSearchForm.listener, () => {
+  // 重新加载后端主机选项时清空当前选择
+  qosSearchForm.backendHost = ''
+})
+
+// QOS监控自动刷新监听
+watch(() => qosSearchForm.autoRefresh, (newVal) => {
+  if (newVal) {
+    startQosAutoRefresh()
+  } else {
+    stopQosAutoRefresh()
+  }
+})
+
+watch(() => qosSearchForm.refreshInterval, () => {
+  if (qosSearchForm.autoRefresh) {
+    stopQosAutoRefresh()
+    startQosAutoRefresh()
+  }
+})
+
+// QOS监控自动刷新函数
+const startQosAutoRefresh = () => {
+  if (qosRefreshTimer) {
+    clearInterval(qosRefreshTimer)
+  }
+  qosRefreshTimer = setInterval(() => {
+    handleQosSearch()
+  }, qosSearchForm.refreshInterval * 1000)
+}
+
+const stopQosAutoRefresh = () => {
+  if (qosRefreshTimer) {
+    clearInterval(qosRefreshTimer)
+    qosRefreshTimer = null
+  }
+}
+
 // 组件卸载时清理定时器
 onUnmounted(() => {
   stopInstanceAutoRefresh()
   stopSnatAutoRefresh()
+  stopQosAutoRefresh()
 })
 </script>
 
@@ -792,6 +1052,65 @@ onUnmounted(() => {
 }
 
 .snat-chart-empty {
+  padding: 20px;
+  height: 300px;
+  
+  :deep(.el-empty__image) {
+    width: 80px;
+    height: 80px;
+  }
+  
+  :deep(.el-empty__description) {
+    font-size: 14px;
+    color: #909399;
+  }
+}
+
+/* QOS监控指标面板样式 */
+.qos-inline-form {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+  
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+  
+  .el-form-item:last-child {
+    margin-right: 0;
+  }
+}
+
+.qos-chart-simple {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.qos-chart-title {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+  }
+}
+
+.qos-chart-empty {
   padding: 20px;
   height: 300px;
   
