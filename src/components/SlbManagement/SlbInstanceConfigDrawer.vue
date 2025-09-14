@@ -135,7 +135,7 @@
               <div v-if="selectedListener" class="backend-hosts-section">
                 <div class="backend-header">
                   <div class="backend-title">
-                    <h4>后端member</h4>
+                    <h4>后端主机</h4>
                     <div class="listener-stats">
                       监听名称: {{ selectedListener.name }}{{ selectedListener.port ? ` (${selectedListener.port})` : '' }}
                       <el-tag type="info" size="small">总数: {{ selectedListener.servers ? selectedListener.servers.length : 0 }}</el-tag>

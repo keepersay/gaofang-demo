@@ -206,10 +206,10 @@
               />
             </div>
 
-            <!-- 后端member部分 -->
+            <!-- 后端主机部分 -->
             <div class="backend-member-section" v-if="currentSlb">
               <div class="section-header">
-                <h3>后端member</h3>
+                <h3>后端主机</h3>
               </div>
               
               <div class="member-header">
@@ -273,7 +273,7 @@
                 <el-empty description="暂无后端服务器" />
               </div>
               
-              <!-- 后端member分页 -->
+              <!-- 后端主机分页 -->
               <div class="pagination-container" v-if="memberList.length > 0">
                 <el-pagination
                   v-model:current-page="memberPagination.currentPage"
@@ -474,11 +474,11 @@ const slbPagination = reactive({
 // 当前选中的负载均衡实例
 const currentSlb = ref(null)
 
-// 后端member列表
+// 后端主机列表
 const memberList = ref([])
 const memberLoading = ref(false)
 
-// 后端member统计数据
+// 后端主机统计数据
 const memberStats = reactive({
   total: 0,
   running: 0,
@@ -488,7 +488,7 @@ const memberStats = reactive({
   abnormal: 0
 })
 
-// 后端member分页
+// 后端主机分页
 const memberPagination = reactive({
   currentPage: 1,
   pageSize: 10
@@ -528,7 +528,7 @@ const paginatedSlbList = computed(() => {
   return filteredSlbList.value.slice(start, end)
 })
 
-// 分页后的后端member列表
+// 分页后的后端主机列表
 const paginatedMemberList = computed(() => {
   const start = (memberPagination.currentPage - 1) * memberPagination.pageSize
   const end = start + memberPagination.pageSize
@@ -915,7 +915,7 @@ const handleSlbRowClick = (row) => {
   fetchMemberList(row.id)
 }
 
-// 获取后端member列表
+// 获取后端主机列表
 const fetchMemberList = (listenerId) => {
   if (!listenerId) return
   
@@ -1212,12 +1212,12 @@ const handleSlbCurrentChange = (val) => {
   slbPagination.currentPage = val
 }
 
-// 处理后端member分页大小变化
+// 处理后端主机分页大小变化
 const handleMemberSizeChange = (val) => {
   memberPagination.pageSize = val
 }
 
-// 处理后端member当前页变化
+// 处理后端主机当前页变化
 const handleMemberCurrentChange = (val) => {
   memberPagination.currentPage = val
 }
@@ -1381,7 +1381,7 @@ watch(() => drawerVisible.value, (visible) => {
   margin-top: 20px;
 }
 
-/* 后端member样式 */
+/* 后端主机样式 */
 .backend-member-section {
   margin-top: 30px;
   border-top: 1px solid #e6e6e6;
