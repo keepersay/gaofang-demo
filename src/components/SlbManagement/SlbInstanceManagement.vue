@@ -172,6 +172,12 @@ i<template>
       :instance-data="editingInstance"
       @success="handleEditSuccess"
     />
+    
+    <!-- 配置实例抽屉 -->
+    <SlbInstanceConfigDrawer
+      v-model="configDrawerVisible"
+      :instance-data="configInstance"
+    />
   </div>
 </template>
 
@@ -179,6 +185,7 @@ i<template>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SlbInstanceDrawer from './SlbInstanceDrawer.vue'
+import SlbInstanceConfigDrawer from './SlbInstanceConfigDrawer.vue'
 
 // 搜索表单数据
 const searchForm = ref({
@@ -202,6 +209,10 @@ const createDrawerVisible = ref(false)
 // 编辑实例抽屉控制
 const editDrawerVisible = ref(false)
 const editingInstance = ref(null)
+
+// 配置实例抽屉控制
+const configDrawerVisible = ref(false)
+const configInstance = ref(null)
 
 // 模拟数据
 const mockData = [
@@ -375,10 +386,9 @@ const handleAction = async (action, row) => {
       break
       
     case 'config':
-      ElMessage({
-        message: `配置实例: ${row.instanceName}`,
-        type: 'info'
-      })
+      // 打开配置抽屉
+      configInstance.value = { ...row }
+      configDrawerVisible.value = true
       break
       
     case 'stop':
