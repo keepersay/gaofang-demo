@@ -127,8 +127,104 @@
             <span>Linux网卡</span>
           </div>
         </template>
-        <div class="panel-content">
-          <el-empty description="Linux网卡监控功能开发中" />
+        
+        <!-- 搜索控制表单 -->
+        <el-form :inline="true" size="small" :model="linuxSearchForm" class="linux-inline-form">
+          <el-form-item>
+            <el-select 
+              v-model="linuxSearchForm.hostIp" 
+              placeholder="选择主机"
+              style="width: 140px;"
+              clearable
+            >
+              <el-option
+                v-for="host in hostOptions"
+                :key="host.value"
+                :label="host.label"
+                :value="host.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="linuxSearchForm.statisticType" 
+              placeholder="统计方式"
+              style="width: 100px;"
+            >
+              <el-option
+                v-for="stat in statisticOptions"
+                :key="stat.value"
+                :label="stat.label"
+                :value="stat.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="linuxSearchForm.startTime"
+              type="datetime"
+              placeholder="开始时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="linuxSearchForm.endTime"
+              type="datetime"
+              placeholder="结束时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-checkbox v-model="linuxSearchForm.autoRefresh">
+              自动刷新
+            </el-checkbox>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="linuxSearchForm.refreshInterval" 
+              :disabled="!linuxSearchForm.autoRefresh"
+              style="width: 80px;"
+            >
+              <el-option
+                v-for="refresh in refreshOptions"
+                :key="refresh.value"
+                :label="refresh.label"
+                :value="refresh.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-button type="primary" @click="handleLinuxSearch" :loading="linuxLoading">
+              查询
+            </el-button>
+          </el-form-item>
+        </el-form>
+        
+        <!-- 主机Linux网卡流量 -->
+        <div class="linux-chart-simple">
+          <div class="linux-chart-title">
+            <h4>主机Linux网卡流量</h4>
+          </div>
+          <el-empty description="Linux网卡流量监控图表功能开发中" class="linux-chart-empty" />
+        </div>
+        
+        <!-- 主机Linux网卡丢包数 -->
+        <div class="linux-chart-simple">
+          <div class="linux-chart-title">
+            <h4>主机Linux网卡丢包数</h4>
+          </div>
+          <el-empty description="Linux网卡丢包数监控图表功能开发中" class="linux-chart-empty" />
         </div>
       </el-collapse-item>
 
@@ -140,8 +236,104 @@
             <span>DPVS网卡</span>
           </div>
         </template>
-        <div class="panel-content">
-          <el-empty description="DPVS网卡监控功能开发中" />
+        
+        <!-- 搜索控制表单 -->
+        <el-form :inline="true" size="small" :model="dpvsSearchForm" class="dpvs-inline-form">
+          <el-form-item>
+            <el-select 
+              v-model="dpvsSearchForm.hostIp" 
+              placeholder="选择主机"
+              style="width: 140px;"
+              clearable
+            >
+              <el-option
+                v-for="host in hostOptions"
+                :key="host.value"
+                :label="host.label"
+                :value="host.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="dpvsSearchForm.statisticType" 
+              placeholder="统计方式"
+              style="width: 100px;"
+            >
+              <el-option
+                v-for="stat in statisticOptions"
+                :key="stat.value"
+                :label="stat.label"
+                :value="stat.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="dpvsSearchForm.startTime"
+              type="datetime"
+              placeholder="开始时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-date-picker
+              v-model="dpvsSearchForm.endTime"
+              type="datetime"
+              placeholder="结束时间"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              style="width: 160px;"
+            />
+          </el-form-item>
+          
+          <el-form-item>
+            <el-checkbox v-model="dpvsSearchForm.autoRefresh">
+              自动刷新
+            </el-checkbox>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-select 
+              v-model="dpvsSearchForm.refreshInterval" 
+              :disabled="!dpvsSearchForm.autoRefresh"
+              style="width: 80px;"
+            >
+              <el-option
+                v-for="refresh in refreshOptions"
+                :key="refresh.value"
+                :label="refresh.label"
+                :value="refresh.value"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item>
+            <el-button type="primary" @click="handleDpvsSearch" :loading="dpvsLoading">
+              查询
+            </el-button>
+          </el-form-item>
+        </el-form>
+        
+        <!-- 主机DPVS网卡流量 -->
+        <div class="dpvs-chart-simple">
+          <div class="dpvs-chart-title">
+            <h4>主机DPVS网卡流量</h4>
+          </div>
+          <el-empty description="DPVS网卡流量监控图表功能开发中" class="dpvs-chart-empty" />
+        </div>
+        
+        <!-- 主机DPVS网卡丢包数 -->
+        <div class="dpvs-chart-simple">
+          <div class="dpvs-chart-title">
+            <h4>主机DPVS网卡丢包数</h4>
+          </div>
+          <el-empty description="DPVS网卡丢包数监控图表功能开发中" class="dpvs-chart-empty" />
         </div>
       </el-collapse-item>
     </el-collapse>
@@ -166,8 +358,32 @@ const cpuSearchForm = reactive({
   refreshInterval: 15
 })
 
+// Linux网卡搜索表单
+const linuxSearchForm = reactive({
+  hostIp: '',
+  statisticType: 'avg',
+  startTime: '',
+  endTime: '',
+  autoRefresh: false,
+  refreshInterval: 15
+})
+
+// DPVS网卡搜索表单
+const dpvsSearchForm = reactive({
+  hostIp: '',
+  statisticType: 'avg',
+  startTime: '',
+  endTime: '',
+  autoRefresh: false,
+  refreshInterval: 15
+})
+
 const cpuLoading = ref(false)
+const linuxLoading = ref(false)
+const dpvsLoading = ref(false)
 let refreshTimer = null
+let linuxRefreshTimer = null
+let dpvsRefreshTimer = null
 
 // 主机选项列表
 const hostOptions = ref([
@@ -191,7 +407,7 @@ const refreshOptions = [
   { label: '3分钟', value: 180 }
 ]
 
-// 查询处理
+// CPU查询处理
 const handleCpuSearch = () => {
   console.log('CPU监控查询:', cpuSearchForm)
   cpuLoading.value = true
@@ -199,6 +415,28 @@ const handleCpuSearch = () => {
   setTimeout(() => {
     cpuLoading.value = false
     ElMessage.success('CPU/内存/磁盘监控数据查询完成')
+  }, 1000)
+}
+
+// Linux网卡查询处理
+const handleLinuxSearch = () => {
+  console.log('Linux网卡监控查询:', linuxSearchForm)
+  linuxLoading.value = true
+  
+  setTimeout(() => {
+    linuxLoading.value = false
+    ElMessage.success('Linux网卡监控数据查询完成')
+  }, 1000)
+}
+
+// DPVS网卡查询处理
+const handleDpvsSearch = () => {
+  console.log('DPVS网卡监控查询:', dpvsSearchForm)
+  dpvsLoading.value = true
+  
+  setTimeout(() => {
+    dpvsLoading.value = false
+    ElMessage.success('DPVS网卡监控数据查询完成')
   }, 1000)
 }
 
@@ -237,17 +475,87 @@ const stopAutoRefresh = () => {
   }
 }
 
+// Linux网卡自动刷新监听
+watch(() => linuxSearchForm.autoRefresh, (newVal) => {
+  if (newVal) {
+    startLinuxAutoRefresh()
+  } else {
+    stopLinuxAutoRefresh()
+  }
+})
+
+watch(() => linuxSearchForm.refreshInterval, () => {
+  if (linuxSearchForm.autoRefresh) {
+    stopLinuxAutoRefresh()
+    startLinuxAutoRefresh()
+  }
+})
+
+// Linux网卡自动刷新函数
+const startLinuxAutoRefresh = () => {
+  if (linuxRefreshTimer) {
+    clearInterval(linuxRefreshTimer)
+  }
+  linuxRefreshTimer = setInterval(() => {
+    handleLinuxSearch()
+  }, linuxSearchForm.refreshInterval * 1000)
+}
+
+const stopLinuxAutoRefresh = () => {
+  if (linuxRefreshTimer) {
+    clearInterval(linuxRefreshTimer)
+    linuxRefreshTimer = null
+  }
+}
+
+// DPVS网卡自动刷新监听
+watch(() => dpvsSearchForm.autoRefresh, (newVal) => {
+  if (newVal) {
+    startDpvsAutoRefresh()
+  } else {
+    stopDpvsAutoRefresh()
+  }
+})
+
+watch(() => dpvsSearchForm.refreshInterval, () => {
+  if (dpvsSearchForm.autoRefresh) {
+    stopDpvsAutoRefresh()
+    startDpvsAutoRefresh()
+  }
+})
+
+// DPVS网卡自动刷新函数
+const startDpvsAutoRefresh = () => {
+  if (dpvsRefreshTimer) {
+    clearInterval(dpvsRefreshTimer)
+  }
+  dpvsRefreshTimer = setInterval(() => {
+    handleDpvsSearch()
+  }, dpvsSearchForm.refreshInterval * 1000)
+}
+
+const stopDpvsAutoRefresh = () => {
+  if (dpvsRefreshTimer) {
+    clearInterval(dpvsRefreshTimer)
+    dpvsRefreshTimer = null
+  }
+}
+
 // 组件挂载时初始化
 onMounted(() => {
   // 设置默认主机
   if (hostOptions.value.length > 0) {
     cpuSearchForm.hostIp = hostOptions.value[0].value
+    linuxSearchForm.hostIp = hostOptions.value[0].value
+    dpvsSearchForm.hostIp = hostOptions.value[0].value
   }
 })
 
 // 组件卸载时清理定时器
 onUnmounted(() => {
   stopAutoRefresh()
+  stopLinuxAutoRefresh()
+  stopDpvsAutoRefresh()
 })
 </script>
 
@@ -336,6 +644,124 @@ onUnmounted(() => {
 }
 
 .cpu-chart-empty {
+  padding: 20px;
+  height: 300px;
+  
+  :deep(.el-empty__image) {
+    width: 80px;
+    height: 80px;
+  }
+  
+  :deep(.el-empty__description) {
+    font-size: 14px;
+    color: #909399;
+  }
+}
+
+/* Linux网卡面板样式 */
+.linux-inline-form {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+  
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+  
+  .el-form-item:last-child {
+    margin-right: 0;
+  }
+}
+
+.linux-chart-simple {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.linux-chart-title {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+  }
+}
+
+.linux-chart-empty {
+  padding: 20px;
+  height: 300px;
+  
+  :deep(.el-empty__image) {
+    width: 80px;
+    height: 80px;
+  }
+  
+  :deep(.el-empty__description) {
+    font-size: 14px;
+    color: #909399;
+  }
+}
+
+/* DPVS网卡面板样式 */
+.dpvs-inline-form {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+  
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+  
+  .el-form-item:last-child {
+    margin-right: 0;
+  }
+}
+
+.dpvs-chart-simple {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.dpvs-chart-title {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+  }
+}
+
+.dpvs-chart-empty {
   padding: 20px;
   height: 300px;
   
