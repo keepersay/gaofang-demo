@@ -159,9 +159,18 @@ i<template>
     </el-card>
 
     <!-- 新建实例抽屉 -->
-    <SlbInstanceCreateDrawer
+    <SlbInstanceDrawer
       v-model="createDrawerVisible"
+      mode="create"
       @success="handleCreateSuccess"
+    />
+    
+    <!-- 编辑实例抽屉 -->
+    <SlbInstanceDrawer
+      v-model="editDrawerVisible"
+      mode="edit"
+      :instance-data="editingInstance"
+      @success="handleEditSuccess"
     />
   </div>
 </template>
@@ -169,7 +178,7 @@ i<template>
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import SlbInstanceCreateDrawer from './SlbInstanceCreateDrawer.vue'
+import SlbInstanceDrawer from './SlbInstanceDrawer.vue'
 
 // 搜索表单数据
 const searchForm = ref({
@@ -189,6 +198,10 @@ const totalCount = ref(0)
 
 // 新建实例抽屉控制
 const createDrawerVisible = ref(false)
+
+// 编辑实例抽屉控制
+const editDrawerVisible = ref(false)
+const editingInstance = ref(null)
 
 // 模拟数据
 const mockData = [
@@ -333,6 +346,15 @@ const handleCreateSuccess = (newInstance) => {
   }
 }
 
+// 编辑实例成功处理
+const handleEditSuccess = (updatedInstance) => {
+  // 查找并更新表格中的实例数据
+  const index = tableData.value.findIndex(item => item.id === updatedInstance.id)
+  if (index > -1) {
+    tableData.value[index] = updatedInstance
+  }
+}
+
 // 查看监控
 const handleViewMonitor = (row) => {
   ElMessage({
@@ -347,10 +369,9 @@ const handleAction = async (action, row) => {
   
   switch (action) {
     case 'edit':
-      ElMessage({
-        message: `编辑实例: ${row.instanceName}`,
-        type: 'info'
-      })
+      // 打开编辑抽屉
+      editingInstance.value = { ...row }
+      editDrawerVisible.value = true
       break
       
     case 'config':
