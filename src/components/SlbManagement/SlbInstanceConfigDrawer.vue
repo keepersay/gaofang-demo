@@ -161,7 +161,7 @@
                   class="backend-hosts-table"
                 >
                   <el-table-column prop="id" label="序号" width="80" align="center" />
-                  <el-table-column prop="serverName" label="主机服务名" width="120" align="center">
+                  <el-table-column prop="serverName" label="主机簿名称" width="120" align="center">
                     <template #default="{ row }">
                       <span>{{ row.serverName || '--' }}</span>
                     </template>
@@ -244,7 +244,128 @@
           <!-- 异常日志Tab -->
           <el-tab-pane label="异常日志" name="errorLogs">
             <div class="error-logs-content">
-              <el-empty description="异常日志功能开发中" />
+              <!-- 搜索表单 -->
+              <div class="search-form">
+                <el-form :inline="true" :model="errorLogsSearchForm" size="small">
+                  <el-row :gutter="16">
+                    <el-col :span="12">
+                      <el-form-item label="监听开始时间">
+                        <el-date-picker
+                          v-model="errorLogsSearchForm.startTime"
+                          type="datetime"
+                          placeholder="开始时间"
+                          format="YYYY-MM-DD HH:mm:ss"
+                          value-format="YYYY-MM-DD HH:mm:ss"
+                          style="width: 180px;"
+                        />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="12">
+                      <el-form-item label="监听结束时间">
+                        <el-date-picker
+                          v-model="errorLogsSearchForm.endTime"
+                          type="datetime"
+                          placeholder="结束时间"
+                          format="YYYY-MM-DD HH:mm:ss"
+                          value-format="YYYY-MM-DD HH:mm:ss"
+                          style="width: 180px;"
+                        />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  
+                  <el-row :gutter="16">
+                    <el-col :span="8">
+                      <el-form-item label="状态">
+                        <el-select v-model="errorLogsSearchForm.status" placeholder="全部" style="width: 120px;">
+                          <el-option label="全部" value="" />
+                          <el-option label="已恢复" value="recovered" />
+                          <el-option label="异常中" value="error" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="监听">
+                        <el-select v-model="errorLogsSearchForm.listener" placeholder="ALL" style="width: 120px;">
+                          <el-option label="ALL" value="" />
+                          <el-option 
+                            v-for="listener in listenersData" 
+                            :key="listener.id"
+                            :label="`${listener.protocol.toUpperCase()}:${listener.port}`"
+                            :value="listener.id"
+                          />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="后端服务器">
+                        <el-select v-model="errorLogsSearchForm.backendServer" placeholder="后端服务器" style="width: 140px;">
+                          <el-option label="全部" value="" />
+                          <el-option 
+                            v-for="server in backendServerOptions" 
+                            :key="server.value"
+                            :label="server.label"
+                            :value="server.value"
+                          />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  
+                  <el-row>
+                    <el-col :span="24">
+                      <el-form-item>
+                        <el-button type="primary" @click="handleErrorLogsSearch" :loading="errorLogsLoading">
+                          查询
+                        </el-button>
+                        <el-button @click="handleErrorLogsReset">
+                          重置
+                        </el-button>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </el-form>
+              </div>
+              
+              <!-- 数据表格 -->
+              <el-table 
+                :data="errorLogsData" 
+                :loading="errorLogsLoading"
+                border 
+                stripe
+                size="small"
+                class="error-logs-table"
+              >
+                <el-table-column prop="protocol" label="监听协议" width="120" align="center" />
+                <el-table-column prop="backendService" label="后端服务" width="160" align="center" />
+                <el-table-column prop="startTime" label="开始时间" width="180" align="center" />
+                <el-table-column prop="endTime" label="结束时间" width="180" align="center" />
+                <el-table-column prop="errorCount" label="异常次数" width="100" align="center" />
+                <el-table-column prop="status" label="状态" width="100" align="center">
+                  <template #default="{ row }">
+                    <el-tag 
+                      :type="row.status === '已恢复' ? 'success' : 'danger'"
+                      size="small"
+                    >
+                      {{ row.status }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="recoveryReason" label="恢复原因" min-width="120" align="center" />
+              </el-table>
+              
+              <!-- 分页 -->
+              <div class="pagination-container">
+                <el-pagination
+                  v-model:current-page="errorLogsPagination.currentPage"
+                  v-model:page-size="errorLogsPagination.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :total="errorLogsPagination.total"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleErrorLogsPageSizeChange"
+                  @current-change="handleErrorLogsCurrentPageChange"
+                />
+              </div>
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -257,13 +378,21 @@
       :instance-data="instanceData"
       @success="handleCreateListenerSuccess"
     />
+    
+    <!-- 添加后端主机抽屉 -->
+    <SlbBackendHostCreateDrawer
+      v-model="addBackendHostVisible"
+      :listener-data="currentListenerForHost"
+      @success="handleAddBackendHostSuccess"
+    />
   </el-drawer>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import SlbListenerCreateDrawer from './SlbListenerCreateDrawer.vue'
+import SlbBackendHostCreateDrawer from './SlbBackendHostCreateDrawer.vue'
 
 // 定义props和emits
 const props = defineProps({
@@ -293,6 +422,73 @@ const selectedListener = ref(null)
 
 // 新建监听抽屉控制
 const createListenerVisible = ref(false)
+
+// 添加后端主机抽屉控制
+const addBackendHostVisible = ref(false)
+const currentListenerForHost = ref(null)
+
+// 异常日志相关
+const errorLogsSearchForm = reactive({
+  startTime: '',
+  endTime: '',
+  status: '',
+  listener: '',
+  backendServer: ''
+})
+
+const errorLogsData = ref([
+  {
+    id: 1,
+    protocol: 'tcp:8080',
+    backendService: '1.1.1.1:808',
+    startTime: '2025-01-10 11:34:30',
+    endTime: '2025-01-10 11:38:13',
+    errorCount: 3,
+    status: '已恢复',
+    recoveryReason: '服务已恢复'
+  },
+  {
+    id: 2,
+    protocol: 'tcp:8080',
+    backendService: '100.0.0.14:80',
+    startTime: '2025-01-06 16:47:45',
+    endTime: '2025-01-06 16:49:00',
+    errorCount: 5,
+    status: '已恢复',
+    recoveryReason: '服务已恢复'
+  },
+  {
+    id: 3,
+    protocol: 'tcp:8080',
+    backendService: '100.0.0.13:80',
+    startTime: '2025-01-06 16:47:30',
+    endTime: '2025-01-06 16:49:00',
+    errorCount: 6,
+    status: '已恢复',
+    recoveryReason: '服务已恢复'
+  }
+])
+
+const errorLogsLoading = ref(false)
+
+// 异常日志分页
+const errorLogsPagination = reactive({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
+
+// 后端服务器选项
+const backendServerOptions = computed(() => {
+  if (!errorLogsSearchForm.listener) {
+    return []
+  }
+  const listener = listenersData.value.find(l => l.id === errorLogsSearchForm.listener)
+  return listener?.servers?.map(server => ({
+    label: `${server.ipAddress}:${server.port}`,
+    value: server.id
+  })) || []
+})
 
 // 模拟监听器数据
 const listenersData = ref([
@@ -406,12 +602,98 @@ const handleViewListenerMonitor = (row) => {
 
 // 后端主机操作处理
 const handleAddBackendHost = () => {
-  if (selectedListener.value) {
-    ElMessage.info(`为监听器 ${selectedListener.value.name} 添加后端主机功能开发中`)
-  } else {
+  if (!selectedListener.value) {
     ElMessage.warning('请先选择监听器')
+    return
   }
+  currentListenerForHost.value = selectedListener.value
+  addBackendHostVisible.value = true
 }
+
+// 添加后端主机成功处理
+const handleAddBackendHostSuccess = (newHost) => {
+  // 添加到选中监听器的servers数组
+  if (selectedListener.value && selectedListener.value.servers) {
+    selectedListener.value.servers.push({
+      id: newHost.id,
+      ipAddress: newHost.ip,  // 注意这里用ipAddress匹配表格字段
+      port: newHost.port,
+      weight: newHost.weight,
+      status: newHost.status,
+      health: newHost.health,
+      role: newHost.role
+    })
+  }
+  ElMessage.success('后端主机添加成功')
+}
+
+// 异常日志相关方法
+const handleErrorLogsSearch = () => {
+  console.log('查询异常日志:', errorLogsSearchForm)
+  errorLogsLoading.value = true
+  
+  // 模拟API调用
+  setTimeout(() => {
+    // 模拟数据过滤
+    let filteredData = [...errorLogsData.value]
+    
+    if (errorLogsSearchForm.status) {
+      filteredData = filteredData.filter(item => {
+        if (errorLogsSearchForm.status === 'recovered') {
+          return item.status === '已恢复'
+        } else if (errorLogsSearchForm.status === 'error') {
+          return item.status === '异常中'
+        }
+        return true
+      })
+    }
+    
+    if (errorLogsSearchForm.listener) {
+      const listener = listenersData.value.find(l => l.id === errorLogsSearchForm.listener)
+      if (listener) {
+        const protocol = `${listener.protocol}:${listener.port}`
+        filteredData = filteredData.filter(item => item.protocol === protocol)
+      }
+    }
+    
+    errorLogsPagination.total = filteredData.length
+    errorLogsLoading.value = false
+    ElMessage.success('查询完成')
+  }, 1000)
+}
+
+const handleErrorLogsReset = () => {
+  Object.assign(errorLogsSearchForm, {
+    startTime: '',
+    endTime: '',
+    status: '',
+    listener: '',
+    backendServer: ''
+  })
+  errorLogsPagination.currentPage = 1
+  ElMessage.success('重置成功')
+}
+
+const handleErrorLogsPageSizeChange = (size) => {
+  errorLogsPagination.pageSize = size
+  errorLogsPagination.currentPage = 1
+}
+
+const handleErrorLogsCurrentPageChange = (page) => {
+  errorLogsPagination.currentPage = page
+}
+
+// 监听器变化时重置后端服务器选择
+watch(() => errorLogsSearchForm.listener, () => {
+  errorLogsSearchForm.backendServer = ''
+})
+
+// Tab切换时加载数据
+watch(() => activeTab.value, (newTab) => {
+  if (newTab === 'errorLogs' && props.instanceData) {
+    errorLogsPagination.total = errorLogsData.value.length
+  }
+})
 
 const handleEditServer = (server) => {
   ElMessage.info(`编辑服务器 ${server.ipAddress}:${server.port} 功能开发中`)
@@ -457,6 +739,77 @@ watch(() => props.instanceData, (newData) => {
 
 :deep(.el-drawer__body) {
   padding: 0;
+}
+
+/* 异常日志样式 */
+.error-logs-content {
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-form {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border: 1px solid #e9ecef;
+  
+  .el-form-item {
+    margin-bottom: 12px;
+  }
+  
+  .el-form-item__label {
+    font-size: 12px;
+    color: #606266;
+    font-weight: 500;
+  }
+  
+  .el-input {
+    font-size: 12px;
+  }
+  
+  .el-select {
+    font-size: 12px;
+  }
+  
+  .el-button {
+    font-size: 12px;
+  }
+}
+
+.error-logs-table {
+  flex: 1;
+  font-size: 12px;
+  
+  :deep(.el-table__header) {
+    font-weight: 600;
+    font-size: 12px;
+  }
+  
+  :deep(.el-table__body) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-table td) {
+    padding: 8px 0;
+  }
+  
+  :deep(.el-table th) {
+    padding: 8px 0;
+    background-color: #f5f7fa;
+  }
+}
+
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  
+  :deep(.el-pagination) {
+    font-size: 12px;
+  }
 }
 
 .instance-info-card {
