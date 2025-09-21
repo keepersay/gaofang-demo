@@ -77,6 +77,11 @@
                     <span>{{ getAlgorithmText(row.algorithm) }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column prop="timeout" label="会话超时时间" width="120" align="center">
+                  <template #default="{ row }">
+                    <span>{{ row.timeout }}s</span>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="status" label="状态" width="100" align="center">
                   <template #default="{ row }">
                     <el-tag 
