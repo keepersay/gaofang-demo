@@ -54,12 +54,17 @@
           <div class="range-tip">范围: 1-100</div>
         </el-form-item>
 
-        <el-form-item label="角色" prop="role">
-          <el-radio-group v-model="formData.role">
-            <el-radio value="主">主</el-radio>
-            <el-radio value="备">备</el-radio>
-          </el-radio-group>
+        <el-form-item label="备注" prop="remark">
+          <el-input 
+            v-model="formData.remark" 
+            type="textarea"
+            :rows="3"
+            placeholder="请输入备注信息"
+            maxlength="200"
+            show-word-limit
+          />
         </el-form-item>
+
       </el-form>
     </div>
     
@@ -113,7 +118,7 @@ const formData = reactive({
   ip: '',                 // IP地址
   port: '',               // 端口
   weight: 10,             // 权重，默认10
-  role: '主'              // 角色，默认主
+  remark: ''              // 备注
 })
 
 // 表单验证规则
@@ -139,9 +144,6 @@ const rules = {
   ],
   weight: [
     { type: 'number', min: 1, max: 100, message: '权重范围: 1-100', trigger: 'blur' }
-  ],
-  role: [
-    { required: true, message: '请选择角色', trigger: 'change' }
   ]
 }
 
@@ -154,7 +156,7 @@ const buildBackendHostData = () => {
     ip: formData.ip,
     port: parseInt(formData.port),
     weight: formData.weight,
-    role: formData.role,
+    remark: formData.remark,
     status: 'running', // 默认运行状态
     health: '正常'     // 默认健康状态
   }
@@ -214,7 +216,7 @@ const resetForm = () => {
     ip: '',
     port: '',
     weight: 10,
-    role: '主'
+    remark: ''
   })
   
   // 清除表单验证状态

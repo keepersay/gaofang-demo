@@ -177,6 +177,7 @@ i<template>
     <SlbInstanceConfigDrawer
       v-model="configDrawerVisible"
       :instance-data="configInstance"
+      @listener-status-change="handleListenerStatusChange"
     />
   </div>
 </template>
@@ -223,7 +224,20 @@ const mockData = [
     attractionStatus: 'attracted',
     owner: '张三',
     runningStatus: 'running',
-    createTime: '2025-03-26 17:44:40'
+    createTime: '2025-03-26 17:44:40',
+    listeners: [
+      {
+        id: 1,
+        name: '8080',
+        port: '8080',
+        protocol: 'TCP',
+        status: 'running',
+        servers: [
+          { id: 1, status: 'running' },
+          { id: 2, status: 'running' }
+        ]
+      }
+    ]
   },
   {
     id: 2,
@@ -232,7 +246,19 @@ const mockData = [
     attractionStatus: 'not_attracted',
     owner: '李四',
     runningStatus: 'running',
-    createTime: '2025-03-25 16:30:20'
+    createTime: '2025-03-25 16:30:20',
+    listeners: [
+      {
+        id: 2,
+        name: '8080',
+        port: '8080',
+        protocol: 'TCP',
+        status: 'running',
+        servers: [
+          { id: 3, status: 'running' }
+        ]
+      }
+    ]
   },
   {
     id: 3,
@@ -241,7 +267,17 @@ const mockData = [
     attractionStatus: 'not_attracted',
     owner: '王五',
     runningStatus: 'stopped',
-    createTime: '2025-03-24 15:20:10'
+    createTime: '2025-03-24 15:20:10',
+    listeners: [
+      {
+        id: 3,
+        name: '8080',
+        port: '8080',
+        protocol: 'TCP',
+        status: 'stopped',
+        servers: []
+      }
+    ]
   },
   {
     id: 4,
@@ -250,7 +286,20 @@ const mockData = [
     attractionStatus: 'attracted',
     owner: '赵六',
     runningStatus: 'running',
-    createTime: '2025-03-23 14:10:30'
+    createTime: '2025-03-23 14:10:30',
+    listeners: [
+      {
+        id: 4,
+        name: '8080',
+        port: '8080',
+        protocol: 'TCP',
+        status: 'running',
+        servers: [
+          { id: 4, status: 'running' },
+          { id: 5, status: 'stopped' }
+        ]
+      }
+    ]
   },
   {
     id: 5,
@@ -259,7 +308,8 @@ const mockData = [
     attractionStatus: 'not_attracted',
     owner: '孙七',
     runningStatus: 'stopped',
-    createTime: '2025-03-22 13:45:15'
+    createTime: '2025-03-22 13:45:15',
+    listeners: []
   }
 ]
 
@@ -301,12 +351,29 @@ const filteredTableData = computed(() => {
   return data
 })
 
+// 检查监听器是否全部删除或停用
+const areAllListenersDeletedOrStopped = (instance) => {
+  if (!instance.listeners || instance.listeners.length === 0) {
+    return true // 没有监听器时认为全部删除
+  }
+  
+  // 检查是否所有监听器都已删除或停用
+  const activeListeners = instance.listeners.filter(listener => 
+    listener.status === 'running'
+  )
+  return activeListeners.length === 0
+}
+
 // 按钮显示逻辑
 const canStop = (row) => {
-  return row.runningStatus === 'running' && row.attractionStatus === 'not_attracted'
+  // 实例停用条件：监听全部删除或者全部停用，实例已经取消牵引
+  return row.runningStatus === 'running' && 
+         row.attractionStatus === 'not_attracted' && 
+         areAllListenersDeletedOrStopped(row)
 }
 
 const canStart = (row) => {
+  // 实例启用条件：无条件启用
   return row.runningStatus === 'stopped'
 }
 
@@ -319,6 +386,7 @@ const canCancelAttract = (row) => {
 }
 
 const canDelete = (row) => {
+  // 实例删除条件：实例已经停用
   return row.runningStatus === 'stopped'
 }
 
@@ -366,6 +434,25 @@ const handleEditSuccess = (updatedInstance) => {
   }
 }
 
+// 检查实例是否应该自动停用
+const checkAndAutoStopInstance = (instance) => {
+  if (instance.runningStatus === 'running' && 
+      instance.attractionStatus === 'not_attracted' && 
+      areAllListenersDeletedOrStopped(instance)) {
+    instance.runningStatus = 'stopped'
+    ElMessage.warning(`实例 ${instance.instanceName} 的所有监听器已删除或停用，实例已自动停用`)
+  }
+}
+
+// 监听器状态变化处理（从配置抽屉调用）
+const handleListenerStatusChange = (instanceId, listeners) => {
+  const instance = tableData.value.find(item => item.id === instanceId)
+  if (instance) {
+    instance.listeners = listeners
+    checkAndAutoStopInstance(instance)
+  }
+}
+
 // 查看监控
 const handleViewMonitor = (row) => {
   ElMessage({
@@ -392,6 +479,18 @@ const handleAction = async (action, row) => {
       break
       
     case 'stop':
+      // 检查停用条件
+      if (!canStop(row)) {
+        if (row.attractionStatus === 'attracted') {
+          ElMessage.warning('实例已启用牵引，请先取消牵引')
+        } else if (!areAllListenersDeletedOrStopped(row)) {
+          ElMessage.warning('请先删除或停用所有监听器')
+        } else {
+          ElMessage.warning('实例当前状态不允许停用')
+        }
+        return
+      }
+      
       try {
         await ElMessageBox.confirm(
           `确定要停用实例 ${row.instanceName} 吗？`,
@@ -453,6 +552,12 @@ const handleAction = async (action, row) => {
       break
       
     case 'delete':
+      // 检查删除条件
+      if (!canDelete(row)) {
+        ElMessage.warning('只有已停用的实例才能删除')
+        return
+      }
+      
       try {
         await ElMessageBox.confirm(
           `确定要删除实例 ${row.instanceName} 吗？此操作不可恢复！`,
