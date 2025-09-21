@@ -71,9 +71,7 @@
               </div>
             </el-tab-pane>
             <el-tab-pane label="主机IP对象" name="hostIpObject">
-              <div class="tab-placeholder-content">
-                <el-empty :description="`${selectedCluster.label} 主机IP对象内容将在这里显示`" />
-              </div>
+              <SlbHostIpObjectManagement />
             </el-tab-pane>
             <el-tab-pane label="抓包管理" name="packetCapture">
               <div class="tab-placeholder-content">
@@ -115,6 +113,7 @@ import { ElMessage } from 'element-plus'
 import SlbInstanceManagement from '@/components/SlbManagement/SlbInstanceManagement.vue'
 import SlbClusterMonitor from '@/components/SlbManagement/SlbClusterMonitor.vue'
 import SlbRateLimitManagement from '@/components/SlbManagement/SlbRateLimitManagement.vue'
+import SlbHostIpObjectManagement from '@/components/SlbManagement/SlbHostIpObjectManagement.vue'
 
 const route = useRoute()
 const search = ref('')
