@@ -48,18 +48,16 @@
               <SlbClusterMonitor />
             </el-tab-pane>
             <el-tab-pane label="限速管理" name="rateLimit">
-              <div class="tab-placeholder-content">
-                <el-empty :description="`${selectedCluster.label} 限速管理内容将在这里显示`" />
-              </div>
+              <SlbRateLimitManagement />
             </el-tab-pane>
             <el-tab-pane label="SNAT规则" name="snatRules">
               <div class="tab-placeholder-content">
                 <el-empty :description="`${selectedCluster.label} SNAT规则内容将在这里显示`" />
               </div>
             </el-tab-pane>
-            <el-tab-pane label="集群管理" name="clusterManagement">
+            <el-tab-pane label="主机管理" name="hostManagement">
               <div class="tab-placeholder-content">
-                <el-empty :description="`${selectedCluster.label} 集群管理内容将在这里显示`" />
+                <el-empty :description="`${selectedCluster.label} 主机管理内容将在这里显示`" />
               </div>
             </el-tab-pane>
             <el-tab-pane label="VIP池管理" name="vipPool">
@@ -116,6 +114,7 @@ import DataCenterService from '@/services/DataCenterService'
 import { ElMessage } from 'element-plus'
 import SlbInstanceManagement from '@/components/SlbManagement/SlbInstanceManagement.vue'
 import SlbClusterMonitor from '@/components/SlbManagement/SlbClusterMonitor.vue'
+import SlbRateLimitManagement from '@/components/SlbManagement/SlbRateLimitManagement.vue'
 
 const route = useRoute()
 const search = ref('')
