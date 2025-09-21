@@ -13,6 +13,6 @@
 .business-log-page {
   padding: 20px;
   background: #f5f6fa;
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 108px);
 }
 </style> 

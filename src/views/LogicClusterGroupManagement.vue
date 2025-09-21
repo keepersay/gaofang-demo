@@ -644,13 +644,13 @@ const getAddressTypeLabel = (type) => {
   padding: 0;
   margin: 0;
   background: #f5f6fa;
-  min-height: calc(100vh - 60px);
+  min-height: calc(100vh - 48px);
 }
 
 .box-card {
   margin-bottom: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  height: calc(100vh - 60px);
+  height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
 }

@@ -788,7 +788,7 @@ onMounted(() => {
 <style scoped>
 .cluster-management {
   padding: 8px 12px;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 88px);
 }
 
 .box-card {

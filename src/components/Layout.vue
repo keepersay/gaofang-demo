@@ -3,13 +3,13 @@
     <!-- 侧边导航 -->
     <el-aside :width="sidebarWidth" :class="{ 'sidebar-collapsed': isCollapsed }" style="background: #f5f7fa;display:flex;flex-direction:column;transition: width 0.3s ease;">
       <!-- 顶部logo和系统标题区 -->
-      <div class="sidebar-header" style="height:64px;display:flex;align-items:center;background:#fff;border-bottom:1px solid #eee;position:relative;">
+      <div class="sidebar-header" style="height:48px;display:flex;align-items:center;background:#fff;border-bottom:1px solid #eee;position:relative;">
         <div v-if="!isCollapsed" class="logo-area" style="display:flex;align-items:center;justify-content:center;flex:1;padding-right:40px;">
-          <img src="/logo.svg" alt="logo" style="height:32px;width:32px;margin-right:10px;" />
-          <span style="font-weight:bold;font-size:18px;letter-spacing:2px;color:#222;">网元管理平台</span>
+          <img src="/logo.svg" alt="logo" style="height:28px;width:28px;margin-right:8px;" />
+          <span style="font-weight:bold;font-size:16px;letter-spacing:1px;color:#222;">网元管理平台</span>
         </div>
         <div v-else class="logo-collapsed" style="display:flex;flex-direction:column;justify-content:center;align-items:center;width:100%;height:100%;">
-          <img src="/logo.svg" alt="logo" style="height:24px;width:24px;margin-bottom:2px;" />
+          <img src="/logo.svg" alt="logo" style="height:20px;width:20px;margin-bottom:2px;" />
           <el-button 
             type="text" 
             @click="toggleSidebar"
@@ -263,7 +263,7 @@
     <!-- 主体内容 -->
     <el-container>
       <!-- 顶部栏 -->
-      <el-header style="background: #fff; display: flex; justify-content: flex-end; align-items: center; height: 60px;">
+      <el-header style="background: #fff; display: flex; justify-content: flex-end; align-items: center; height: 48px; padding: 0 20px;">
         <el-icon style="margin-right: 20px;"><Bell /></el-icon>
         <el-icon style="margin-right: 20px;"><QuestionFilled /></el-icon>
         <el-dropdown>

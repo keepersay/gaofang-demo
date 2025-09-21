@@ -1248,7 +1248,7 @@ onMounted(() => {
 .order-page {
   padding: 10px;
   background: #f5f6fa;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 88px);
 }
 
 .order-card {
